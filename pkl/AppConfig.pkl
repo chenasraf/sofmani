@@ -1,0 +1,27 @@
+@go.Package { name = "github.com/chenasraf/sofmani/appconfig" }
+module dev.casraf.sofmani.AppConfig
+
+import "package://pkg.pkl-lang.org/pkl-go/pkl.golang@0.8.0#/go.pkl"
+
+typealias InstallerType = "custom"|"brew"|"apt"|"git"|"unzip"
+
+class Installer {
+  name: String
+  type: InstallerType
+  platforms: Platforms?
+
+  url: String?
+  command: String?
+
+  steps: Listing<Installer>?
+}
+
+typealias Platform = "macos"|"linux"|"windows"
+
+class Platforms {
+  only: Listing<Platform>
+  except: Listing<Platform>
+}
+
+debug = false
+install: Listing<Installer>
