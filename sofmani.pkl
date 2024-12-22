@@ -1,3 +1,4 @@
+amends "pkl/AppConfig.pkl"
 debug = true
 install {
   new {

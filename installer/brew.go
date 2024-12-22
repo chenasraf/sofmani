@@ -20,7 +20,7 @@ func (i *BrewInstaller) Install() error {
 	scanner := bufio.NewScanner(stderr)
 	scanner.Split(bufio.ScanRunes)
 	for scanner.Scan() {
-		fmt.Println(scanner.Text())
+		fmt.Print(scanner.Text())
 	}
 	return nil
 }

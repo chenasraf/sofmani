@@ -13,7 +13,9 @@ func main() {
 		return
 	}
 
+	fmt.Println("Installing...")
 	for _, i := range cfg.Install {
+		fmt.Println(fmt.Sprintf("Installing %s", i.Name))
 		installer.RunInstaller(installer.NewBrewInstaller(cfg, i))
 	}
 }
