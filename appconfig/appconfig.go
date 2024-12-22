@@ -14,23 +14,21 @@ type AppConfig struct {
 }
 
 type Installer struct {
-	Name      string        `json:"name"      yaml:"name"`
-	BinName   *string       `json:"bin_name"  yaml:"bin_name"`
-	Type      InstallerType `json:"type"      yaml:"type"`
-	Platforms *Platforms    `json:"platforms" yaml:"platforms"`
-	Url       *string       `json:"url"       yaml:"url"`
-	Command   *string       `json:"command"   yaml:"command"`
-	Steps     *[]Installer  `json:"steps"     yaml:"steps"`
+	Name      string          `json:"name"      yaml:"name"`
+	Type      InstallerType   `json:"type"      yaml:"type"`
+	Platforms *Platforms      `json:"platforms" yaml:"platforms"`
+	Steps     *[]Installer    `json:"steps"     yaml:"steps"`
+	Opts      *map[string]any `json:"opts" yaml:"opts"`
 }
 
 type InstallerType string
 
 const (
-	Brew  InstallerType = "brew"
-	Apt   InstallerType = "apt"
-	Git   InstallerType = "git"
-	Cmd   InstallerType = "cmd"
-	Group InstallerType = "group"
+	InstallerTypeCmd   InstallerType = "cmd"
+	InstallerTypeBrew  InstallerType = "brew"
+	InstallerTypeApt   InstallerType = "apt"
+	InstallerTypeGit   InstallerType = "git"
+	InstallerTypeGroup InstallerType = "group"
 )
 
 type Platforms struct {
@@ -41,9 +39,9 @@ type Platforms struct {
 type Platform string
 
 const (
-	Macos   Platform = "macos"
-	Linux   Platform = "linux"
-	Windows Platform = "windows"
+	PlatformMacos   Platform = "macos"
+	PlatformLinux   Platform = "linux"
+	PlatformWindows Platform = "windows"
 )
 
 func ParseConfigFile(file string) (*AppConfig, error) {

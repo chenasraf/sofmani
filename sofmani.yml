@@ -1,8 +1,26 @@
 debug: true
-# check_updates: true
 install:
-  - name: "treelike"
-    type: "brew"
-    url: "chenasraf/tap/treelike"
+  - name: treelike
+    type: brew
     platforms:
-      only: new Listing { "macos" }
+      only: ['macos']
+    opts:
+      tap: chenasraf/tap/treelike
+  - name: lazygit
+    type: group
+    steps:
+      - name: lazygit
+        type: brew
+        platforms:
+          only: ['macos']
+        opts:
+          tap: jesseduffield/lazygit
+      - name: lazygit
+        type: cmd
+        opts:
+          command: |
+            cd $(mktemp -d)
+            lazygit_version=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
+            curl -Lo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${lazygit_version}_Linux_x86_64.tar.gz"
+            tar xf lazygit.tar.gz lazygit
+            sudo install lazygit /usr/local/bin

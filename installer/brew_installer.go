@@ -15,6 +15,11 @@ type BrewInstaller struct {
 	Info   *appconfig.Installer
 }
 
+type BrewOpts struct {
+	Tap     *string
+	BinName *string
+}
+
 // Install implements IInstaller.
 func (i *BrewInstaller) Install() error {
 	cmd := exec.Command("brew", "install", i.Info.Name)
@@ -78,9 +83,24 @@ func (i *BrewInstaller) GetInfo() *appconfig.Installer {
 	return i.Info
 }
 
+func (i *BrewInstaller) GetOpts() *BrewOpts {
+	opts := &BrewOpts{}
+	info := i.Info
+	if info.Opts != nil {
+		if tap, ok := (*info.Opts)["tap"].(string); ok {
+			opts.Tap = &tap
+		}
+		if binName, ok := (*info.Opts)["bin_name"].(string); ok {
+			opts.BinName = &binName
+		}
+	}
+	return opts
+}
+
 func (i *BrewInstaller) GetBinName() string {
-	if i.Info.BinName != nil && len(*i.Info.BinName) > 0 {
-		return *i.Info.BinName
+	opts := i.GetOpts()
+	if opts.BinName != nil && len(*opts.BinName) > 0 {
+		return *opts.BinName
 	}
 	return i.Info.Name
 }

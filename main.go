@@ -21,6 +21,12 @@ func main() {
 			fmt.Println(err)
 			return
 		}
-		installer.RunInstaller(cfg, installerInstance)
+		err = installer.RunInstaller(cfg, installerInstance)
+		if err != nil {
+			fmt.Println(err)
+			panic(err)
+			return
+		}
+
 	}
 }
