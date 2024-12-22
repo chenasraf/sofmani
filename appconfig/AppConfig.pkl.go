@@ -11,6 +11,8 @@ type AppConfig struct {
 	Debug any `pkl:"debug"`
 
 	Install []*Installer `pkl:"install"`
+
+	CheckUpdates *bool `pkl:"check_updates"`
 }
 
 // LoadFromPath loads the pkl module at the given path and evaluates it into a AppConfig

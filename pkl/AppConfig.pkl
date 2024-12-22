@@ -25,3 +25,4 @@ class Platforms {
 
 debug = false
 install: Listing<Installer>
+check_updates: Boolean? = false
