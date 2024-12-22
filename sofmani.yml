@@ -1,0 +1,8 @@
+debug: true
+# check_updates: true
+install:
+  - name: "treelike"
+    type: "brew"
+    url: "chenasraf/tap/treelike"
+    platforms:
+      only: new Listing { "macos" }

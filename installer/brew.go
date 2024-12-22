@@ -64,7 +64,8 @@ func (i *BrewInstaller) CheckNeedsUpdate() (error, bool) {
 
 // CheckIsInstalled implements IInstaller.
 func (i *BrewInstaller) CheckIsInstalled() (error, bool) {
-	cmd := exec.Command("brew", "list", i.Info.Name)
+	// cmd := exec.Command("brew", "list", i.Info.Name)
+	cmd := exec.Command("which", i.GetBinName())
 	err := cmd.Run()
 	if err != nil {
 		return nil, false
@@ -75,6 +76,13 @@ func (i *BrewInstaller) CheckIsInstalled() (error, bool) {
 // GetInfo implements IInstaller.
 func (i *BrewInstaller) GetInfo() *appconfig.Installer {
 	return i.Info
+}
+
+func (i *BrewInstaller) GetBinName() string {
+	if i.Info.BinName != nil && len(*i.Info.BinName) > 0 {
+		return *i.Info.BinName
+	}
+	return i.Info.Name
 }
 
 func NewBrewInstaller(cfg *appconfig.AppConfig, installer *appconfig.Installer) *BrewInstaller {
