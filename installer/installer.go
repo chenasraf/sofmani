@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/chenasraf/sofmani/appconfig"
+	"github.com/chenasraf/sofmani/logger"
 )
 
 type IInstaller interface {
@@ -25,21 +26,21 @@ func GetInstaller(config *appconfig.AppConfig, installer *appconfig.Installer) (
 }
 
 func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
-	fmt.Printf("Checking if %s is installed\n", installer.GetInfo().Name)
+	logger.Info("Checking if %s is installed", installer.GetInfo().Name)
 	err, installed := installer.CheckIsInstalled()
 	if err != nil {
 		return err
 	}
 	if installed {
-		fmt.Printf("%s is already installed\n", installer.GetInfo().Name)
+		logger.Info("%s is already installed", installer.GetInfo().Name)
 		if config.CheckUpdates {
-			fmt.Printf("Checking if %s needs an update\n", installer.GetInfo().Name)
+			logger.Info("Checking if %s needs an update", installer.GetInfo().Name)
 			err, needsUpdate := installer.CheckNeedsUpdate()
 			if err != nil {
 				return err
 			}
 			if needsUpdate {
-				fmt.Printf("%s needs an update\n", installer.GetInfo().Name)
+				logger.Info("%s needs an update", installer.GetInfo().Name)
 				installer.Update()
 			}
 		} else {

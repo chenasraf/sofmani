@@ -1,9 +1,8 @@
 package installer
 
 import (
-	"fmt"
-
 	"github.com/chenasraf/sofmani/appconfig"
+	"github.com/chenasraf/sofmani/logger"
 )
 
 type GroupInstaller struct {
@@ -13,7 +12,7 @@ type GroupInstaller struct {
 
 // Install implements IInstaller.
 func (i *GroupInstaller) Install() error {
-	fmt.Printf("Installing group %s\n", i.Info.Name)
+	logger.Info("Installing group %s", i.Info.Name)
 	for _, step := range *i.Info.Steps {
 		err, installer := GetInstaller(i.Config, &step)
 		if err != nil {
