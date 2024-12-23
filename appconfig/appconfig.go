@@ -2,6 +2,7 @@ package appconfig
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/eschao/config"
@@ -75,4 +76,21 @@ func ParseConfigFile(file string) (*AppConfig, error) {
 		return &appConfig, nil
 	}
 	return nil, fmt.Errorf("Unsupported config file extension %s", ext)
+}
+
+func ApplyCliOverrides(config *AppConfig) *AppConfig {
+	for len(os.Args) > 0 {
+		switch os.Args[0] {
+		case "-d", "--debug":
+			config.Debug = true
+		case "-D", "--no-debug":
+			config.Debug = false
+		case "-c", "--check-updates":
+			config.CheckUpdates = true
+		case "-C", "--no-check-updates":
+			config.CheckUpdates = false
+		}
+		os.Args = os.Args[1:]
+	}
+	return config
 }

@@ -18,5 +18,6 @@ func LoadConfig() (*appconfig.AppConfig, error) {
 	if err != nil {
 		return nil, err
 	}
+	cfg = appconfig.ApplyCliOverrides(cfg)
 	return cfg, nil
 }
