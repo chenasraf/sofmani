@@ -33,5 +33,18 @@ install:
         curl -fsSL https://fnm.vercel.app/install | bash
         fnm install --lts
         fnm use lts-latest
+  - name: pyenv
+    type: group
+    steps:
+      - name: pyenv
+        type: brew
+        platforms:
+          only: ['macos']
+      - name: pyenv
+        type: shell
+        platforms:
+          only: ['linux']
+        opts:
+          command: 'curl https://pyenv.run | bash'
 
 

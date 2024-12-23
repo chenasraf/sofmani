@@ -69,7 +69,6 @@ func (i *BrewInstaller) CheckNeedsUpdate() (error, bool) {
 
 // CheckIsInstalled implements IInstaller.
 func (i *BrewInstaller) CheckIsInstalled() (error, bool) {
-	// cmd := exec.Command("brew", "list", i.Info.Name)
 	cmd := exec.Command("which", i.GetBinName())
 	err := cmd.Run()
 	if err != nil {

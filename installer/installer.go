@@ -18,10 +18,10 @@ type IInstaller interface {
 
 func GetInstaller(config *appconfig.AppConfig, installer *appconfig.Installer) (error, IInstaller) {
 	switch installer.Type {
-	case appconfig.InstallerTypeBrew:
-		return nil, NewBrewInstaller(config, installer)
 	case appconfig.InstallerTypeGroup:
 		return nil, NewGroupInstaller(config, installer)
+	case appconfig.InstallerTypeBrew:
+		return nil, NewBrewInstaller(config, installer)
 	case appconfig.InstallerTypeShell:
 		return nil, NewShellInstaller(config, installer)
 	}
