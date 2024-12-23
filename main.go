@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/chenasraf/sofmani/installer"
@@ -8,17 +9,16 @@ import (
 )
 
 func main() {
-	logFile := "sofmani.log"
-	logger.InitLogger(logFile)
 	cfg, err := LoadConfig()
 	if err != nil {
-		logger.Error("Error loading config: %v", err)
+		fmt.Println(fmt.Errorf("Error loading config: %v", err))
 		return
 	}
+	logFile := "sofmani.log"
+	logger.InitLogger(logFile, cfg)
 
 	logger.Info("Installing...")
 	for _, i := range cfg.Install {
-		logger.Info("Installing %s", i.Name)
 		err, installerInstance := installer.GetInstaller(cfg, &i)
 		if err != nil {
 			logger.Error("%s", err)

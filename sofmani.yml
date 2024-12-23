@@ -16,7 +16,9 @@ install:
         opts:
           tap: jesseduffield/lazygit
       - name: lazygit
-        type: cmd
+        type: shell
+        platforms:
+          only: ['linux']
         opts:
           command: |
             cd $(mktemp -d)
@@ -24,3 +26,12 @@ install:
             curl -Lo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${lazygit_version}_Linux_x86_64.tar.gz"
             tar xf lazygit.tar.gz lazygit
             sudo install lazygit /usr/local/bin
+  - name: fnm
+    type: shell
+    opts:
+      command: |
+        curl -fsSL https://fnm.vercel.app/install | bash
+        fnm install --lts
+        fnm use lts-latest
+
+

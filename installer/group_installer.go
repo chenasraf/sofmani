@@ -12,7 +12,7 @@ type GroupInstaller struct {
 
 // Install implements IInstaller.
 func (i *GroupInstaller) Install() error {
-	logger.Info("Installing group %s", i.Info.Name)
+	logger.Debug("Installing group %s", i.Info.Name)
 	for _, step := range *i.Info.Steps {
 		err, installer := GetInstaller(i.Config, &step)
 		if err != nil {

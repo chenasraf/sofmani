@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/fatih/color"
 )
@@ -13,11 +14,12 @@ type Logger struct {
 	fileLogger *log.Logger
 	consoleOut *log.Logger
 	logFile    *os.File
+	debug      bool
 }
 
 var logger *Logger
 
-func InitLogger(filePath string) *Logger {
+func InitLogger(filePath string, config *appconfig.AppConfig) *Logger {
 	// Open the log file
 	logFile, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -34,6 +36,7 @@ func InitLogger(filePath string) *Logger {
 		fileLogger: fileLogger,
 		consoleOut: consoleOut,
 		logFile:    logFile,
+		debug:      config.Debug,
 	}
 
 	return logger
@@ -71,6 +74,9 @@ func Error(format string, args ...interface{}) {
 }
 
 func Debug(format string, args ...interface{}) {
+	if !logger.debug {
+		return
+	}
 	colorGreen := color.New(color.FgGreen).Add(color.Bold)
 	logger.log("DEBUG", colorGreen, format, args...)
 }

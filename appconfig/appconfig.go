@@ -24,7 +24,7 @@ type Installer struct {
 type InstallerType string
 
 const (
-	InstallerTypeCmd   InstallerType = "cmd"
+	InstallerTypeShell InstallerType = "shell"
 	InstallerTypeBrew  InstallerType = "brew"
 	InstallerTypeApt   InstallerType = "apt"
 	InstallerTypeGit   InstallerType = "git"
@@ -43,6 +43,15 @@ const (
 	PlatformLinux   Platform = "linux"
 	PlatformWindows Platform = "windows"
 )
+
+func ContainsPlatform(platforms *[]Platform, platform Platform) bool {
+	for _, p := range *platforms {
+		if p == platform {
+			return true
+		}
+	}
+	return false
+}
 
 func ParseConfigFile(file string) (*AppConfig, error) {
 	ext := filepath.Ext(file)
