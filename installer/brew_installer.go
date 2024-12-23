@@ -14,34 +14,29 @@ type BrewInstaller struct {
 }
 
 type BrewOpts struct {
-	Tap         *string
-	BinName     *string
-	PreCommand  *string
-	PostCommand *string
+	Tap *string
 }
 
 // Install implements IInstaller.
 func (i *BrewInstaller) Install() error {
-	chain := [][]string{
-		{"brew", "install", i.Info.Name},
+	name := i.GetBinName()
+	if i.GetOpts().Tap != nil {
+		name = *i.GetOpts().Tap + "/" + name
 	}
-	if i.GetOpts().PreCommand != nil {
-		chain = append([][]string{{"sh", "-c", *i.GetOpts().PreCommand}}, chain...)
-	}
-	if i.GetOpts().PostCommand != nil {
-		chain = append(chain, []string{"sh", "-c", *i.GetOpts().PostCommand})
-	}
-	return utils.RunCmdPassThroughChained(chain)
+	return utils.RunCmdPassThrough("brew", "install", name)
 }
 
 // Update implements IInstaller.
 func (i *BrewInstaller) Update() error {
-	return utils.RunCmdPassThrough("brew", "upgrade", i.Info.Name)
+	return utils.RunCmdPassThrough("brew", "upgrade", *i.Info.Name)
 }
 
 // CheckNeedsUpdate implements IInstaller.
 func (i *BrewInstaller) CheckNeedsUpdate() (error, bool) {
-	out, err := utils.RunCmdGetOutput("brew", "outdated", "--json", i.Info.Name)
+	if i.GetInfo().CheckHasUpdate != nil {
+		return utils.RunCmdGetSuccess("sh", "-c", *i.GetInfo().CheckHasUpdate)
+	}
+	out, err := utils.RunCmdGetOutput("brew", "outdated", "--json", *i.Info.Name)
 	if err != nil {
 		return err, false
 	}
@@ -55,7 +50,7 @@ func (i *BrewInstaller) CheckNeedsUpdate() (error, bool) {
 	for i, v := range formulae {
 		strFormulae[i] = v.(string)
 	}
-	if slices.Contains(strFormulae, i.Info.Name) {
+	if slices.Contains(strFormulae, *i.Info.Name) {
 		return nil, true
 	}
 	return nil, false
@@ -78,30 +73,23 @@ func (i *BrewInstaller) GetOpts() *BrewOpts {
 		if tap, ok := (*info.Opts)["tap"].(string); ok {
 			opts.Tap = &tap
 		}
-		if binName, ok := (*info.Opts)["bin_name"].(string); ok {
-			opts.BinName = &binName
-		}
-		if command, ok := (*info.Opts)["pre_command"].(string); ok {
-			opts.PreCommand = &command
-		}
-		if command, ok := (*info.Opts)["post_command"].(string); ok {
-			opts.PostCommand = &command
-		}
 	}
 	return opts
 }
 
 func (i *BrewInstaller) GetBinName() string {
-	opts := i.GetOpts()
-	if opts.BinName != nil && len(*opts.BinName) > 0 {
-		return *opts.BinName
+	info := i.GetInfo()
+	if info.BinName != nil && len(*info.BinName) > 0 {
+		return *info.BinName
 	}
-	return i.Info.Name
+	return *info.Name
 }
 
 func NewBrewInstaller(cfg *appconfig.AppConfig, installer *appconfig.Installer) *BrewInstaller {
-	return &BrewInstaller{
+	i := &BrewInstaller{
 		Config: cfg,
 		Info:   installer,
 	}
+
+	return i
 }

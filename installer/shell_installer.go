@@ -14,10 +14,7 @@ type ShellInstaller struct {
 }
 
 type ShellOpts struct {
-	Command        *string
-	BinName        *string
-	CheckHasUpdate *string
-	CheckInstalled *string
+	Command *string
 }
 
 // Install implements IInstaller.
@@ -40,16 +37,16 @@ func (i *ShellInstaller) Update() error {
 
 // CheckNeedsUpdate implements IInstaller.
 func (i *ShellInstaller) CheckNeedsUpdate() (error, bool) {
-	if i.GetOpts().CheckHasUpdate != nil {
-		return utils.RunCmdGetSuccess("sh", "-c", *i.GetOpts().CheckHasUpdate)
+	if i.GetInfo().CheckHasUpdate != nil {
+		return utils.RunCmdGetSuccess("sh", "-c", *i.GetInfo().CheckHasUpdate)
 	}
 	return nil, false
 }
 
 // CheckIsInstalled implements IInstaller.
 func (i *ShellInstaller) CheckIsInstalled() (error, bool) {
-	if i.GetOpts().CheckInstalled != nil {
-		return utils.RunCmdGetSuccess("sh", "-c", *i.GetOpts().CheckInstalled)
+	if i.GetInfo().CheckInstalled != nil {
+		return utils.RunCmdGetSuccess("sh", "-c", *i.GetInfo().CheckInstalled)
 	}
 	return utils.RunCmdGetSuccess("which", i.GetBinName())
 }
@@ -66,25 +63,16 @@ func (i *ShellInstaller) GetOpts() *ShellOpts {
 		if command, ok := (*info.Opts)["command"].(string); ok {
 			opts.Command = &command
 		}
-		if binName, ok := (*info.Opts)["bin_name"].(string); ok {
-			opts.BinName = &binName
-		}
-		if command, ok := (*info.Opts)["check_has_update"].(string); ok {
-			opts.CheckHasUpdate = &command
-		}
-		if command, ok := (*info.Opts)["check_installed"].(string); ok {
-			opts.CheckInstalled = &command
-		}
 	}
 	return opts
 }
 
 func (i *ShellInstaller) GetBinName() string {
-	opts := i.GetOpts()
-	if opts.BinName != nil && len(*opts.BinName) > 0 {
-		return *opts.BinName
+	info := i.GetInfo()
+	if info.BinName != nil && len(*info.BinName) > 0 {
+		return *info.BinName
 	}
-	return i.Info.Name
+	return *info.Name
 }
 
 func NewShellInstaller(cfg *appconfig.AppConfig, installer *appconfig.Installer) *ShellInstaller {

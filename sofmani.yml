@@ -1,9 +1,13 @@
-# debug: true
+debug: true
+defaults:
+  type:
+    brew:
+      platforms:
+        only: ['macos']
+
 install:
   - name: treelike
     type: brew
-    platforms:
-      only: ['macos']
     opts:
       tap: chenasraf/tap/treelike
   - name: lazygit
@@ -11,8 +15,6 @@ install:
     steps:
       - name: lazygit
         type: brew
-        platforms:
-          only: ['macos']
         opts:
           tap: jesseduffield/lazygit
       - name: lazygit
@@ -26,20 +28,36 @@ install:
             curl -Lo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${lazygit_version}_Linux_x86_64.tar.gz"
             tar xf lazygit.tar.gz lazygit
             sudo install lazygit /usr/local/bin
+  - name: lazydocker
+    type: group
+    steps:
+      - name: lazydocker
+        type: brew
+        opts:
+          tap: jesseduffield/lazydocker
+      - name: lazydocker
+        type: shell
+        platforms:
+          only: ['linux']
+        opts:
+          command: |
+            cd $(mktemp -d)
+            lazydocker_version=$(curl -s "https://api.github.com/repos/jesseduffield/lazydocker/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
+            curl -Lo lazydocker.tar.gz "https://github.com/jesseduffield/lazydocker/releases/latest/download/lazydocker_${lazydocker_version}_Linux_x86_64.tar.gz"
+            tar xf lazydocker.tar.gz lazydocker
+            sudo install lazydocker /usr/local/bin
   - name: fnm
     type: shell
+    post_install: |
+      fnm install --lts
+      fnm use lts-latest
     opts:
-      command: |
-        curl -fsSL https://fnm.vercel.app/install | bash
-        fnm install --lts
-        fnm use lts-latest
+      command: curl -fsSL https://fnm.vercel.app/install | bash
   - name: pyenv
     type: group
     steps:
       - name: pyenv
         type: brew
-        platforms:
-          only: ['macos']
       - name: pyenv
         type: shell
         platforms:
@@ -48,24 +66,16 @@ install:
           command: 'curl https://pyenv.run | bash'
   - name: pipx
     type: group
-    opts:
-      post_command: sudo pipx ensurepath --global
+    post_install: sudo pipx ensurepath --global
     steps:
       - name: pipx
         type: brew
-        platforms:
-          only: ['macos']
       - name: pipx
         type: apt
         platforms:
           only: ['linux']
-        opts:
-          post_command: |
-            sudo pipx ensurepath --global
   - name: jq
     type: brew
-    platforms:
-      only: ['macos']
   - name: yq
     type: shell
     opts:
@@ -75,8 +85,6 @@ install:
     steps:
       - name: direnv
         type: brew
-        platforms:
-          only: ['macos']
       - name: direnv
         type: shell
         platforms:
@@ -88,8 +96,6 @@ install:
     steps:
       - name: dotenvx
         type: brew
-        platforms:
-          only: ['macos']
         opts:
           tap: dotenvx/brew
       - name: dotenvx
@@ -100,17 +106,12 @@ install:
           command: curl -sfS https://dotenvx.sh | sh
   - name: ollama
     type: brew
-    platforms:
-      only: ['macos']
-    opts:
-      post_command: brew services start ollama
+    post_install: brew services start ollama
   - name: gi_gen
     type: group
     steps:
       - name: gi_gen
         type: brew
-        platforms:
-          only: ['macos']
         opts:
           tap: chenasraf/tap
       - name: gi_gen
@@ -128,8 +129,6 @@ install:
     steps:
       - name: treelike
         type: brew
-        platforms:
-          only: ['macos']
         opts:
           tap: chenasraf/tap
       - name: treelike
@@ -142,8 +141,20 @@ install:
             mkdir -p "$DOTBIN_META"
             arch=$(archmatch -mA "macos-arm" -mI "macos-intel" -l "linux-amd")
             curl -L https://github.com/chenasraf/treelike/releases/download/$treelike_ver/treelike-$arch.tar.gz -o $DOTBIN/treelike.tar.gz
-  - name: pnpm-pkgs
+  - name: pnpm
     type: group
+    check_installed: |
+      [[ \
+        $(which pnpm) && \
+        $(which tsc) && \
+        $(which tldr) && \
+        $(which simple-scaffold) && \
+        $(which firebase) && \
+        $(which prettier) && \
+        $(which http-server) && \
+        $(which licenseg) && \
+        $(which vscode-json-language-server) \
+      ]]; exit $?
     steps:
       - name: pnpm
         type: shell
@@ -190,6 +201,6 @@ install:
         pnpm i && pnpm build && pnpm ginst
   - name: zplug
     type: shell
+    check_installed: test -d ~/.zplug; exit $?
     opts:
-      check_installed: test -d ~/.zplug
       command: curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh | zsh

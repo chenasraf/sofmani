@@ -6,6 +6,7 @@ import (
 
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
+	"github.com/chenasraf/sofmani/utils"
 )
 
 type IInstaller interface {
@@ -17,6 +18,7 @@ type IInstaller interface {
 }
 
 func GetInstaller(config *appconfig.AppConfig, installer *appconfig.Installer) (error, IInstaller) {
+	installer = InstallerWithDefaults(installer, installer.Type, config.Defaults)
 	switch installer.Type {
 	case appconfig.InstallerTypeGroup:
 		return nil, NewGroupInstaller(config, installer)
@@ -28,6 +30,42 @@ func GetInstaller(config *appconfig.AppConfig, installer *appconfig.Installer) (
 	return nil, nil
 }
 
+func InstallerWithDefaults(
+	installer *appconfig.Installer,
+	installerType appconfig.InstallerType,
+	defaults *appconfig.AppConfigDefaults,
+) *appconfig.Installer {
+	if defaults != nil && *defaults.Type != nil {
+		if val, ok := (*defaults.Type)[installerType]; ok {
+			logger.Debug("Applying defaults for %s", installerType)
+			if val.Opts != nil {
+				installer.Opts = val.Opts
+			}
+			if val.Platforms != nil {
+				installer.Platforms = val.Platforms
+			}
+			if val.PreUpdate != nil {
+				installer.PreUpdate = val.PreUpdate
+			}
+			if val.PostUpdate != nil {
+				installer.PostUpdate = val.PostUpdate
+			}
+			if val.PreInstall != nil {
+				installer.PreInstall = val.PreInstall
+			}
+			if val.PostInstall != nil {
+				installer.PostInstall = val.PostInstall
+			}
+			if val.CheckHasUpdate != nil {
+				installer.CheckHasUpdate = val.CheckHasUpdate
+			}
+			if val.CheckInstalled != nil {
+				installer.CheckInstalled = val.CheckInstalled
+			}
+		}
+	}
+	return installer
+}
 func GetCurrentPlatform() appconfig.Platform {
 	switch runtime.GOOS {
 	case "darwin":
@@ -41,35 +79,67 @@ func GetCurrentPlatform() appconfig.Platform {
 }
 
 func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
-	logger.Debug("Checking if %s should run on %s", installer.GetInfo().Name, GetCurrentPlatform())
+	info := installer.GetInfo()
+	name := *info.Name
+	logger.Debug("Checking if %s should run on %s", name, GetCurrentPlatform())
 	curOS := GetCurrentPlatform()
 	if !GetShouldRunOnOS(installer, curOS) {
-		logger.Debug("%s should not run on %s, skipping", installer.GetInfo().Name, curOS)
+		logger.Debug("%s should not run on %s, skipping", name, curOS)
 		return nil
 	}
-	logger.Debug("Checking if %s is installed", installer.GetInfo().Name)
+	logger.Debug("Checking if %s is installed", name)
 	err, installed := installer.CheckIsInstalled()
 	if err != nil {
 		return err
 	}
 	if installed {
-		logger.Debug("%s is already installed", installer.GetInfo().Name)
+		logger.Debug("%s is already installed", name)
 		if config.CheckUpdates {
-			logger.Debug("Checking if %s needs an update", installer.GetInfo().Name)
+			logger.Debug("Checking if %s needs an update", name)
 			err, needsUpdate := installer.CheckNeedsUpdate()
 			if err != nil {
 				return err
 			}
 			if needsUpdate {
-				logger.Info("%s has an update", installer.GetInfo().Name)
+				logger.Info("%s has an update", name)
+				if info.PreUpdate != nil {
+					logger.Debug("Running pre-update command for %s", name)
+					err := utils.RunCmdPassThrough("sh", "-c", *info.PreUpdate)
+					if err != nil {
+						return err
+					}
+				}
+				logger.Debug("Running update for %s", name)
 				installer.Update()
+				if info.PostUpdate != nil {
+					logger.Debug("Running post-update command for %s", name)
+					err := utils.RunCmdPassThrough("sh", "-c", *info.PostUpdate)
+					if err != nil {
+						return err
+					}
+				}
 			}
 		} else {
 			return nil
 		}
 	}
-	logger.Info("Installing %s (%s)", installer.GetInfo().Name, installer.GetInfo().Type)
+	logger.Info("Installing %s (%s)", name, installer.GetInfo().Type)
+	if info.PreInstall != nil {
+		logger.Debug("Running pre-install command for %s", name)
+		err := utils.RunCmdPassThrough("sh", "-c", *info.PreInstall)
+		if err != nil {
+			return err
+		}
+	}
+	logger.Debug("Running installer for %s", name)
 	err = installer.Install()
+	if info.PostInstall != nil {
+		logger.Debug("Running post-install command for %s", name)
+		err := utils.RunCmdPassThrough("sh", "-c", *info.PostInstall)
+		if err != nil {
+			return err
+		}
+	}
 	if err != nil {
 		return err
 	}
