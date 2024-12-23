@@ -22,7 +22,16 @@ type BrewOpts struct {
 
 // Install implements IInstaller.
 func (i *BrewInstaller) Install() error {
-	return utils.RunCmdPassThrough("brew", "install", i.Info.Name)
+	chain := [][]string{
+		{"brew", "install", i.Info.Name},
+	}
+	if i.GetOpts().PreCommand != nil {
+		chain = append([][]string{{"sh", "-c", *i.GetOpts().PreCommand}}, chain...)
+	}
+	if i.GetOpts().PostCommand != nil {
+		chain = append(chain, []string{"sh", "-c", *i.GetOpts().PostCommand})
+	}
+	return utils.RunCmdPassThroughChained(chain)
 }
 
 // Update implements IInstaller.

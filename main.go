@@ -17,7 +17,7 @@ func main() {
 	logFile := "sofmani.log"
 	logger.InitLogger(logFile, cfg)
 
-	logger.Info("Installing...")
+	logger.Info("Checking all installers...")
 	for _, i := range cfg.Install {
 		err, installerInstance := installer.GetInstaller(cfg, &i)
 		if err != nil {
@@ -34,4 +34,5 @@ func main() {
 			}
 		}
 	}
+	logger.Info("Complete")
 }

@@ -1,4 +1,4 @@
-debug: true
+# debug: true
 install:
   - name: treelike
     type: brew
@@ -70,5 +70,126 @@ install:
     type: shell
     opts:
       command: pipx install yq
-
-
+  - name: direnv
+    type: group
+    steps:
+      - name: direnv
+        type: brew
+        platforms:
+          only: ['macos']
+      - name: direnv
+        type: shell
+        platforms:
+          only: ['linux']
+        opts:
+          command: export bin_path=/usr/local/bin curl -sfL https://direnv.net/install.sh | bash
+  - name: dotenvx
+    type: group
+    steps:
+      - name: dotenvx
+        type: brew
+        platforms:
+          only: ['macos']
+        opts:
+          tap: dotenvx/brew
+      - name: dotenvx
+        type: shell
+        platforms:
+          only: ['linux']
+        opts:
+          command: curl -sfS https://dotenvx.sh | sh
+  - name: ollama
+    type: brew
+    platforms:
+      only: ['macos']
+    opts:
+      post_command: brew services start ollama
+  - name: gi_gen
+    type: group
+    steps:
+      - name: gi_gen
+        type: brew
+        platforms:
+          only: ['macos']
+        opts:
+          tap: chenasraf/tap
+      - name: gi_gen
+        type: shell
+        platforms:
+          only: ['linux']
+        opts:
+          command: |
+            gi_ver=$(get-gh-latest-tag "chenasraf/gi_gen")
+            mkdir -p "$DOTBIN_META"
+            arch=$(archmatch -mA "macos-arm" -mI "macos-intel" -l "linux-amd")
+            curl -L https://github.com/chenasraf/gi_gen/releases/download/$gi_ver/gi_gen-$gi_ver-$arch -o $DOTBIN/gi_gen
+  - name: treelike
+    type: group
+    steps:
+      - name: treelike
+        type: brew
+        platforms:
+          only: ['macos']
+        opts:
+          tap: chenasraf/tap
+      - name: treelike
+        type: shell
+        platforms:
+          only: ['linux']
+        opts:
+          command: |
+            gi_ver=$(get-gh-latest-tag "chenasraf/treelike")
+            mkdir -p "$DOTBIN_META"
+            arch=$(archmatch -mA "macos-arm" -mI "macos-intel" -l "linux-amd")
+            curl -L https://github.com/chenasraf/treelike/releases/download/$treelike_ver/treelike-$arch.tar.gz -o $DOTBIN/treelike.tar.gz
+  - name: pnpm-pkgs
+    type: group
+    steps:
+      - name: pnpm
+        type: shell
+        opts:
+          command: npm i -g pnpm
+      - name: tsc
+        type: shell
+        opts:
+          command: pnpm i -g typescript
+      - name: tldr
+        type: shell
+        opts:
+          command: pnpm i -g tldr
+      - name: simple-scaffold
+        type: shell
+        opts:
+          command: pnpm i -g simple-scaffold
+      - name: firebase
+        type: shell
+        opts:
+          command: pnpm i -g firebase-tools
+      - name: prettier
+        type: shell
+        opts:
+          command: pnpm i -g prettier
+      - name: http-server
+        type: shell
+        opts:
+          command: pnpm i -g http-server
+      - name: licenseg
+        type: shell
+        opts:
+          command: pnpm i -g licenseg
+      - name: vscode-json-language-server
+        type: shell
+        opts:
+          command: pnpm i -g vscode-langservers-extracted
+  - name: home
+    type: shell
+    opts:
+      bin_name: tx
+      command: |
+        cd $DOTFILES/utils
+        pnpm i && pnpm build && pnpm ginst
+  - name: zplug
+    type: shell
+    opts:
+      check_installed: test -d ~/.zplug
+      command: curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh | zsh

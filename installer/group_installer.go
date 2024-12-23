@@ -21,6 +21,13 @@ type GroupOpts struct {
 // Install implements IInstaller.
 func (i *GroupInstaller) Install() error {
 	logger.Debug("Installing group %s", i.Info.Name)
+	if i.GetOpts().PreCommand != nil {
+		logger.Debug("Running pre-command for group %s", i.Info.Name)
+		err := utils.RunCmdPassThrough("sh", "-c", *i.GetOpts().PreCommand)
+		if err != nil {
+			return err
+		}
+	}
 	for _, step := range *i.Info.Steps {
 		err, installer := GetInstaller(i.Config, &step)
 		if err != nil {
@@ -30,6 +37,13 @@ func (i *GroupInstaller) Install() error {
 			logger.Warn("Installer type %s is not supported, skipping", step.Type)
 		} else {
 			RunInstaller(i.Config, installer)
+		}
+	}
+	if i.GetOpts().PostCommand != nil {
+		logger.Debug("Running post-command for group %s", i.Info.Name)
+		err := utils.RunCmdPassThrough("sh", "-c", *i.GetOpts().PostCommand)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
