@@ -15,9 +15,9 @@ type ShellInstaller struct {
 }
 
 type ShellOpts struct {
-	Command            *string
-	BinName            *string
-	UpdateCheckCommand *string
+	Command        *string
+	BinName        *string
+	CheckHasUpdate *string
 }
 
 // Install implements IInstaller.
@@ -47,7 +47,14 @@ func (i *ShellInstaller) Update() error {
 
 // CheckNeedsUpdate implements IInstaller.
 func (i *ShellInstaller) CheckNeedsUpdate() (error, bool) {
-
+	if i.GetOpts().CheckHasUpdate != nil {
+		cmd := exec.Command("sh", "-c", *i.GetOpts().CheckHasUpdate)
+		err := cmd.Run()
+		if err != nil {
+			return err, true
+		}
+		return nil, false
+	}
 	return nil, false
 }
 
@@ -76,6 +83,9 @@ func (i *ShellInstaller) GetOpts() *ShellOpts {
 		}
 		if binName, ok := (*info.Opts)["bin_name"].(string); ok {
 			opts.BinName = &binName
+		}
+		if command, ok := (*info.Opts)["check_has_update"].(string); ok {
+			opts.CheckHasUpdate = &command
 		}
 	}
 	return opts

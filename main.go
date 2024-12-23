@@ -24,10 +24,14 @@ func main() {
 			logger.Error("%s", err)
 			return
 		}
-		err = installer.RunInstaller(cfg, installerInstance)
-		if err != nil {
-			logger.Error("%s", err)
-			os.Exit(1)
+		if installerInstance == nil {
+			logger.Warn("Installer type %s is not supported, skipping", i.Type)
+		} else {
+			err = installer.RunInstaller(cfg, installerInstance)
+			if err != nil {
+				logger.Error("%s", err)
+				os.Exit(1)
+			}
 		}
 	}
 }

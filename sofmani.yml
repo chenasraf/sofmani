@@ -46,5 +46,31 @@ install:
           only: ['linux']
         opts:
           command: 'curl https://pyenv.run | bash'
+  - name: pipx
+    type: group
+    steps:
+      - name: pipx
+        type: brew
+        platforms:
+          only: ['macos']
+        opts:
+          post_command: |
+            sudo pipx ensurepath --global
+      - name: pipx
+        type: apt
+        platforms:
+          only: ['linux']
+        opts:
+          post_command: |
+            sudo pipx ensurepath --global
+
+  - name: jq
+    type: brew
+    platforms:
+      only: ['macos']
+  - name: yq
+    type: shell
+    opts:
+      command: pipx install yq
 
 

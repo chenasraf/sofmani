@@ -25,7 +25,7 @@ func GetInstaller(config *appconfig.AppConfig, installer *appconfig.Installer) (
 	case appconfig.InstallerTypeShell:
 		return nil, NewShellInstaller(config, installer)
 	}
-	return fmt.Errorf("Installer type %s is not supported", installer.Type), nil
+	return nil, nil
 }
 
 func GetCurrentPlatform() appconfig.Platform {

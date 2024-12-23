@@ -13,7 +13,8 @@ type GroupInstaller struct {
 }
 
 type GroupOpts struct {
-	BinName *string
+	BinName        *string
+	CheckHasUpdate *string
 }
 
 // Install implements IInstaller.
@@ -24,7 +25,11 @@ func (i *GroupInstaller) Install() error {
 		if err != nil {
 			return err
 		}
-		RunInstaller(i.Config, installer)
+		if installer == nil {
+			logger.Warn("Installer type %s is not supported, skipping", step.Type)
+		} else {
+			RunInstaller(i.Config, installer)
+		}
 	}
 	return nil
 }
@@ -36,6 +41,14 @@ func (i *GroupInstaller) Update() error {
 
 // CheckNeedsUpdate implements IInstaller.
 func (i *GroupInstaller) CheckNeedsUpdate() (error, bool) {
+	if i.GetOpts().CheckHasUpdate != nil {
+		cmd := exec.Command("sh", "-c", *i.GetOpts().CheckHasUpdate)
+		err := cmd.Run()
+		if err != nil {
+			return err, true
+		}
+		return nil, false
+	}
 	return nil, false
 }
 
@@ -60,6 +73,9 @@ func (i *GroupInstaller) GetOpts() *GroupOpts {
 	if info.Opts != nil {
 		if binName, ok := (*info.Opts)["bin_name"].(string); ok {
 			opts.BinName = &binName
+		}
+		if command, ok := (*info.Opts)["check_has_update"].(string); ok {
+			opts.CheckHasUpdate = &command
 		}
 	}
 	return opts
