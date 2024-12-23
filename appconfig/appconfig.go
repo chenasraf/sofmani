@@ -41,6 +41,7 @@ const (
 	InstallerTypeBrew  InstallerType = "brew"
 	InstallerTypeApt   InstallerType = "apt"
 	InstallerTypeGit   InstallerType = "git"
+	InstallerTypeRsync InstallerType = "rsync"
 )
 
 type Platforms struct {

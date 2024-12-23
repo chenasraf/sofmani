@@ -1,9 +1,6 @@
 package installer
 
 import (
-	"encoding/json"
-	"slices"
-
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/utils"
 )
@@ -36,24 +33,11 @@ func (i *BrewInstaller) CheckNeedsUpdate() (error, bool) {
 	if i.GetInfo().CheckHasUpdate != nil {
 		return utils.RunCmdGetSuccess("sh", "-c", *i.GetInfo().CheckHasUpdate)
 	}
-	out, err := utils.RunCmdGetOutput("brew", "outdated", "--json", *i.Info.Name)
+	err, success := utils.RunCmdGetSuccess("brew", "outdated", "--json", *i.Info.Name)
 	if err != nil {
 		return err, false
 	}
-	jsonOut := make(map[string]interface{})
-	err = json.Unmarshal(out, &jsonOut)
-	if err != nil {
-		return err, false
-	}
-	var formulae []interface{} = jsonOut["formulae"].([]interface{})
-	strFormulae := make([]string, len(formulae))
-	for i, v := range formulae {
-		strFormulae[i] = v.(string)
-	}
-	if slices.Contains(strFormulae, *i.Info.Name) {
-		return nil, true
-	}
-	return nil, false
+	return nil, !success
 }
 
 // CheckIsInstalled implements IInstaller.

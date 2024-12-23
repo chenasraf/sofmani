@@ -1,4 +1,5 @@
 debug: true
+check_updates: true
 defaults:
   type:
     brew:
@@ -6,10 +7,27 @@ defaults:
         only: ['macos']
 
 install:
+  - name: nvim
+    type: rsync
+    opts:
+      source: ~/.dotfiles/.config/nvim/
+      destination: ~/.config/nvim/
+      flags: --delete --exclude .git --exclude .DS_Store
+  - name: lazygit
+    type: rsync
+    opts:
+      source: ~/.dotfiles/.config/lazygit.yml
+      destination: ~/Library/ApplicationSupport/lazygit/config.yml
+  - name: config
+    type: rsync
+    opts:
+      source: ~/.dotfiles/.config
+      destination: ~/.config
+      flags: --exclude lazygit.yml --exclude nvim --exclude .git --exclude .DS_Store
   - name: treelike
     type: brew
     opts:
-      tap: chenasraf/tap/treelike
+      tap: chenasraf/tap
   - name: lazygit
     type: group
     steps:

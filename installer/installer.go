@@ -26,6 +26,8 @@ func GetInstaller(config *appconfig.AppConfig, installer *appconfig.Installer) (
 		return nil, NewBrewInstaller(config, installer)
 	case appconfig.InstallerTypeShell:
 		return nil, NewShellInstaller(config, installer)
+	case appconfig.InstallerTypeRsync:
+		return nil, NewRsyncInstaller(config, installer)
 	}
 	return nil, nil
 }
@@ -95,7 +97,7 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 	if installed {
 		logger.Debug("%s is already installed", name)
 		if config.CheckUpdates {
-			logger.Debug("Checking if %s needs an update", name)
+			logger.Info("Checking if %s needs an update", name)
 			err, needsUpdate := installer.CheckNeedsUpdate()
 			if err != nil {
 				return err
@@ -119,6 +121,7 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 					}
 				}
 			}
+			return nil
 		} else {
 			return nil
 		}

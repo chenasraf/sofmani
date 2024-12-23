@@ -20,7 +20,7 @@ type ShellOpts struct {
 // Install implements IInstaller.
 func (i *ShellInstaller) Install() error {
 	tmpdir := os.TempDir()
-	tmpfile := fmt.Sprintf("%s/%s", tmpdir, "install.sh")
+	tmpfile := fmt.Sprintf("%s%s", tmpdir, "install.sh")
 	commandStr := fmt.Sprintf("#!/bin/bash\n%s\n", *i.GetOpts().Command)
 	err := os.WriteFile(tmpfile, []byte(commandStr), 0755)
 	if err != nil {
