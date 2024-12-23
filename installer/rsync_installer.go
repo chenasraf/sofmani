@@ -57,7 +57,7 @@ func (i *RsyncInstaller) CheckNeedsUpdate() (error, bool) {
 
 // CheckIsInstalled implements IInstaller.
 func (i *RsyncInstaller) CheckIsInstalled() (error, bool) {
-	return utils.RunCmdGetSuccess("which", i.GetBinName())
+	return nil, false
 }
 
 // GetInfo implements IInstaller.

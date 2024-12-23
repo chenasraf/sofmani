@@ -1,5 +1,5 @@
-debug: true
-check_updates: true
+# debug: true
+# check_updates: true
 defaults:
   type:
     brew:
@@ -21,8 +21,8 @@ install:
   - name: config
     type: rsync
     opts:
-      source: ~/.dotfiles/.config
-      destination: ~/.config
+      source: ~/.dotfiles/.config/
+      destination: ~/.config/
       flags: --exclude lazygit.yml --exclude nvim --exclude .git --exclude .DS_Store
   - name: treelike
     type: brew
