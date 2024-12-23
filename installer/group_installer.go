@@ -1,10 +1,9 @@
 package installer
 
 import (
-	"os/exec"
-
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
+	"github.com/chenasraf/sofmani/utils"
 )
 
 type GroupInstaller struct {
@@ -15,6 +14,8 @@ type GroupInstaller struct {
 type GroupOpts struct {
 	BinName        *string
 	CheckHasUpdate *string
+	PreCommand     *string
+	PostCommand    *string
 }
 
 // Install implements IInstaller.
@@ -42,24 +43,14 @@ func (i *GroupInstaller) Update() error {
 // CheckNeedsUpdate implements IInstaller.
 func (i *GroupInstaller) CheckNeedsUpdate() (error, bool) {
 	if i.GetOpts().CheckHasUpdate != nil {
-		cmd := exec.Command("sh", "-c", *i.GetOpts().CheckHasUpdate)
-		err := cmd.Run()
-		if err != nil {
-			return err, true
-		}
-		return nil, false
+		return utils.RunCmdGetSuccess("sh", "-c", *i.GetOpts().CheckHasUpdate)
 	}
 	return nil, false
 }
 
 // CheckIsInstalled implements IInstaller.
 func (i *GroupInstaller) CheckIsInstalled() (error, bool) {
-	cmd := exec.Command("which", i.GetBinName())
-	err := cmd.Run()
-	if err != nil {
-		return nil, false
-	}
-	return nil, true
+	return utils.RunCmdGetSuccess("which", i.GetBinName())
 }
 
 // GetInfo implements IInstaller.
@@ -76,6 +67,12 @@ func (i *GroupInstaller) GetOpts() *GroupOpts {
 		}
 		if command, ok := (*info.Opts)["check_has_update"].(string); ok {
 			opts.CheckHasUpdate = &command
+		}
+		if command, ok := (*info.Opts)["pre_command"].(string); ok {
+			opts.PreCommand = &command
+		}
+		if command, ok := (*info.Opts)["post_command"].(string); ok {
+			opts.PostCommand = &command
 		}
 	}
 	return opts

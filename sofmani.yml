@@ -48,14 +48,13 @@ install:
           command: 'curl https://pyenv.run | bash'
   - name: pipx
     type: group
+    opts:
+      post_command: sudo pipx ensurepath --global
     steps:
       - name: pipx
         type: brew
         platforms:
           only: ['macos']
-        opts:
-          post_command: |
-            sudo pipx ensurepath --global
       - name: pipx
         type: apt
         platforms:
@@ -63,7 +62,6 @@ install:
         opts:
           post_command: |
             sudo pipx ensurepath --global
-
   - name: jq
     type: brew
     platforms:

@@ -2,11 +2,10 @@ package installer
 
 import (
 	"fmt"
-	"io"
 	"os"
-	"os/exec"
 
 	"github.com/chenasraf/sofmani/appconfig"
+	"github.com/chenasraf/sofmani/utils"
 )
 
 type ShellInstaller struct {
@@ -30,14 +29,7 @@ func (i *ShellInstaller) Install() error {
 		return err
 	}
 
-	cmd := exec.Command("sh", "-c", tmpfile)
-	stdout, _ := cmd.StdoutPipe()
-	stderr, _ := cmd.StderrPipe()
-	cmd.Start()
-	go io.Copy(os.Stdout, stdout)
-	go io.Copy(os.Stderr, stderr)
-	cmd.Wait()
-	return nil
+	return utils.RunCmdPassThrough("sh", "-c", tmpfile)
 }
 
 // Update implements IInstaller.
@@ -48,25 +40,14 @@ func (i *ShellInstaller) Update() error {
 // CheckNeedsUpdate implements IInstaller.
 func (i *ShellInstaller) CheckNeedsUpdate() (error, bool) {
 	if i.GetOpts().CheckHasUpdate != nil {
-		cmd := exec.Command("sh", "-c", *i.GetOpts().CheckHasUpdate)
-		err := cmd.Run()
-		if err != nil {
-			return err, true
-		}
-		return nil, false
+		return utils.RunCmdGetSuccess("sh", "-c", *i.GetOpts().CheckHasUpdate)
 	}
 	return nil, false
 }
 
 // CheckIsInstalled implements IInstaller.
 func (i *ShellInstaller) CheckIsInstalled() (error, bool) {
-	// cmd := exec.Command("brew", "list", i.Info.Name)
-	cmd := exec.Command("which", i.GetBinName())
-	err := cmd.Run()
-	if err != nil {
-		return nil, false
-	}
-	return nil, true
+	return utils.RunCmdGetSuccess("which", i.GetBinName())
 }
 
 // GetInfo implements IInstaller.
