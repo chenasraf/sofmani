@@ -92,4 +92,3 @@ func CloseLogger() {
 		logger.logFile.Close()
 	}
 }
-

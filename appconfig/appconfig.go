@@ -15,6 +15,12 @@ type AppConfig struct {
 	Defaults     *AppConfigDefaults `json:"defaults"       yaml:"defaults"`
 }
 
+type AppCliConfig struct {
+	ConfigFile   string
+	Debug        bool
+	CheckUpdates bool
+}
+
 type AppConfigDefaults struct {
 	Type *map[InstallerType]Installer `json:"type" yaml:"type"`
 }
@@ -67,7 +73,9 @@ func ContainsPlatform(platforms *[]Platform, platform Platform) bool {
 	return false
 }
 
-func ParseConfigFile(file string) (*AppConfig, error) {
+func ParseConfig() (*AppConfig, error) {
+	overrides := ParseCliConfig()
+	file := overrides.ConfigFile
 	ext := filepath.Ext(file)
 	switch ext {
 	case ".json", ".yaml", ".yml":
@@ -78,19 +86,60 @@ func ParseConfigFile(file string) (*AppConfig, error) {
 	return nil, fmt.Errorf("Unsupported config file extension %s", ext)
 }
 
-func ApplyCliOverrides(config *AppConfig) *AppConfig {
+func FindConfigFile() string {
+	wd, err := os.Getwd()
+	if err != nil {
+		return ""
+	}
+	home, err := os.UserHomeDir()
+	file := ""
+	dirs := []string{wd, home}
+	for _, dir := range dirs {
+		file = tryConfigDir(dir)
+		if file != "" {
+			return file
+		}
+	}
+	return ""
+}
+
+func tryConfigDir(dir string) string {
+	for _, ext := range []string{"json", "yaml", "yml"} {
+		file := filepath.Join(dir, "sofmani."+ext)
+		if _, err := os.Stat(file); err == nil {
+			return file
+		}
+	}
+	return ""
+}
+
+func ParseCliConfig() *AppCliConfig {
+	config := &AppCliConfig{}
+	file := FindConfigFile()
 	for len(os.Args) > 0 {
 		switch os.Args[0] {
 		case "-d", "--debug":
 			config.Debug = true
 		case "-D", "--no-debug":
 			config.Debug = false
-		case "-c", "--check-updates":
+		case "-u", "--update":
 			config.CheckUpdates = true
-		case "-C", "--no-check-updates":
+		case "-U", "--no-update":
 			config.CheckUpdates = false
+		case "-h", "--help":
+			fmt.Println("Usage: sofmani [options] [config_file]")
+			os.Exit(0)
+		default:
+			if file == "" {
+				file = os.Args[0]
+			}
 		}
 		os.Args = os.Args[1:]
 	}
+	if file == "" {
+		fmt.Println("No config file found")
+		os.Exit(1)
+	}
+	config.ConfigFile = file
 	return config
 }
