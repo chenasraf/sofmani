@@ -14,8 +14,7 @@ func main() {
 		fmt.Println(fmt.Errorf("Error loading config: %v", err))
 		return
 	}
-	logFile := "sofmani.log"
-	logger.InitLogger(logFile, cfg)
+	logger.InitLogger(cfg)
 
 	logger.Info("Checking all installers...")
 	for _, i := range cfg.Install {
