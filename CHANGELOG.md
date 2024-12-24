@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/chenasraf/sofmani/compare/v1.0.0...v1.0.1) (2024-12-24)
+
+
+### Bug Fixes
+
+* find config in .config dir ([18c7933](https://github.com/chenasraf/sofmani/commit/18c7933c0b354a958ab4cae4d407f33674f889ff))
+
 ## 1.0.0 (2024-12-24)
 
 
