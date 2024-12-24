@@ -78,5 +78,5 @@ jobs:
         run: |
           gh release upload ${{ steps.release.outputs.tag_name }} ./dist/sofmani-linux-amd64.tar.gz
           gh release upload ${{ steps.release.outputs.tag_name }} ./dist/sofmani-darwin-amd64.tar.gz
-          gh release upload ${{ steps.release.outputs.tag_name }} ./dist/sofmani-windows-amd64.zip
+          gh release upload ${{ steps.release.outputs.tag_name }} ./dist/sofmani-windows-amd64.tar.gz
           # gh release upload ${{ steps.release.outputs.tag_name }} ./dist/sofmani-darwin-arm64.tar.gz
