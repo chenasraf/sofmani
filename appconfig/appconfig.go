@@ -17,8 +17,8 @@ type AppConfig struct {
 
 type AppCliConfig struct {
 	ConfigFile   string
-	Debug        bool
-	CheckUpdates bool
+	Debug        *bool
+	CheckUpdates *bool
 }
 
 type AppConfigDefaults struct {
@@ -81,6 +81,12 @@ func ParseConfig() (*AppConfig, error) {
 	case ".json", ".yaml", ".yml":
 		appConfig := AppConfig{}
 		config.ParseConfigFile(&appConfig, file)
+		if overrides.Debug != nil {
+			appConfig.Debug = *overrides.Debug
+		}
+		if overrides.CheckUpdates != nil {
+			appConfig.CheckUpdates = *overrides.CheckUpdates
+		}
 		return &appConfig, nil
 	}
 	return nil, fmt.Errorf("Unsupported config file extension %s", ext)
@@ -116,16 +122,18 @@ func tryConfigDir(dir string) string {
 func ParseCliConfig() *AppCliConfig {
 	config := &AppCliConfig{}
 	file := FindConfigFile()
+	tVal := true
+	fVal := false
 	for len(os.Args) > 0 {
 		switch os.Args[0] {
 		case "-d", "--debug":
-			config.Debug = true
+			config.Debug = &tVal
 		case "-D", "--no-debug":
-			config.Debug = false
+			config.Debug = &fVal
 		case "-u", "--update":
-			config.CheckUpdates = true
+			config.CheckUpdates = &tVal
 		case "-U", "--no-update":
-			config.CheckUpdates = false
+			config.CheckUpdates = &fVal
 		case "-h", "--help":
 			fmt.Println("Usage: sofmani [options] [config_file]")
 			os.Exit(0)
