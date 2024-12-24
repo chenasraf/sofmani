@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.1.0](https://github.com/chenasraf/sofmani/compare/v1.0.1...v1.1.0) (2024-12-24)
+
+
+### Features
+
+* add env support ([957968f](https://github.com/chenasraf/sofmani/commit/957968f2d00beab4b78467ae70dfb18da4d18b54))
+* improve windows support ([55347b2](https://github.com/chenasraf/sofmani/commit/55347b2ece9993df15db3ee50f4902224de0cc6d))
+* npm installer ([1047177](https://github.com/chenasraf/sofmani/commit/104717717acda2937fa813a6025f3bb75fc54edf))
+
+
+### Bug Fixes
+
+* correctly install brew by name ([be3cd37](https://github.com/chenasraf/sofmani/commit/be3cd37bd6c5549a6cda1e2bd7516406b04ce99b))
+* env path resolution ([7b69333](https://github.com/chenasraf/sofmani/commit/7b693334e5b9a98fa26e45ccd33481f6536e2b2c))
+* group should always "have update" ([b5af709](https://github.com/chenasraf/sofmani/commit/b5af70985d7f0b7d7f50a303357a5ee49e14070d))
+* log directory ([64de503](https://github.com/chenasraf/sofmani/commit/64de5037a2155bd31cb74e15b9e103ef75d16c51))
+
 ## [1.0.1](https://github.com/chenasraf/sofmani/compare/v1.0.0...v1.0.1) (2024-12-24)
 
 
