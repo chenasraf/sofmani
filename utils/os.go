@@ -8,6 +8,12 @@ import (
 )
 
 func GetRealPath(env []string, path string) string {
+	for _, e := range env {
+		split := strings.Split(e, "=")
+		k, v := split[0], split[1]
+		os.Setenv(k, v)
+	}
+	path = os.ExpandEnv(path)
 	if strings.HasPrefix(path, fmt.Sprintf("~%s", string(filepath.Separator))) {
 		homedir, err := os.UserHomeDir()
 		if err != nil {
@@ -22,6 +28,5 @@ func GetRealPath(env []string, path string) string {
 			path += string(filepath.Separator)
 		}
 	}
-	output := os.ExpandEnv(path)
-	return strings.TrimSpace(string(output))
+	return strings.TrimSpace(string(path))
 }
