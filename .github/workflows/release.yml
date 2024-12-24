@@ -33,11 +33,11 @@ jobs:
       - name: Generate build files
         uses: chenasraf/go-cross-build@v1
         with:
-            platforms: 'linux/amd64, darwin/amd64, windows/amd64' # , darwin/arm64' # '
-            package: ''
-            name: 'sofmani'
-            compress: 'true'
-            dest: 'dist'
+          platforms: 'linux/amd64, darwin/amd64, windows/amd64' # , darwin/arm64' # '
+          package: ''
+          name: 'sofmani'
+          compress: 'true'
+          dest: 'dist'
       - name: Upload builds
         uses: actions/upload-artifact@v4
         with:
@@ -51,6 +51,8 @@ jobs:
       - test
       - generate
     steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
       - name: Download builds
         uses: actions/download-artifact@v4
         with:
