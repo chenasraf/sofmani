@@ -49,6 +49,9 @@ const (
 	InstallerTypeApt   InstallerType = "apt"
 	InstallerTypeGit   InstallerType = "git"
 	InstallerTypeRsync InstallerType = "rsync"
+	InstallerTypeNpm   InstallerType = "npm"
+	InstallerTypePnpm  InstallerType = "pnpm"
+	InstallerTypeYarn  InstallerType = "yarn"
 )
 
 type Platforms struct {
