@@ -44,7 +44,7 @@ func (i *GroupInstaller) CheckNeedsUpdate() (error, bool) {
 	if i.GetInfo().CheckHasUpdate != nil {
 		return utils.RunCmdGetSuccess("sh", "-c", *i.GetInfo().CheckHasUpdate)
 	}
-	return nil, false
+	return nil, true
 }
 
 // CheckIsInstalled implements IInstaller.
