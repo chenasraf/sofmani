@@ -16,6 +16,11 @@ func main() {
 	}
 	logger.InitLogger(cfg)
 
+	for k, v := range *cfg.Env {
+		logger.Debug("Setting env %s=%s", k, v)
+		os.Setenv(k, v)
+	}
+
 	logger.Info("Checking all installers...")
 	for _, i := range cfg.Install {
 		err, installerInstance := installer.GetInstaller(cfg, &i)

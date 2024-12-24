@@ -20,20 +20,20 @@ func (i *BrewInstaller) Install() error {
 	if i.GetOpts().Tap != nil {
 		name = *i.GetOpts().Tap + "/" + name
 	}
-	return utils.RunCmdPassThrough("brew", "install", name)
+	return utils.RunCmdPassThrough(i.Info.Environ(), "brew", "install", name)
 }
 
 // Update implements IInstaller.
 func (i *BrewInstaller) Update() error {
-	return utils.RunCmdPassThrough("brew", "upgrade", *i.Info.Name)
+	return utils.RunCmdPassThrough(i.Info.Environ(), "brew", "upgrade", *i.Info.Name)
 }
 
 // CheckNeedsUpdate implements IInstaller.
 func (i *BrewInstaller) CheckNeedsUpdate() (error, bool) {
 	if i.GetInfo().CheckHasUpdate != nil {
-		return utils.RunCmdGetSuccess("sh", "-c", *i.GetInfo().CheckHasUpdate)
+		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetOSShell(), utils.GetOSShellArgs(*i.GetInfo().CheckHasUpdate)...)
 	}
-	err, success := utils.RunCmdGetSuccess("brew", "outdated", "--json", *i.Info.Name)
+	err, success := utils.RunCmdGetSuccess(i.Info.Environ(), "brew", "outdated", "--json", *i.Info.Name)
 	if err != nil {
 		return err, false
 	}
@@ -42,7 +42,7 @@ func (i *BrewInstaller) CheckNeedsUpdate() (error, bool) {
 
 // CheckIsInstalled implements IInstaller.
 func (i *BrewInstaller) CheckIsInstalled() (error, bool) {
-	return utils.RunCmdGetSuccess("which", i.GetBinName())
+	return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetShellWhich(), i.GetBinName())
 }
 
 // GetInfo implements IInstaller.

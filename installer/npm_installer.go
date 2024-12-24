@@ -25,20 +25,20 @@ const (
 
 // Install implements IInstaller.
 func (i *NpmInstaller) Install() error {
-	return utils.RunCmdPassThrough(string(i.PackageManager), "install", "--global", *i.Info.Name)
+	return utils.RunCmdPassThrough(i.Info.Environ(), string(i.PackageManager), "install", "--global", *i.Info.Name)
 }
 
 // Update implements IInstaller.
 func (i *NpmInstaller) Update() error {
-	return utils.RunCmdPassThrough(string(i.PackageManager), "install", "--global", *i.Info.Name+"@latest")
+	return utils.RunCmdPassThrough(i.Info.Environ(), string(i.PackageManager), "install", "--global", *i.Info.Name+"@latest")
 }
 
 // CheckNeedsUpdate implements IInstaller.
 func (i *NpmInstaller) CheckNeedsUpdate() (error, bool) {
 	if i.GetInfo().CheckHasUpdate != nil {
-		return utils.RunCmdGetSuccess("sh", "-c", *i.GetInfo().CheckHasUpdate)
+		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetShellWhich(), utils.GetOSShellArgs(*i.GetInfo().CheckHasUpdate)...)
 	}
-	err, success := utils.RunCmdGetSuccess(string(i.PackageManager), "outdated", "--global", "--json", *i.Info.Name)
+	err, success := utils.RunCmdGetSuccess(i.Info.Environ(), string(i.PackageManager), "outdated", "--global", "--json", *i.Info.Name)
 	if err != nil {
 		return err, false
 	}
@@ -47,7 +47,10 @@ func (i *NpmInstaller) CheckNeedsUpdate() (error, bool) {
 
 // CheckIsInstalled implements IInstaller.
 func (i *NpmInstaller) CheckIsInstalled() (error, bool) {
-	return utils.RunCmdGetSuccess("which", i.GetBinName())
+	if i.GetInfo().CheckInstalled != nil {
+		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetOSShell(), utils.GetOSShellArgs(*i.GetInfo().CheckInstalled)...)
+	}
+	return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetShellWhich(), i.GetBinName())
 }
 
 // GetInfo implements IInstaller.

@@ -32,9 +32,9 @@ func (i *ShellInstaller) Install() error {
 		return err
 	}
 
-	shell := getOSShell()
-	args := getOSShellArgs(tmpfile)
-	return utils.RunCmdPassThrough(shell, args...)
+	shell := utils.GetOSShell()
+	args := utils.GetOSShellArgs(tmpfile)
+	return utils.RunCmdPassThrough(i.Info.Environ(), shell, args...)
 }
 
 // Update implements IInstaller.
@@ -45,9 +45,9 @@ func (i *ShellInstaller) Update() error {
 // CheckNeedsUpdate implements IInstaller.
 func (i *ShellInstaller) CheckNeedsUpdate() (error, bool) {
 	if i.GetInfo().CheckHasUpdate != nil {
-		shell := getOSShell()
-		args := getOSShellArgs(*i.GetInfo().CheckHasUpdate)
-		return utils.RunCmdGetSuccess(shell, args...)
+		shell := utils.GetOSShell()
+		args := utils.GetOSShellArgs(*i.GetInfo().CheckHasUpdate)
+		return utils.RunCmdGetSuccess(i.Info.Environ(), shell, args...)
 	}
 	return nil, false
 }
@@ -55,11 +55,11 @@ func (i *ShellInstaller) CheckNeedsUpdate() (error, bool) {
 // CheckIsInstalled implements IInstaller.
 func (i *ShellInstaller) CheckIsInstalled() (error, bool) {
 	if i.GetInfo().CheckInstalled != nil {
-		shell := getOSShell()
-		args := getOSShellArgs(*i.GetInfo().CheckInstalled)
-		return utils.RunCmdGetSuccess(shell, args...)
+		shell := utils.GetOSShell()
+		args := utils.GetOSShellArgs(*i.GetInfo().CheckInstalled)
+		return utils.RunCmdGetSuccess(i.Info.Environ(), shell, args...)
 	}
-	return utils.RunCmdGetSuccess(getShellWhich(), i.GetBinName())
+	return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetShellWhich(), i.GetBinName())
 }
 
 // GetInfo implements IInstaller.
@@ -103,39 +103,9 @@ func (i *ShellInstaller) getScriptContents(script string) (string, error) {
 	case "windows":
 		return *i.GetOpts().Command, nil
 	case "linux", "darwin":
-		return fmt.Sprintf("#!/usr/bin/env bash\n%s\n", script), nil
+		return fmt.Sprintf("#!/usr/bin/i.Info.Environ() bash\n%s\n", script), nil
 	}
 	return "", fmt.Errorf("unsupported OS: %s", runtime.GOOS)
-}
-
-func getShellWhich() string {
-	switch runtime.GOOS {
-	case "windows":
-		return "where"
-	case "linux", "darwin":
-		return "which"
-	}
-	return ""
-}
-
-func getOSShell() string {
-	switch runtime.GOOS {
-	case "windows":
-		return "cmd"
-	case "linux", "darwin":
-		return "sh"
-	}
-	return ""
-}
-
-func getOSShellArgs(cmd string) []string {
-	switch runtime.GOOS {
-	case "windows":
-		return []string{"/C", cmd}
-	case "linux", "darwin":
-		return []string{"-c", cmd}
-	}
-	return []string{}
 }
 
 func NewShellInstaller(cfg *appconfig.AppConfig, installer *appconfig.Installer) *ShellInstaller {

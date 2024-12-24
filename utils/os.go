@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func GetRealPath(path string) string {
+func GetRealPath(env []string, path string) string {
 	if strings.HasPrefix(path, fmt.Sprintf("~%s", string(filepath.Separator))) {
 		homedir, err := os.UserHomeDir()
 		if err != nil {
@@ -22,5 +22,6 @@ func GetRealPath(path string) string {
 			path += string(filepath.Separator)
 		}
 	}
-	return path
+	output := os.ExpandEnv(path)
+	return strings.TrimSpace(string(output))
 }

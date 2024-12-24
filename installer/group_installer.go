@@ -42,7 +42,7 @@ func (i *GroupInstaller) Update() error {
 // CheckNeedsUpdate implements IInstaller.
 func (i *GroupInstaller) CheckNeedsUpdate() (error, bool) {
 	if i.GetInfo().CheckHasUpdate != nil {
-		return utils.RunCmdGetSuccess("sh", "-c", *i.GetInfo().CheckHasUpdate)
+		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetOSShell(), utils.GetOSShellArgs(*i.GetInfo().CheckHasUpdate)...)
 	}
 	return nil, true
 }
@@ -50,9 +50,9 @@ func (i *GroupInstaller) CheckNeedsUpdate() (error, bool) {
 // CheckIsInstalled implements IInstaller.
 func (i *GroupInstaller) CheckIsInstalled() (error, bool) {
 	if i.GetInfo().CheckInstalled != nil {
-		return utils.RunCmdGetSuccess("sh", "-c", *i.GetInfo().CheckInstalled)
+		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetOSShell(), utils.GetOSShellArgs(*i.GetInfo().CheckInstalled)...)
 	}
-	return utils.RunCmdGetSuccess("which", i.GetBinName())
+	return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetShellWhich(), i.GetBinName())
 }
 
 // GetInfo implements IInstaller.

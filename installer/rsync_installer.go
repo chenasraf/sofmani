@@ -32,14 +32,14 @@ func (i *RsyncInstaller) Install() error {
 		}
 	}
 
-	src := utils.GetRealPath(*i.GetOpts().Source)
-	dest := utils.GetRealPath(*i.GetOpts().Destination)
+	src := utils.GetRealPath(i.Info.Environ(), *i.GetOpts().Source)
+	dest := utils.GetRealPath(i.Info.Environ(), *i.GetOpts().Destination)
 
 	flags = append(flags, src)
 	flags = append(flags, dest)
 
 	logger.Debug("rsync %s to %s", src, dest)
-	return utils.RunCmdPassThrough("rsync", flags...)
+	return utils.RunCmdPassThrough(i.Info.Environ(), "rsync", flags...)
 }
 
 // Update implements IInstaller.
@@ -50,13 +50,16 @@ func (i *RsyncInstaller) Update() error {
 // CheckNeedsUpdate implements IInstaller.
 func (i *RsyncInstaller) CheckNeedsUpdate() (error, bool) {
 	if i.GetInfo().CheckHasUpdate != nil {
-		return utils.RunCmdGetSuccess("sh", "-c", *i.GetInfo().CheckHasUpdate)
+		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetOSShell(), utils.GetOSShellArgs(*i.GetInfo().CheckHasUpdate)...)
 	}
 	return nil, true
 }
 
 // CheckIsInstalled implements IInstaller.
 func (i *RsyncInstaller) CheckIsInstalled() (error, bool) {
+	if i.GetInfo().CheckInstalled != nil {
+		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetOSShell(), utils.GetOSShellArgs(*i.GetInfo().CheckInstalled)...)
+	}
 	return nil, false
 }
 

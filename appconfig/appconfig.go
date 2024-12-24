@@ -13,6 +13,7 @@ type AppConfig struct {
 	CheckUpdates bool               `json:"check_updates"  yaml:"check_updates"`
 	Install      []Installer        `json:"install"        yaml:"install"`
 	Defaults     *AppConfigDefaults `json:"defaults"       yaml:"defaults"`
+	Env          *map[string]string `json:"env"            yaml:"env"`
 }
 
 type AppCliConfig struct {
@@ -26,18 +27,19 @@ type AppConfigDefaults struct {
 }
 
 type Installer struct {
-	Name           *string         `json:"name"              yaml:"name"`
-	Type           InstallerType   `json:"type"              yaml:"type"`
-	Platforms      *Platforms      `json:"platforms"         yaml:"platforms"`
-	Steps          *[]Installer    `json:"steps"             yaml:"steps"`
-	Opts           *map[string]any `json:"opts"              yaml:"opts"`
-	BinName        *string         `json:"bin_name"          yaml:"bin_name"`
-	CheckHasUpdate *string         `json:"check_has_update"  yaml:"check_has_update"`
-	CheckInstalled *string         `json:"check_installed"   yaml:"check_installed"`
-	PostInstall    *string         `json:"post_install"      yaml:"post_install"`
-	PreInstall     *string         `json:"pre_install"       yaml:"pre_install"`
-	PostUpdate     *string         `json:"post_update"       yaml:"post_update"`
-	PreUpdate      *string         `json:"pre_update"        yaml:"pre_update"`
+	Name           *string            `json:"name"              yaml:"name"`
+	Type           InstallerType      `json:"type"              yaml:"type"`
+	Env            *map[string]string `json:"env"               yaml:"env"`
+	Platforms      *Platforms         `json:"platforms"         yaml:"platforms"`
+	Steps          *[]Installer       `json:"steps"             yaml:"steps"`
+	Opts           *map[string]any    `json:"opts"              yaml:"opts"`
+	BinName        *string            `json:"bin_name"          yaml:"bin_name"`
+	CheckHasUpdate *string            `json:"check_has_update"  yaml:"check_has_update"`
+	CheckInstalled *string            `json:"check_installed"   yaml:"check_installed"`
+	PostInstall    *string            `json:"post_install"      yaml:"post_install"`
+	PreInstall     *string            `json:"pre_install"       yaml:"pre_install"`
+	PostUpdate     *string            `json:"post_update"       yaml:"post_update"`
+	PreUpdate      *string            `json:"pre_update"        yaml:"pre_update"`
 }
 
 type InstallerType string
@@ -66,6 +68,28 @@ const (
 	PlatformLinux   Platform = "linux"
 	PlatformWindows Platform = "windows"
 )
+
+func (c *AppConfig) Environ() []string {
+	if c.Env == nil {
+		return []string{}
+	}
+	out := []string{}
+	for k, v := range *c.Env {
+		out = append(out, fmt.Sprintf("%s=%s", k, v))
+	}
+	return out
+}
+
+func (i *Installer) Environ() []string {
+	if i.Env == nil {
+		return []string{}
+	}
+	out := []string{}
+	for k, v := range *i.Env {
+		out = append(out, fmt.Sprintf("%s=%s", k, v))
+	}
+	return out
+}
 
 func ContainsPlatform(platforms *[]Platform, platform Platform) bool {
 	for _, p := range *platforms {
