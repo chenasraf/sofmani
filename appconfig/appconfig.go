@@ -99,7 +99,7 @@ func FindConfigFile() string {
 	}
 	home, err := os.UserHomeDir()
 	file := ""
-	dirs := []string{wd, home}
+	dirs := []string{wd, filepath.Join(home, ".config"), home}
 	for _, dir := range dirs {
 		file = tryConfigDir(dir)
 		if file != "" {
@@ -120,12 +120,13 @@ func tryConfigDir(dir string) string {
 }
 
 func ParseCliConfig() *AppCliConfig {
+	args := os.Args[1:]
 	config := &AppCliConfig{}
 	file := FindConfigFile()
 	tVal := true
 	fVal := false
-	for len(os.Args) > 0 {
-		switch os.Args[0] {
+	for len(args) > 0 {
+		switch args[0] {
 		case "-d", "--debug":
 			config.Debug = &tVal
 		case "-D", "--no-debug":
@@ -139,10 +140,10 @@ func ParseCliConfig() *AppCliConfig {
 			os.Exit(0)
 		default:
 			if file == "" {
-				file = os.Args[0]
+				file = args[0]
 			}
 		}
-		os.Args = os.Args[1:]
+		args = args[1:]
 	}
 	if file == "" {
 		fmt.Println("No config file found")
