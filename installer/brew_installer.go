@@ -16,7 +16,7 @@ type BrewOpts struct {
 
 // Install implements IInstaller.
 func (i *BrewInstaller) Install() error {
-	name := i.GetBinName()
+	name := *i.Info.Name
 	if i.GetOpts().Tap != nil {
 		name = *i.GetOpts().Tap + "/" + name
 	}
