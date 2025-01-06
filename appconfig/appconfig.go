@@ -40,6 +40,7 @@ type Installer struct {
 	PreInstall     *string            `json:"pre_install"       yaml:"pre_install"`
 	PostUpdate     *string            `json:"post_update"       yaml:"post_update"`
 	PreUpdate      *string            `json:"pre_update"        yaml:"pre_update"`
+	EnvShell       *string            `json:"env_shell"         yaml:"env_shell"`
 }
 
 type InstallerType string

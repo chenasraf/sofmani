@@ -144,6 +144,7 @@ actions. Steps can be of **several types**, such as `brew`, `rsync`, `shell`, an
 | `post_install`     | String (shell script) | Shell script to execute _after_ the step is installed.                                                                                                                                                                            |
 | `pre_update`       | String (shell script) | Shell script to execute _before_ the step is updated (if applicable).                                                                                                                                                             |
 | `post_update`      | String (shell script) | Shell script to execute _after_ the step is updated (if applicable).                                                                                                                                                              |
+| `env_shell`        | String (optional)     | Shell to use for command executions (only applicable on Linux/macOS). Default: `bash`.                                                                                                                                            |
 
 ### Supported `type` Installers
 
@@ -165,7 +166,8 @@ actions. Steps can be of **several types**, such as `brew`, `rsync`, `shell`, an
 
    - Executes arbitrary shell commands.
    - **Options**:
-     - `opts.command`: The command to execute.
+     - `opts.command`: The command to execute for installing.
+     - `opts.update_command`: The command to execute for updating.
 
 4. **`group`**
 

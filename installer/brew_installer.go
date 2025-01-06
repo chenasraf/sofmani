@@ -31,7 +31,7 @@ func (i *BrewInstaller) Update() error {
 // CheckNeedsUpdate implements IInstaller.
 func (i *BrewInstaller) CheckNeedsUpdate() (error, bool) {
 	if i.GetInfo().CheckHasUpdate != nil {
-		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetOSShell(), utils.GetOSShellArgs(*i.GetInfo().CheckHasUpdate)...)
+		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetOSShell(i.GetInfo().EnvShell), utils.GetOSShellArgs(*i.GetInfo().CheckHasUpdate)...)
 	}
 	err, success := utils.RunCmdGetSuccess(i.Info.Environ(), "brew", "outdated", "--json", *i.Info.Name)
 	if err != nil {

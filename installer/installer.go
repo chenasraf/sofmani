@@ -43,7 +43,14 @@ func InstallerWithDefaults(
 		if val, ok := (*defaults.Type)[installerType]; ok {
 			logger.Debug("Applying defaults for %s", installerType)
 			if val.Opts != nil {
-				installer.Opts = val.Opts
+				o := *val.Opts
+				o2 := *installer.Opts
+				for k, v := range o {
+					o2[k] = v
+				}
+			}
+			if val.EnvShell != nil {
+				installer.EnvShell = val.EnvShell
 			}
 			if val.Platforms != nil {
 				installer.Platforms = val.Platforms
@@ -110,7 +117,7 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 				logger.Info("%s (%s) has an update", name, info.Type)
 				if info.PreUpdate != nil {
 					logger.Debug("Running pre-update command for %s (%s)", name, info.Type)
-					err := utils.RunCmdPassThrough(env, utils.GetOSShell(), utils.GetOSShellArgs(*info.PreUpdate)...)
+					err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetInfo().EnvShell), utils.GetOSShellArgs(*info.PreUpdate)...)
 					if err != nil {
 						return err
 					}
@@ -119,7 +126,7 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 				installer.Update()
 				if info.PostUpdate != nil {
 					logger.Debug("Running post-update command for %s (%s)", name, info.Type)
-					err := utils.RunCmdPassThrough(env, utils.GetOSShell(), utils.GetOSShellArgs(*info.PostUpdate)...)
+					err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetInfo().EnvShell), utils.GetOSShellArgs(*info.PostUpdate)...)
 					if err != nil {
 						return err
 					}
@@ -133,7 +140,7 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 	logger.Info("Installing %s (%s)", name, installer.GetInfo().Type)
 	if info.PreInstall != nil {
 		logger.Debug("Running pre-install command for %s (%s)", name, info.Type)
-		err := utils.RunCmdPassThrough(env, utils.GetOSShell(), utils.GetOSShellArgs(*info.PreInstall)...)
+		err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetInfo().EnvShell), utils.GetOSShellArgs(*info.PreInstall)...)
 		if err != nil {
 			return err
 		}
@@ -142,7 +149,7 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 	err = installer.Install()
 	if info.PostInstall != nil {
 		logger.Debug("Running post-install command for %s (%s)", name, info.Type)
-		err := utils.RunCmdPassThrough(env, utils.GetOSShell(), utils.GetOSShellArgs(*info.PostInstall)...)
+		err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetInfo().EnvShell), utils.GetOSShellArgs(*info.PostInstall)...)
 		if err != nil {
 			return err
 		}

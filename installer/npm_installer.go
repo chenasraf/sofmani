@@ -48,7 +48,7 @@ func (i *NpmInstaller) CheckNeedsUpdate() (error, bool) {
 // CheckIsInstalled implements IInstaller.
 func (i *NpmInstaller) CheckIsInstalled() (error, bool) {
 	if i.GetInfo().CheckInstalled != nil {
-		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetOSShell(), utils.GetOSShellArgs(*i.GetInfo().CheckInstalled)...)
+		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetOSShell(i.GetInfo().EnvShell), utils.GetOSShellArgs(*i.GetInfo().CheckInstalled)...)
 	}
 	return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetShellWhich(), i.GetBinName())
 }

@@ -1,11 +1,6 @@
 package installer
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
-	"runtime"
-
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/utils"
 )
@@ -16,36 +11,27 @@ type ShellInstaller struct {
 }
 
 type ShellOpts struct {
-	Command *string
+	Command       *string
+	UpdateCommand *string
 }
 
 // Install implements IInstaller.
 func (i *ShellInstaller) Install() error {
-	tmpdir := os.TempDir()
-	tmpfile := i.getShellScript(tmpdir)
-	commandStr, err := i.getScriptContents(*i.GetOpts().Command)
-	if err != nil {
-		return err
-	}
-	err = os.WriteFile(tmpfile, []byte(commandStr), 0755)
-	if err != nil {
-		return err
-	}
-
-	shell := utils.GetOSShell()
-	args := utils.GetOSShellArgs(tmpfile)
-	return utils.RunCmdPassThrough(i.Info.Environ(), shell, args...)
+	return utils.RunCmdAsFile(i.Info.Environ(), *i.GetOpts().Command, i.GetInfo().EnvShell)
 }
 
 // Update implements IInstaller.
 func (i *ShellInstaller) Update() error {
+	if i.GetOpts().UpdateCommand != nil {
+		return utils.RunCmdAsFile(i.Info.Environ(), *i.GetOpts().UpdateCommand, i.GetInfo().EnvShell)
+	}
 	return i.Install()
 }
 
 // CheckNeedsUpdate implements IInstaller.
 func (i *ShellInstaller) CheckNeedsUpdate() (error, bool) {
 	if i.GetInfo().CheckHasUpdate != nil {
-		shell := utils.GetOSShell()
+		shell := utils.GetOSShell(i.GetInfo().EnvShell)
 		args := utils.GetOSShellArgs(*i.GetInfo().CheckHasUpdate)
 		return utils.RunCmdGetSuccess(i.Info.Environ(), shell, args...)
 	}
@@ -55,7 +41,7 @@ func (i *ShellInstaller) CheckNeedsUpdate() (error, bool) {
 // CheckIsInstalled implements IInstaller.
 func (i *ShellInstaller) CheckIsInstalled() (error, bool) {
 	if i.GetInfo().CheckInstalled != nil {
-		shell := utils.GetOSShell()
+		shell := utils.GetOSShell(i.GetInfo().EnvShell)
 		args := utils.GetOSShellArgs(*i.GetInfo().CheckInstalled)
 		return utils.RunCmdGetSuccess(i.Info.Environ(), shell, args...)
 	}
@@ -74,6 +60,9 @@ func (i *ShellInstaller) GetOpts() *ShellOpts {
 		if command, ok := (*info.Opts)["command"].(string); ok {
 			opts.Command = &command
 		}
+		if updateCommand, ok := (*info.Opts)["update_command"].(string); ok {
+			opts.UpdateCommand = &updateCommand
+		}
 	}
 	return opts
 }
@@ -84,28 +73,6 @@ func (i *ShellInstaller) GetBinName() string {
 		return *info.BinName
 	}
 	return *info.Name
-}
-
-func (*ShellInstaller) getShellScript(dir string) string {
-	var filename string
-	switch runtime.GOOS {
-	case "windows":
-		filename = "install.bat"
-	case "linux", "darwin":
-		filename = "install.sh"
-	}
-	tmpfile := filepath.Join(dir, filename)
-	return tmpfile
-}
-
-func (i *ShellInstaller) getScriptContents(script string) (string, error) {
-	switch runtime.GOOS {
-	case "windows":
-		return *i.GetOpts().Command, nil
-	case "linux", "darwin":
-		return fmt.Sprintf("#!/usr/bin/i.Info.Environ() bash\n%s\n", script), nil
-	}
-	return "", fmt.Errorf("unsupported OS: %s", runtime.GOOS)
 }
 
 func NewShellInstaller(cfg *appconfig.AppConfig, installer *appconfig.Installer) *ShellInstaller {
