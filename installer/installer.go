@@ -30,6 +30,8 @@ func GetInstaller(config *appconfig.AppConfig, installer *appconfig.Installer) (
 		return nil, NewRsyncInstaller(config, installer)
 	case appconfig.InstallerTypeNpm, appconfig.InstallerTypePnpm, appconfig.InstallerTypeYarn:
 		return nil, NewNpmInstaller(config, installer)
+	case appconfig.InstallerTypeApt:
+		return nil, NewAptInstaller(config, installer)
 	}
 	return nil, nil
 }

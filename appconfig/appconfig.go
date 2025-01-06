@@ -27,20 +27,20 @@ type AppConfigDefaults struct {
 }
 
 type Installer struct {
-	Name           *string            `json:"name"              yaml:"name"`
-	Type           InstallerType      `json:"type"              yaml:"type"`
-	Env            *map[string]string `json:"env"               yaml:"env"`
-	Platforms      *Platforms         `json:"platforms"         yaml:"platforms"`
-	Steps          *[]Installer       `json:"steps"             yaml:"steps"`
-	Opts           *map[string]any    `json:"opts"              yaml:"opts"`
-	BinName        *string            `json:"bin_name"          yaml:"bin_name"`
-	CheckHasUpdate *string            `json:"check_has_update"  yaml:"check_has_update"`
-	CheckInstalled *string            `json:"check_installed"   yaml:"check_installed"`
-	PostInstall    *string            `json:"post_install"      yaml:"post_install"`
-	PreInstall     *string            `json:"pre_install"       yaml:"pre_install"`
-	PostUpdate     *string            `json:"post_update"       yaml:"post_update"`
-	PreUpdate      *string            `json:"pre_update"        yaml:"pre_update"`
-	EnvShell       *string            `json:"env_shell"         yaml:"env_shell"`
+	Name           *string              `json:"name"              yaml:"name"`
+	Type           InstallerType        `json:"type"              yaml:"type"`
+	Env            *map[string]string   `json:"env"               yaml:"env"`
+	Platforms      *Platforms           `json:"platforms"         yaml:"platforms"`
+	Steps          *[]Installer         `json:"steps"             yaml:"steps"`
+	Opts           *map[string]any      `json:"opts"              yaml:"opts"`
+	BinName        *string              `json:"bin_name"          yaml:"bin_name"`
+	CheckHasUpdate *string              `json:"check_has_update"  yaml:"check_has_update"`
+	CheckInstalled *string              `json:"check_installed"   yaml:"check_installed"`
+	PostInstall    *string              `json:"post_install"      yaml:"post_install"`
+	PreInstall     *string              `json:"pre_install"       yaml:"pre_install"`
+	PostUpdate     *string              `json:"post_update"       yaml:"post_update"`
+	PreUpdate      *string              `json:"pre_update"        yaml:"pre_update"`
+	EnvShell       *PlatformMap[string] `json:"env_shell"         yaml:"env_shell"`
 }
 
 type InstallerType string
@@ -69,6 +69,12 @@ const (
 	PlatformLinux   Platform = "linux"
 	PlatformWindows Platform = "windows"
 )
+
+type PlatformMap[T any] struct {
+	MacOS   *T `json:"macos"   yaml:"macos"`
+	Linux   *T `json:"linux"   yaml:"linux"`
+	Windows *T `json:"windows" yaml:"windows"`
+}
 
 func (c *AppConfig) Environ() []string {
 	if c.Env == nil {
