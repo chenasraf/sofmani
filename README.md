@@ -156,27 +156,33 @@ actions. Steps can be of **several types**, such as `brew`, `rsync`, `shell`, an
      - `opts.destination`: Destination directory/file.
      - `opts.flags`: Additional rsync flags (e.g., `--delete`, `--exclude`).
 
-2. **`brew`**
-
-   - Installs packages using Homebrew.
-   - **Options**:
-     - `opts.tap`: Name of the tap to install the package from.
-
-3. **`shell`**
-
-   - Executes arbitrary shell commands.
-   - **Options**:
-     - `opts.command`: The command to execute for installing.
-     - `opts.update_command`: The command to execute for updating.
-
-4. **`group`**
+2. **`group`**
 
    - Executes a logical group of steps in sequence.
    - Allows nesting multiple steps together.
    - **Options**:
      - `steps`: List of nested steps.
 
-5. **`apt`**
+3. **`brew`**
+
+   - Installs packages using Homebrew.
+   - **Options**:
+     - `opts.tap`: Name of the tap to install the package from.
+
+4. **`shell`**
+
+   - Executes arbitrary shell commands.
+   - **Options**:
+     - `opts.command`: The command to execute for installing.
+     - `opts.update_command`: The command to execute for updating.
+
+5. **npm/pnpm/yarn**
+
+   - Installs packages using npm/pnpm/yarn.
+   - Use `type: npm` for `npm install`, `type: pnpm` for `pnpm install`, and `type: yarn` for
+     `yarn install`.
+
+6. **`apt`**
 
    - Installs packages using apt install.
 
