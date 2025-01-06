@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.3.0](https://github.com/chenasraf/sofmani/compare/v1.2.0...v1.3.0) (2025-01-06)
+
+
+### Features
+
+* add apt installer ([5fe683a](https://github.com/chenasraf/sofmani/commit/5fe683a6530043d94ea3feb2bd3a9c722ad43f39))
+
+
+### Bug Fixes
+
+* env shell platform map ([1367921](https://github.com/chenasraf/sofmani/commit/13679214acf3b2d5b2750efa5d54a322dc987b37))
+
 ## [1.2.0](https://github.com/chenasraf/sofmani/compare/v1.1.0...v1.2.0) (2025-01-06)
 
 
