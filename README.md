@@ -44,6 +44,19 @@ That's it! You're now ready to use `sofmani`.
 
 ---
 
+### Linux
+
+You can install `sofmani` by downloading the release tar, and extracting it to your preferred
+location.
+
+- You can see an example script for install here: [install.sh](/install.sh)
+- The example script can be used for actual install, use this command to download and execute the
+  file (use at your own discretion):
+
+  ```sh
+  curl https://raw.githubusercontent.com/chenasraf/sofmani/master/install.sh | sh
+  ```
+
 ## ✨ Getting Started
 
 `sofmani` works based on a configuration file written in **YAML** or **JSON**. Below is an annotated
