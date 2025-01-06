@@ -9,10 +9,11 @@ import (
 	"runtime"
 	"slices"
 
+	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
 )
 
-const UNIX_DEFAULT_SHELL = "bash"
+const UNIX_DEFAULT_SHELL string = "bash"
 
 func RunCmdPassThrough(env []string, bin string, args ...string) error {
 	logger.Debug("Running command: %s %v", bin, args)
@@ -69,21 +70,18 @@ func getShellScript(dir string) string {
 	return tmpfile
 }
 
-func getScriptContents(script string, envShell *string) (string, error) {
+func getScriptContents(script string, envShell *appconfig.PlatformMap[string]) (string, error) {
 	switch runtime.GOOS {
 	case "windows":
 		return script, nil
 	case "linux", "darwin":
-		if envShell == nil {
-			shell := UNIX_DEFAULT_SHELL
-			envShell = &shell
-		}
-		return fmt.Sprintf("#!/usr/bin/env %s\n%s\n", *envShell, script), nil
+		shell := GetOSShell(envShell)
+		return fmt.Sprintf("#!/usr/bin/env %s\n%s\n", shell, script), nil
 	}
 	return "", fmt.Errorf("unsupported OS: %s", runtime.GOOS)
 }
 
-func RunCmdAsFile(env []string, contents string, envShell *string) error {
+func RunCmdAsFile(env []string, contents string, envShell *appconfig.PlatformMap[string]) error {
 	tmpdir := os.TempDir()
 	tmpfile := getShellScript(tmpdir)
 	commandStr, err := getScriptContents(contents, envShell)
@@ -110,15 +108,19 @@ func GetShellWhich() string {
 	return ""
 }
 
-func GetOSShell(envShell *string) string {
+func GetOSShell(envShell *appconfig.PlatformMap[string]) string {
 	switch runtime.GOOS {
 	case "windows":
 		return "cmd"
 	case "linux", "darwin":
-		if envShell != nil {
-			return *envShell
+		def := os.Getenv("SHELL")
+		if def == "" {
+			def = UNIX_DEFAULT_SHELL
 		}
-		return UNIX_DEFAULT_SHELL
+		if envShell != nil {
+			return envShell.ResolveWithFallback(appconfig.PlatformMap[string]{Linux: &def, MacOS: &def})
+		}
+		return def
 	}
 	return ""
 }

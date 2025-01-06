@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/eschao/config"
 )
@@ -74,6 +75,36 @@ type PlatformMap[T any] struct {
 	MacOS   *T `json:"macos"   yaml:"macos"`
 	Linux   *T `json:"linux"   yaml:"linux"`
 	Windows *T `json:"windows" yaml:"windows"`
+}
+
+func (p *PlatformMap[T]) Resolve() *T {
+	switch runtime.GOOS {
+	case "darwin":
+		if p.MacOS != nil {
+			return p.MacOS
+		}
+		return nil
+	case "linux":
+		if p.Linux != nil {
+			return p.Linux
+		}
+		return nil
+	case "windows":
+		if p.Windows != nil {
+			return p.Windows
+		}
+		return nil
+	default:
+		return nil
+	}
+}
+
+func (o *PlatformMap[T]) ResolveWithFallback(fallback PlatformMap[T]) T {
+	val := o.Resolve()
+	if val == nil {
+		return *fallback.Resolve()
+	}
+	return *val
 }
 
 func (c *AppConfig) Environ() []string {

@@ -166,7 +166,9 @@ actions. Steps can be of **several types**, such as `brew`, `rsync`, `shell`, an
 | `post_install`     | String (shell script) | Shell script to execute _after_ the step is installed.                                                                                                                                                                            |
 | `pre_update`       | String (shell script) | Shell script to execute _before_ the step is updated (if applicable).                                                                                                                                                             |
 | `post_update`      | String (shell script) | Shell script to execute _after_ the step is updated (if applicable).                                                                                                                                                              |
-| `env_shell`        | String (optional)     | Shell to use for command executions (only applicable on Linux/macOS). Default: `bash`.                                                                                                                                            |
+| `env_shell`        | Object (optional)     | Shell to use for command executions. See `env_shell` subfields below.                                                                                                                                                             |
+| `env_shell.macos`  | String (optional)     | Shell to use for macOS command executions. If not specified, the default shell will be used.                                                                                                                                      |
+| `env_shell.linux`  | String (optional)     | Shell to use for Linux command executions. If not specified, the default shell will be used.                                                                                                                                      |
 
 ### Supported `type` Installers
 
