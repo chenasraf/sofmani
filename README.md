@@ -109,6 +109,15 @@ The following flags are supported to customize behavior:
 If a configuration file is not explicitly provided, `sofmani` attempts to locate one automatically
 in the current directory.
 
+If a configuration file argument is not present, sofmani will try to find a `sofmani.yaml` or
+`sofmani.json` in the following directories, ordered by priority:
+
+1. Current directory
+1. `$HOME/.config` directory
+1. Home directory
+
+If no file is found, sofmani will fail to start.
+
 ---
 
 ## 📚 Configuration Reference
@@ -131,7 +140,7 @@ actions. Steps can be of **several types**, such as `brew`, `rsync`, `shell`, an
 | Field              | Type                  | Description                                                                                                                                                                                                                       |
 | ------------------ | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `name`             | String                | Identifier for the step. It does not have to be unique, but is usually used to check for the app's existence, if applicable (can be overridden using `bin_name`)                                                                  |
-| `type`             | String (required)     | Type of the step. Currently supported: `group`, `brew`, `apt`, `rsync`, `shell`.                                                                                                                                                  |
+| `type`             | String (required)     | Type of the step. Currently supported: `group`, `brew`, `apt`, `rsync`, `shell`, `npm`/`pnpm`/`yarn`.                                                                                                                             |
 | `platforms`        | Object (optional)     | Platform-specific execution controls. See `platforms` subfields below.                                                                                                                                                            |
 | `platforms.only`   | Array of Strings      | Platforms where the step should execute (e.g., `['macos', 'linux']`). Supercedes `platforms.except`.                                                                                                                              |
 | `platforms.except` | Array of Strings      | Platforms where the step should **not** execute; replaces `platforms.only`.                                                                                                                                                       |
@@ -219,7 +228,7 @@ Here’s how you might configure `sofmani` to provision a new system:
 
 ## 💡 Tips and Tricks
 
-1. Use `platforms.only` and `platforms.ignore` to fine-tune actions for platform-specific
+1. Use `platforms.only` and `platforms.except` to fine-tune actions for platform-specific
    environments.
 2. Use `check_installed` to skip steps if a specific condition or software is already installed, if
    the check is not a simple binary existence check on `name` or `bin_name`.
