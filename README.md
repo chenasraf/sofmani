@@ -144,6 +144,7 @@ Here is a detailed breakdown of all configuration options:
 | `debug`         | Boolean | Enable or disable debug mode. Default: `false`.                                                          |
 | `check_updates` | Boolean | Enable or disable checking for updates before running operations. Default: `false`.                      |
 | `defaults`      | Object  | Defaults to apply to all installer types, such as specifying supported platforms or commonly used flags. |
+| `env`           | Object  | Environment variables to set before running the installer.                                               |
 
 ### `install` Node
 
