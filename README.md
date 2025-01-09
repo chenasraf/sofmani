@@ -215,7 +215,20 @@ actions. Steps can be of **several types**, such as `brew`, `rsync`, `shell`, an
      - `opts.destination`: The local directory to clone the repository to.
      - `opts.ref`: The branch, tag, or commit to checkout after cloning.
 
-7. **`apt`**
+7. **`manifest`**
+
+   - Installs an entire manifest from a local or remote file.
+   - Every entry in the `install` array will independently be run.
+   - `debug` and `check_updates` will be inherited by the loaded config.
+   - `env` and `defaults` will be merged into the loaded config, overriding any existing values.
+   - **Options**:
+     - `opts.source`: The local file, or remote git URL (https or SSH) containing the manifest.
+     - `opts.path`: The path to the manifest file within the repository. If `opts.source` is a local
+       file, `opts.path` will still append to it.
+     - `opts.ref`: The branch, tag, or commit to checkout after cloning (if `opts.source` is a git
+       URL).
+
+8. **`apt`**
 
    - Installs packages using apt install.
 

@@ -47,15 +47,16 @@ type Installer struct {
 type InstallerType string
 
 const (
-	InstallerTypeGroup InstallerType = "group"
-	InstallerTypeShell InstallerType = "shell"
-	InstallerTypeBrew  InstallerType = "brew"
-	InstallerTypeApt   InstallerType = "apt"
-	InstallerTypeGit   InstallerType = "git"
-	InstallerTypeRsync InstallerType = "rsync"
-	InstallerTypeNpm   InstallerType = "npm"
-	InstallerTypePnpm  InstallerType = "pnpm"
-	InstallerTypeYarn  InstallerType = "yarn"
+	InstallerTypeGroup    InstallerType = "group"
+	InstallerTypeShell    InstallerType = "shell"
+	InstallerTypeBrew     InstallerType = "brew"
+	InstallerTypeApt      InstallerType = "apt"
+	InstallerTypeGit      InstallerType = "git"
+	InstallerTypeRsync    InstallerType = "rsync"
+	InstallerTypeNpm      InstallerType = "npm"
+	InstallerTypePnpm     InstallerType = "pnpm"
+	InstallerTypeYarn     InstallerType = "yarn"
+	InstallerTypeManifest InstallerType = "manifest"
 )
 
 type Platforms struct {
@@ -144,17 +145,28 @@ func ParseConfig() (*AppConfig, error) {
 	ext := filepath.Ext(file)
 	switch ext {
 	case ".json", ".yaml", ".yml":
-		appConfig := AppConfig{}
-		config.ParseConfigFile(&appConfig, file)
+		appConfig, err := ParseConfigFrom(file)
+		if err != nil {
+			return nil, err
+		}
 		if overrides.Debug != nil {
 			appConfig.Debug = *overrides.Debug
 		}
 		if overrides.CheckUpdates != nil {
 			appConfig.CheckUpdates = *overrides.CheckUpdates
 		}
-		return &appConfig, nil
+		return appConfig, nil
 	}
 	return nil, fmt.Errorf("Unsupported config file extension %s", ext)
+}
+
+func ParseConfigFrom(file string) (*AppConfig, error) {
+	appConfig := NewAppConfig()
+	err := config.ParseConfigFile(&appConfig, file)
+	if err != nil {
+		return nil, err
+	}
+	return &appConfig, nil
 }
 
 func FindConfigFile() string {
@@ -204,9 +216,7 @@ func ParseCliConfig() *AppCliConfig {
 			fmt.Println("Usage: sofmani [options] [config_file]")
 			os.Exit(0)
 		default:
-			if file == "" {
-				file = args[0]
-			}
+			file = args[0]
 		}
 		args = args[1:]
 	}
@@ -216,4 +226,10 @@ func ParseCliConfig() *AppCliConfig {
 	}
 	config.ConfigFile = file
 	return config
+}
+
+func NewAppConfig() AppConfig {
+	return AppConfig{
+		Install: []Installer{},
+	}
 }
