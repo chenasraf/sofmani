@@ -32,6 +32,8 @@ func GetInstaller(config *appconfig.AppConfig, installer *appconfig.Installer) (
 		return nil, NewNpmInstaller(config, installer)
 	case appconfig.InstallerTypeApt:
 		return nil, NewAptInstaller(config, installer)
+	case appconfig.InstallerTypeGit:
+		return nil, NewGitInstaller(config, installer)
 	}
 	return nil, nil
 }

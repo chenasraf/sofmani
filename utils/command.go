@@ -42,6 +42,7 @@ func RunCmdPassThroughChained(env []string, commands [][]string) error {
 }
 
 func RunCmdGetSuccess(env []string, bin string, args ...string) (error, bool) {
+	logger.Debug("Running command: %s %v", bin, args)
 	cmd := exec.Command(bin, args...)
 	cmd.Env = slices.Concat(os.Environ(), cmd.Env, env)
 	err := cmd.Run()
@@ -52,6 +53,7 @@ func RunCmdGetSuccess(env []string, bin string, args ...string) (error, bool) {
 }
 
 func RunCmdGetOutput(env []string, bin string, args ...string) ([]byte, error) {
+	logger.Debug("Running command: %s %v", bin, args)
 	cmd := exec.Command(bin, args...)
 	cmd.Env = slices.Concat(os.Environ(), cmd.Env, env)
 	out, err := cmd.Output()

@@ -1,7 +1,9 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -29,4 +31,10 @@ func GetRealPath(env []string, path string) string {
 		}
 	}
 	return strings.TrimSpace(string(path))
+}
+
+func PathExists(path string) (error, bool) {
+	_, err := os.Stat(path)
+	exists := !errors.Is(err, fs.ErrNotExist)
+	return nil, exists
 }

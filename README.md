@@ -153,7 +153,7 @@ actions. Steps can be of **several types**, such as `brew`, `rsync`, `shell`, an
 | Field              | Type                  | Description                                                                                                                                                                                                                       |
 | ------------------ | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `name`             | String                | Identifier for the step. It does not have to be unique, but is usually used to check for the app's existence, if applicable (can be overridden using `bin_name`)                                                                  |
-| `type`             | String (required)     | Type of the step. Currently supported: `group`, `brew`, `apt`, `rsync`, `shell`, `npm`/`pnpm`/`yarn`.                                                                                                                             |
+| `type`             | String (required)     | Type of the step. Currently supported: `group`, `brew`, `apt`, `rsync`, `shell`, `git`, `npm`/`pnpm`/`yarn`.                                                                                                                      |
 | `platforms`        | Object (optional)     | Platform-specific execution controls. See `platforms` subfields below.                                                                                                                                                            |
 | `platforms.only`   | Array of Strings      | Platforms where the step should execute (e.g., `['macos', 'linux']`). Supercedes `platforms.except`.                                                                                                                              |
 | `platforms.except` | Array of Strings      | Platforms where the step should **not** execute; replaces `platforms.only`.                                                                                                                                                       |
@@ -200,13 +200,20 @@ actions. Steps can be of **several types**, such as `brew`, `rsync`, `shell`, an
      - `opts.command`: The command to execute for installing.
      - `opts.update_command`: The command to execute for updating.
 
-5. **npm/pnpm/yarn**
+5. **`npm`/`pnpm`/`yarn`**
 
    - Installs packages using npm/pnpm/yarn.
    - Use `type: npm` for `npm install`, `type: pnpm` for `pnpm install`, and `type: yarn` for
      `yarn install`.
 
-6. **`apt`**
+6. **`git`**
+
+   - Clones a git repository to a local directory.
+   - **Options**:
+     - `opts.destination`: The local directory to clone the repository to.
+     - `opts.ref`: The branch, tag, or commit to checkout after cloning.
+
+7. **`apt`**
 
    - Installs packages using apt install.
 
