@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.4.0](https://github.com/chenasraf/sofmani/compare/v1.3.0...v1.4.0) (2025-01-09)
+
+
+### Features
+
+* add git installer ([b807696](https://github.com/chenasraf/sofmani/commit/b807696014bdfae348779d312a206710566ea7f0))
+* add remote manifest installer ([362ee12](https://github.com/chenasraf/sofmani/commit/362ee121682eacaf9cb793d4be848b7f0c8f0793))
+
+
+### Bug Fixes
+
+* check exit code shell ([4e54373](https://github.com/chenasraf/sofmani/commit/4e54373828bc49545ea67bcea7e18cc71c2b0cdd))
+* file argument ([362ee12](https://github.com/chenasraf/sofmani/commit/362ee121682eacaf9cb793d4be848b7f0c8f0793))
+
 ## [1.3.0](https://github.com/chenasraf/sofmani/compare/v1.2.0...v1.3.0) (2025-01-06)
 
 
