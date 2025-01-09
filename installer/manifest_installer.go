@@ -1,6 +1,7 @@
 package installer
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -54,18 +55,20 @@ func (i *ManifestInstaller) Update() error {
 
 // CheckNeedsUpdate implements IInstaller.
 func (i *ManifestInstaller) CheckNeedsUpdate() (error, bool) {
-	if i.GetInfo().CheckHasUpdate != nil {
-		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetOSShell(i.GetInfo().EnvShell), utils.GetOSShellArgs(*i.GetInfo().CheckHasUpdate)...)
+	info := i.GetInfo()
+	if info.CheckHasUpdate != nil {
+		return utils.RunCmdGetSuccess(info.Environ(), utils.GetOSShell(info.EnvShell), utils.GetOSShellArgs(*info.CheckHasUpdate)...)
 	}
 	return nil, true
 }
 
 // CheckIsInstalled implements IInstaller.
 func (i *ManifestInstaller) CheckIsInstalled() (error, bool) {
-	if i.GetInfo().CheckInstalled != nil {
-		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetOSShell(i.GetInfo().EnvShell), utils.GetOSShellArgs(*i.GetInfo().CheckInstalled)...)
+	info := i.GetInfo()
+	if info.CheckInstalled != nil {
+		return utils.RunCmdGetSuccess(info.Environ(), utils.GetOSShell(info.EnvShell), utils.GetOSShellArgs(*info.CheckInstalled)...)
 	}
-	return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetShellWhich(), i.GetBinName())
+	return nil, false
 }
 
 // GetInfo implements IInstaller.
@@ -75,7 +78,7 @@ func (i *ManifestInstaller) GetInfo() *appconfig.Installer {
 
 func (i *ManifestInstaller) GetOpts() *ManifestOpts {
 	opts := &ManifestOpts{}
-	info := i.Info
+	info := i.GetInfo()
 	if info.Opts != nil {
 		if source, ok := (*info.Opts)["source"].(string); ok {
 			opts.Source = &source
@@ -90,66 +93,86 @@ func (i *ManifestInstaller) GetOpts() *ManifestOpts {
 	return opts
 }
 
-func (i *ManifestInstaller) GetBinName() string {
-	info := i.GetInfo()
-	if info.BinName != nil && len(*info.BinName) > 0 {
-		return *info.BinName
-	}
-	return *info.Name
-}
-
 func (i *ManifestInstaller) FetchManifest() error {
 	opts := i.GetOpts()
 	source := *opts.Source
 	isGit := utils.IsGitURL(source)
+	env := i.GetInfo().Environ()
 	var path string
 	if opts.Path == nil {
 		path = ""
 	} else {
 		path = *opts.Path
 	}
-	path = utils.GetRealPath(i.GetInfo().Environ(), path)
+	path = utils.GetRealPath(env, path)
 
 	if isGit {
-		tmpDir, err := os.MkdirTemp("", "sofmani")
-		defer os.RemoveAll(tmpDir)
+		src, err := i.getGitManifestConfig(source)
 		if err != nil {
 			return err
 		}
-		logger.Debug("Cloning %s to %s", source, tmpDir)
-		err, success := utils.RunCmdGetSuccess(i.Info.Environ(), "git", "clone", "--depth=1", source, tmpDir)
-		if opts.Ref != nil {
-			logger.Debug("Checking out ref %s", *opts.Ref)
-			err = utils.RunCmdPassThrough(i.Info.Environ(), "git", "-C", tmpDir, "checkout", *opts.Ref)
-			if err != nil {
-				return err
-			}
-		}
-		if err != nil {
-			return err
-		}
-		if success {
-			source = tmpDir
-		}
+		source = src
 	} else {
-		source = utils.GetRealPath(i.GetInfo().Environ(), source)
+		source = utils.GetRealPath(env, source)
 	}
 
 	logger.Debug("Parsing manifest from %s", filepath.Join(source, path))
-	config, err := appconfig.ParseConfigFrom(filepath.Join(source, path))
-
+	config, err := i.getLocalManifestConfig(filepath.Join(source, path))
 	if err != nil {
 		return err
 	}
+	logger.Debug("Installers: %d", len(config.Install))
+	i.ManifestConfig = config
+	return nil
+}
+
+func (i *ManifestInstaller) getGitManifestConfig(source string) (string, error) {
+	opts := i.GetOpts()
+	info := i.GetInfo()
+	tmpDir, err := os.MkdirTemp("", "sofmani")
+	defer os.RemoveAll(tmpDir)
+	if err != nil {
+		return "", err
+	}
+	logger.Debug("Cloning %s to %s", source, tmpDir)
+	err, success := utils.RunCmdGetSuccess(info.Environ(), "git", "clone", "--depth=1", source, tmpDir)
+	if opts.Ref != nil {
+		logger.Debug("Checking out ref %s", *opts.Ref)
+		err = utils.RunCmdPassThrough(info.Environ(), "git", "-C", tmpDir, "checkout", *opts.Ref)
+		if err != nil {
+			return "", err
+		}
+	}
+	if err != nil {
+		return "", err
+	}
+	if success {
+		return tmpDir, nil
+	}
+	return "", fmt.Errorf("Failed to clone %s", source)
+}
+
+func (i *ManifestInstaller) getLocalManifestConfig(path string) (*appconfig.AppConfig, error) {
+	config, err := appconfig.ParseConfigFrom(path)
+
+	if err != nil {
+		return nil, err
+	}
 
 	logger.Debug("Setting manifest config")
-	if i.Config.Debug {
-		config.Debug = i.Config.Debug
+	config = i.inheritManifest(config)
+	return config, nil
+}
+
+func (i *ManifestInstaller) inheritManifest(config *appconfig.AppConfig) *appconfig.AppConfig {
+	self := i.Config
+	if self.Debug {
+		config.Debug = self.Debug
 	}
-	if i.Config.CheckUpdates {
-		config.CheckUpdates = i.Config.CheckUpdates
+	if self.CheckUpdates {
+		config.CheckUpdates = self.CheckUpdates
 	}
-	if i.Config.Env != nil {
+	if self.Env != nil {
 		logger.Debug("Injecting base env variables")
 		var env map[string]string
 		if config.Env == nil {
@@ -157,12 +180,12 @@ func (i *ManifestInstaller) FetchManifest() error {
 		} else {
 			env = *config.Env
 		}
-		for k, v := range *i.Config.Env {
+		for k, v := range *self.Env {
 			env[k] = v
 		}
 	}
-	if i.Config.Defaults != nil {
-		defs := i.Config.Defaults
+	if self.Defaults != nil {
+		defs := self.Defaults
 		if defs.Type != nil {
 			types := *defs.Type
 			if shell, ok := types["shell"]; ok {
@@ -175,9 +198,7 @@ func (i *ManifestInstaller) FetchManifest() error {
 			}
 		}
 	}
-	logger.Debug("Installers: %d", len(config.Install))
-	i.ManifestConfig = config
-	return nil
+	return config
 }
 
 func NewManifestInstaller(cfg *appconfig.AppConfig, installer *appconfig.Installer) *ManifestInstaller {
