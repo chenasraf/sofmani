@@ -209,6 +209,8 @@ actions. Steps can be of **several types**, such as `brew`, `rsync`, `shell`, an
 6. **`git`**
 
    - Clones a git repository to a local directory.
+   - If `name` is a full git URL (https or SSH), the repository is cloned directly. If it is a
+     repository path, e.g. `chenasraf/sofmani`, GitHub is assumed.
    - **Options**:
      - `opts.destination`: The local directory to clone the repository to.
      - `opts.ref`: The branch, tag, or commit to checkout after cloning.
