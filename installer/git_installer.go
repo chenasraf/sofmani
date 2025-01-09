@@ -85,7 +85,7 @@ func (i *GitInstaller) GetOpts() *GitOpts {
 func (i *GitInstaller) GetRepositoryUrl() string {
 	info := i.Info
 	name := *info.Name
-	if strings.HasPrefix(name, "https://") || strings.HasPrefix(name, "git@") {
+	if utils.IsGitURL(name) {
 		return name
 	}
 	return fmt.Sprintf("https://github.com/%s", name)
