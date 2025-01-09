@@ -75,10 +75,14 @@ func getShellScript(dir string) string {
 func getScriptContents(script string, envShell *appconfig.PlatformMap[string]) (string, error) {
 	switch runtime.GOOS {
 	case "windows":
-		return script, nil
+		preScript := "@echo off"
+		postScript := "exit /b %ERRORLEVEL%"
+		return fmt.Sprintf("%s\n%s\n\n%s\n", preScript, script, postScript), nil
 	case "linux", "darwin":
 		shell := GetOSShell(envShell)
-		return fmt.Sprintf("#!/usr/bin/env %s\n%s\n", shell, script), nil
+		preScript := fmt.Sprintf("#!/usr/bin/env %s", shell)
+		postScript := "exit $?"
+		return fmt.Sprintf("%s\n%s\n\n%s\n", preScript, script, postScript), nil
 	}
 	return "", fmt.Errorf("unsupported OS: %s", runtime.GOOS)
 }
@@ -130,9 +134,9 @@ func GetOSShell(envShell *appconfig.PlatformMap[string]) string {
 func GetOSShellArgs(cmd string) []string {
 	switch runtime.GOOS {
 	case "windows":
-		return []string{"/C", cmd}
+		return []string{"/C", cmd + " & exit %ERRORLEVEL%"}
 	case "linux", "darwin":
-		return []string{"-c", cmd}
+		return []string{"-c", cmd + "; exit $?"}
 	}
 	return []string{}
 }
