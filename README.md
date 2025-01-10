@@ -40,8 +40,6 @@ Install from a custom tap:
 brew install chenasraf/tap/sofmani
 ```
 
-That's it! You're now ready to use `sofmani`.
-
 ---
 
 ### Linux
@@ -139,99 +137,100 @@ Here is a detailed breakdown of all configuration options:
 
 ### Global Options
 
-| Field           | Type    | Description                                                                                              |
-| --------------- | ------- | -------------------------------------------------------------------------------------------------------- |
-| `debug`         | Boolean | Enable or disable debug mode. Default: `false`.                                                          |
-| `check_updates` | Boolean | Enable or disable checking for updates before running operations. Default: `false`.                      |
-| `defaults`      | Object  | Defaults to apply to all installer types, such as specifying supported platforms or commonly used flags. |
-| `env`           | Object  | Environment variables to set before running the installer.                                               |
+| Field           | Type    | Description                                                                                                                                                            |
+| --------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `debug`         | Boolean | Enable or disable debug mode. Default: `false`.                                                                                                                        |
+| `check_updates` | Boolean | Enable or disable checking for updates before running operations. Default: `false`.                                                                                    |
+| `defaults`      | Object  | Defaults to apply to all installer types, such as specifying supported platforms or commonly used flags.                                                               |
+| `env`           | Object  | Environment variables that will be set for the context of the installer. OS env vars are passed, and may be overridden for this config and all of its installers here. |
 
 ### `install` Node
 
 The `install` field describes the steps to execute. Each step represents an action or group of
 actions. Steps can be of **several types**, such as `brew`, `rsync`, `shell`, and more.
 
-| Field              | Type                  | Description                                                                                                                                                                                                                       |
-| ------------------ | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`             | String                | Identifier for the step. It does not have to be unique, but is usually used to check for the app's existence, if applicable (can be overridden using `bin_name`)                                                                  |
-| `type`             | String (required)     | Type of the step. Currently supported: `group`, `brew`, `apt`, `rsync`, `shell`, `git`, `npm`/`pnpm`/`yarn`.                                                                                                                      |
-| `platforms`        | Object (optional)     | Platform-specific execution controls. See `platforms` subfields below.                                                                                                                                                            |
-| `platforms.only`   | Array of Strings      | Platforms where the step should execute (e.g., `['macos', 'linux']`). Supercedes `platforms.except`.                                                                                                                              |
-| `platforms.except` | Array of Strings      | Platforms where the step should **not** execute; replaces `platforms.only`.                                                                                                                                                       |
-| `steps`            | Array of Installers   | Sub-steps for `group` type. Allows nesting multiple steps together.                                                                                                                                                               |
-| `opts`             | Object (optional)     | Step-specific options and configurations. Content varies depending on the `type`.                                                                                                                                                 |
-| `bin_name`         | String (optional)     | Binary name for the installed software, used instead of `name` when checking for app's existence.                                                                                                                                 |
-| `check_has_update` | String (shell script) | Shell command to check whether an update is available for the installed software. This will override the default binary name check for `name` or `bin_name`. The check **must succeed** (return exit code 0) to prompt an update. |
-| `check_installed`  | String (shell script) | Shell command to check if the step has already been installed. Skips the install step if the check succeeds.                                                                                                                      |
-| `pre_install`      | String (shell script) | Shell script to execute _before_ the step is installed.                                                                                                                                                                           |
-| `post_install`     | String (shell script) | Shell script to execute _after_ the step is installed.                                                                                                                                                                            |
-| `pre_update`       | String (shell script) | Shell script to execute _before_ the step is updated (if applicable).                                                                                                                                                             |
-| `post_update`      | String (shell script) | Shell script to execute _after_ the step is updated (if applicable).                                                                                                                                                              |
-| `env_shell`        | Object (optional)     | Shell to use for command executions. See `env_shell` subfields below.                                                                                                                                                             |
-| `env_shell.macos`  | String (optional)     | Shell to use for macOS command executions. If not specified, the default shell will be used.                                                                                                                                      |
-| `env_shell.linux`  | String (optional)     | Shell to use for Linux command executions. If not specified, the default shell will be used.                                                                                                                                      |
+| Field              | Type                  | Description                                                                                                                                                                                                                                                                                   |
+| ------------------ | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`             | String                | Identifier for the step. It does not have to be unique, but is usually used to check for the app's existence, if applicable (can be overridden using `bin_name`)                                                                                                                              |
+| `type`             | String (required)     | Type of the step. See [supported types](#supported-type-of-installers) for a comprehensive list of supported values.                                                                                                                                                                          |
+| `platforms`        | Object (optional)     | Platform-specific execution controls. See `platforms` subfields below.                                                                                                                                                                                                                        |
+| `platforms.only`   | Array of Strings      | Platforms where the step should execute (e.g., `['macos', 'linux']`). Supercedes `platforms.except`.                                                                                                                                                                                          |
+| `platforms.except` | Array of Strings      | Platforms where the step should **not** execute; replaces `platforms.only`.                                                                                                                                                                                                                   |
+| `steps`            | Array of Installers   | Sub-steps for `group` type. Allows nesting multiple steps together.                                                                                                                                                                                                                           |
+| `opts`             | Object (optional)     | Step-specific options and configurations. Content varies depending on the `type`. See [supported types](#supported-type-of-installers) for a comprehensive list of supported values.                                                                                                          |
+| `bin_name`         | String (optional)     | Binary name for the installed software, used instead of `name` when checking for app's existence.                                                                                                                                                                                             |
+| `check_has_update` | String (shell script) | Shell command to check whether an update is available for the installed software. This will override the default check provided by the corresponding `type`. The check **must succeed** (return exit code 0) if the app has an update, or fail (other status codes) if the app is up to date. |
+| `check_installed`  | String (shell script) | Shell command to check if the step has already been installed. If the check succeeds (exits with status 0), it means the app is already installed and can be skipped if not checking for updates.                                                                                             |
+| `pre_install`      | String (shell script) | Shell script to execute _before_ the step is installed.                                                                                                                                                                                                                                       |
+| `post_install`     | String (shell script) | Shell script to execute _after_ the step is installed.                                                                                                                                                                                                                                        |
+| `pre_update`       | String (shell script) | Shell script to execute _before_ the step is updated (if applicable).                                                                                                                                                                                                                         |
+| `post_update`      | String (shell script) | Shell script to execute _after_ the step is updated (if applicable).                                                                                                                                                                                                                          |
+| `env_shell`        | Object (optional)     | Shell to use for command executions. See `env_shell` subfields below.                                                                                                                                                                                                                         |
+| `env_shell.macos`  | String (optional)     | Shell to use for macOS command executions. If not specified, the default shell will be used.                                                                                                                                                                                                  |
+| `env_shell.linux`  | String (optional)     | Shell to use for Linux command executions. If not specified, the default shell will be used.                                                                                                                                                                                                  |
 
-### Supported `type` Installers
+### Supported `type` of Installers
 
-1. **`rsync`**
+- **`rsync`**
 
-   - Copy files from `source` to `destination` using rsync.
-   - **Options**:
-     - `opts.source`: Source directory/file.
-     - `opts.destination`: Destination directory/file.
-     - `opts.flags`: Additional rsync flags (e.g., `--delete`, `--exclude`).
+  - Copy files from `source` to `destination` using rsync.
+  - **Options**:
+    - `opts.source`: Source directory/file.
+    - `opts.destination`: Destination directory/file.
+    - `opts.flags`: Additional rsync flags (e.g., `--delete`, `--exclude`).
 
-2. **`group`**
+- **`group`**
 
-   - Executes a logical group of steps in sequence.
-   - Allows nesting multiple steps together.
-   - **Options**:
-     - `steps`: List of nested steps.
+  - Executes a logical group of steps in sequence.
+  - Allows nesting multiple steps together.
+  - **Options**:
+    - `steps`: List of nested steps.
 
-3. **`brew`**
+- **`brew`**
 
-   - Installs packages using Homebrew.
-   - **Options**:
-     - `opts.tap`: Name of the tap to install the package from.
+  - Installs packages using Homebrew.
+  - **Options**:
+    - `opts.tap`: Name of the tap to install the package from.
 
-4. **`shell`**
+- **`shell`**
 
-   - Executes arbitrary shell commands.
-   - **Options**:
-     - `opts.command`: The command to execute for installing.
-     - `opts.update_command`: The command to execute for updating.
+  - Executes arbitrary shell commands.
+  - **Options**:
+    - `opts.command`: The command to execute for installing.
+    - `opts.update_command`: The command to execute for updating.
 
-5. **`npm`/`pnpm`/`yarn`**
+- **`npm`/`pnpm`/`yarn`**
 
-   - Installs packages using npm/pnpm/yarn.
-   - Use `type: npm` for `npm install`, `type: pnpm` for `pnpm install`, and `type: yarn` for
-     `yarn install`.
+  - Installs packages using npm/pnpm/yarn.
+  - Use `type: npm` for `npm install`, `type: pnpm` for `pnpm install`, and `type: yarn` for
+    `yarn install`.
 
-6. **`git`**
+- **`git`**
 
-   - Clones a git repository to a local directory.
-   - If `name` is a full git URL (https or SSH), the repository is cloned directly. If it is a
-     repository path, e.g. `chenasraf/sofmani`, GitHub is assumed.
-   - **Options**:
-     - `opts.destination`: The local directory to clone the repository to.
-     - `opts.ref`: The branch, tag, or commit to checkout after cloning.
+  - Clones a git repository to a local directory.
+  - If `name` is a full git URL (https or SSH), the repository is cloned directly. If it is a
+    repository path, e.g. `chenasraf/sofmani`, GitHub is assumed.
+  - **Options**:
+    - `opts.destination`: The local directory to clone the repository to.
+    - `opts.ref`: The branch, tag, or commit to checkout after cloning.
 
-7. **`manifest`**
+- **`manifest`**
 
-   - Installs an entire manifest from a local or remote file.
-   - Every entry in the `install` array will independently be run.
-   - `debug` and `check_updates` will be inherited by the loaded config.
-   - `env` and `defaults` will be merged into the loaded config, overriding any existing values.
-   - **Options**:
-     - `opts.source`: The local file, or remote git URL (https or SSH) containing the manifest.
-     - `opts.path`: The path to the manifest file within the repository. If `opts.source` is a local
-       file, `opts.path` will still append to it.
-     - `opts.ref`: The branch, tag, or commit to checkout after cloning (if `opts.source` is a git
-       URL).
+  - Installs an entire manifest from a local or remote file.
+  - Every entry in the `install` array will be run, similar to how `steps` are run for `group`
+    installers.
+  - `debug` and `check_updates` will be inherited by the loaded config.
+  - `env` and `defaults` will be merged into the loaded config, overriding any existing values.
+  - **Options**:
+    - `opts.source`: The local file, or remote git URL (https or SSH) containing the manifest.
+    - `opts.path`: The path to the manifest file within the repository. If `opts.source` is a local
+      file, `opts.path` will be append to it.
+    - `opts.ref`: The branch, tag, or commit to checkout after cloning if `opts.source` is a git
+      URL. For local manifests, this value will be ignored.
 
-8. **`apt`**
+- **`apt`**
 
-   - Installs packages using apt install.
+  - Installs packages using apt install.
 
 ---
 
