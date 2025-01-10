@@ -295,8 +295,7 @@ don't hesitate to open an appropriate issue and I will do my best to reply promp
 
 ## 📜 License
 
-`sofmani` is licensed under the
-[CC0-1.0 License](https://github.com/chenasraf/sofmani/blob/main/LICENSE).
+`sofmani` is licensed under the [CC0-1.0 License](/LICENSE).
 
 ---
 
