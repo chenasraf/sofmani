@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.1](https://github.com/chenasraf/sofmani/compare/v1.4.0...v1.4.1) (2025-01-11)
+
+
+### Bug Fixes
+
+* bind stdin to process + expand env home dir ([53d3ec6](https://github.com/chenasraf/sofmani/commit/53d3ec645d8994b8a095b0d0db3d556e369055db))
+* run install on group updates ([6292fec](https://github.com/chenasraf/sofmani/commit/6292fec0bfdc80d4fc24bb47a8906ce81b8e22ff))
+
 ## [1.4.0](https://github.com/chenasraf/sofmani/compare/v1.3.0...v1.4.0) (2025-01-09)
 
 
