@@ -36,7 +36,7 @@ func (i *GroupInstaller) Install() error {
 
 // Update implements IInstaller.
 func (i *GroupInstaller) Update() error {
-	return nil
+	return i.Install()
 }
 
 // CheckNeedsUpdate implements IInstaller.
