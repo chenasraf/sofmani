@@ -5,6 +5,9 @@ actions. Steps can be of **several types**, such as `brew`, `rsync`, `shell`, an
 
 ## Fields
 
+These fields are shared by all installer types. Some fields may vary in behavior depending on the
+`type`.
+
 - **`name`**
 
   - **Type**: String (required)
@@ -33,7 +36,8 @@ actions. Steps can be of **several types**, such as `brew`, `rsync`, `shell`, an
 - **`steps`**
 
   - **Type**: Array of Installers
-  - **Description**: Sub-steps for `group` type. Allows nesting multiple steps together.
+  - **Description**: Sub-steps for `group` type. Allows nesting multiple steps together. Ignored for
+    all other types.
 
 - **`opts`**
 
@@ -152,9 +156,106 @@ actions. Steps can be of **several types**, such as `brew`, `rsync`, `shell`, an
   - **Options**:
     - `opts.source`: The local file, or remote git URL (https or SSH) containing the manifest.
     - `opts.path`: The path to the manifest file within the repository. If `opts.source` is a local
-      file, `opts.path` will be append to it.
+      file, `opts.path` will be appended to it.
     - `opts.ref`: The branch, tag, or commit to checkout after cloning if `opts.source` is a git
       URL. For local manifests, this value will be ignored.
 
 - **`apt`**
   - **Description**: Installs packages using apt install.
+
+## Installer Examples
+
+All of these examples should be usable, but don't count on them being maintained. Why not look at
+the [Recipes](./recipes)?
+
+### group
+
+```yaml
+install:
+  - name: pyenv
+    type: group
+    steps:
+      - name: pyenv
+        type: brew
+        platforms:
+          only: ['macos']
+      - name: pyenv
+        type: shell
+        platforms:
+          only: ['linux']
+        opts:
+          command: 'curl https://pyenv.run | bash'
+```
+
+### manifest
+
+```yaml
+install:
+  - name: lazygit
+    type: manifest
+    opts:
+      source: git@github.com:chenasraf/sofmani.git
+      path: docs/recipes/lazygit.yml
+```
+
+### git
+
+```yaml
+install:
+  - name: github/gitignore
+    type: git
+    opts:
+      destination: ~/.gitignore-templates
+```
+
+### shell
+
+```yaml
+install:
+  - name: fnm
+    type: shell
+    post_install: |
+      fnm install --lts
+      fnm use lts-latest
+    opts:
+      command: curl -fsSL https://fnm.vercel.app/install | bash
+```
+
+### rsync
+
+```yaml
+install:
+  - name: config
+    type: rsync
+    opts:
+      source: ~/.dotfiles/.config
+      destination: ~/.config
+```
+
+### brew
+
+```yaml
+install:
+  - name: sofmani
+    type: brew
+    opts:
+      tap: chenasraf/tap
+```
+
+### npm/pnpm/yarn
+
+```yaml
+install:
+  - name: prettier
+    type: pnpm
+```
+
+### apt
+
+```yaml
+install:
+  - name: pipx
+    type: apt
+    platforms:
+      only: ['linux']
+```
