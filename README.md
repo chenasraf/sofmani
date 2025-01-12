@@ -225,7 +225,7 @@ actions. Steps can be of **several types**, such as `brew`, `rsync`, `shell`, an
   - **Options**:
     - `opts.source`: The local file, or remote git URL (https or SSH) containing the manifest.
     - `opts.path`: The path to the manifest file within the repository. If `opts.source` is a local
-      file, `opts.path` will be append to it.
+      file, `opts.path` will be appended to it.
     - `opts.ref`: The branch, tag, or commit to checkout after cloning if `opts.source` is a git
       URL. For local manifests, this value will be ignored.
 
