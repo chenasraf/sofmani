@@ -143,6 +143,7 @@ Here is a detailed breakdown of all configuration options:
 | `check_updates` | Boolean | Enable or disable checking for updates before running operations. Default: `false`.                                                                                    |
 | `defaults`      | Object  | Defaults to apply to all installer types, such as specifying supported platforms or commonly used flags.                                                               |
 | `env`           | Object  | Environment variables that will be set for the context of the installer. OS env vars are passed, and may be overridden for this config and all of its installers here. |
+| `install`       | Array   | Installation steps to execute.                                                                                                                                         |
 
 ### `install` Node
 
@@ -151,7 +152,7 @@ actions. Steps can be of **several types**, such as `brew`, `rsync`, `shell`, an
 
 | Field              | Type                  | Description                                                                                                                                                                                                                                                                                   |
 | ------------------ | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`             | String                | Identifier for the step. It does not have to be unique, but is usually used to check for the app's existence, if applicable (can be overridden using `bin_name`)                                                                                                                              |
+| `name`             | String (required)     | Identifier for the step. It does not have to be unique, but is usually used to check for the app's existence, if applicable (can be overridden using `bin_name`)                                                                                                                              |
 | `type`             | String (required)     | Type of the step. See [supported types](#supported-type-of-installers) for a comprehensive list of supported values.                                                                                                                                                                          |
 | `platforms`        | Object (optional)     | Platform-specific execution controls. See `platforms` subfields below.                                                                                                                                                                                                                        |
 | `platforms.only`   | Array of Strings      | Platforms where the step should execute (e.g., `['macos', 'linux']`). Supercedes `platforms.except`.                                                                                                                                                                                          |
