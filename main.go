@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"fmt"
 	"os"
 
@@ -8,8 +9,11 @@ import (
 	"github.com/chenasraf/sofmani/logger"
 )
 
+//go:embed version.txt
+var version []byte
+
 func main() {
-	cfg, err := LoadConfig()
+	cfg, err := LoadConfig(string(version))
 	if err != nil {
 		fmt.Println(fmt.Errorf("Error loading config: %v", err))
 		return

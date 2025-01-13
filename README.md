@@ -109,13 +109,14 @@ sofmani my-config.yaml
 
 The following flags are supported to customize behavior:
 
-| Flag                | Description                        |
-| ------------------- | ---------------------------------- |
-| `-d`, `--debug`     | Enable debug mode.                 |
-| `-D`, `--no-debug`  | Disable debug mode (default).      |
-| `-u`, `--update`    | Enable update checking.            |
-| `-U`, `--no-update` | Disable update checking (default). |
-| `-h`, `--help`      | Display help information and exit. |
+| Flag                | Description                           |
+| ------------------- | ------------------------------------- |
+| `-d`, `--debug`     | Enable debug mode.                    |
+| `-D`, `--no-debug`  | Disable debug mode (default).         |
+| `-u`, `--update`    | Enable update checking.               |
+| `-U`, `--no-update` | Disable update checking (default).    |
+| `-h`, `--help`      | Display help information and exit.    |
+| `-v`, `--version`   | Display version information and exit. |
 
 If a configuration file is not explicitly provided, `sofmani` attempts to locate one automatically
 in the current directory.

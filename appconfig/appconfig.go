@@ -139,8 +139,8 @@ func ContainsPlatform(platforms *[]Platform, platform Platform) bool {
 	return false
 }
 
-func ParseConfig() (*AppConfig, error) {
-	overrides := ParseCliConfig()
+func ParseConfig(version string) (*AppConfig, error) {
+	overrides := ParseCliConfig(version)
 	file := overrides.ConfigFile
 	ext := filepath.Ext(file)
 	switch ext {
@@ -196,7 +196,7 @@ func tryConfigDir(dir string) string {
 	return ""
 }
 
-func ParseCliConfig() *AppCliConfig {
+func ParseCliConfig(version string) *AppCliConfig {
 	args := os.Args[1:]
 	config := &AppCliConfig{}
 	file := FindConfigFile()
@@ -214,6 +214,18 @@ func ParseCliConfig() *AppCliConfig {
 			config.CheckUpdates = &fVal
 		case "-h", "--help":
 			fmt.Println("Usage: sofmani [options] [config_file]")
+			fmt.Println("Options:")
+			fmt.Println("  -d, --debug        Enable debug mode")
+			fmt.Println("  -D, --no-debug     Disable debug mode")
+			fmt.Println("  -u, --update       Enable update checks")
+			fmt.Println("  -U, --no-update    Disable update checks")
+			fmt.Println("  -h, --help         Show this help message")
+			fmt.Println("  -v, --version      Show version")
+			fmt.Println("")
+			fmt.Println("For online documentation, see https://github.com/chenasraf/sofmani/tree/master/docs")
+			os.Exit(0)
+		case "-v", "--version":
+			fmt.Println(version)
 			os.Exit(0)
 		default:
 			file = args[0]

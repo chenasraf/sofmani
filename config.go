@@ -4,8 +4,8 @@ import (
 	"github.com/chenasraf/sofmani/appconfig"
 )
 
-func LoadConfig() (*appconfig.AppConfig, error) {
-	cfg, err := appconfig.ParseConfig()
+func LoadConfig(version string) (*appconfig.AppConfig, error) {
+	cfg, err := appconfig.ParseConfig(version)
 	if err != nil {
 		return nil, err
 	}
