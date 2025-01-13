@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.2](https://github.com/chenasraf/sofmani/compare/v1.4.1...v1.4.2) (2025-01-13)
+
+
+### Bug Fixes
+
+* show version number ([d62c643](https://github.com/chenasraf/sofmani/commit/d62c643be97158c47b56c3dc67fc03545810d4e9))
+* version output trim ([187df75](https://github.com/chenasraf/sofmani/commit/187df7523209c8e58371bbd5bb582d9e71681099))
+
 ## [1.4.1](https://github.com/chenasraf/sofmani/compare/v1.4.0...v1.4.1) (2025-01-11)
 
 
