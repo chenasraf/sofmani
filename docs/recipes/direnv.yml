@@ -1,0 +1,20 @@
+# To use on your manifest:
+#   - name: direnv
+#     type: manifest
+#     opts:
+#       source: git@github.com/chenasraf/sofmani.git
+#       path: docs/recipes/direnv.yml
+install:
+  - name: direnv
+    type: group
+    steps:
+      - name: direnv
+        type: brew
+        platforms:
+          only: ['macos']
+      - name: direnv
+        type: shell
+        platforms:
+          only: ['linux']
+        opts:
+          command: export bin_path=/usr/local/bin curl -sfL https://direnv.net/install.sh | bash

@@ -1,0 +1,27 @@
+# To use on your manifest:
+#   - name: lazydocker
+#     type: manifest
+#     opts:
+#       source: git@github.com/chenasraf/sofmani.git
+#       path: docs/recipes/lazydocker.yml
+install:
+  - name: lazydocker
+    type: group
+    steps:
+      - name: lazydocker
+        type: brew
+        platforms:
+          only: ['macos']
+        opts:
+          tap: jesseduffield/lazydocker
+      - name: lazydocker
+        type: shell
+        platforms:
+          only: ['linux']
+        opts:
+          command: |
+            cd $(mktemp -d)
+            VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazydocker/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
+            curl -Lo lazydocker.tar.gz "https://github.com/jesseduffield/lazydocker/releases/latest/download/lazydocker_${VERSION}_Linux_x86_64.tar.gz"
+            tar xf lazydocker.tar.gz lazydocker
+            sudo install lazydocker /usr/local/bin

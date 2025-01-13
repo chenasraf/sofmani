@@ -1,0 +1,20 @@
+# To use on your manifest:
+#   - name: pyenv
+#     type: manifest
+#     opts:
+#       source: git@github.com/chenasraf/sofmani.git
+#       path: docs/recipes/pyenv.yml
+install:
+  - name: pyenv
+    type: group
+    steps:
+      - name: pyenv
+        type: brew
+        platforms:
+          only: ['macos']
+      - name: pyenv
+        type: shell
+        platforms:
+          only: ['linux']
+        opts:
+          command: 'curl https://pyenv.run | bash'

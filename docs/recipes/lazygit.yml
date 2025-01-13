@@ -1,0 +1,31 @@
+# To use on your manifest:
+#   - name: lazygit
+#     type: manifest
+#     opts:
+#       source: git@github.com/chenasraf/sofmani.git
+#       path: docs/recipes/lazygit.yml
+install:
+  - name: lazygit
+    type: group
+    steps:
+      - name: lazygit
+        type: brew
+        platforms:
+          only: ['macos']
+        opts:
+          tap: jesseduffield/lazygit
+      - name: lazygit
+        type: shell
+        platforms:
+          only: ['linux']
+        check_has_update: |
+          LATEST=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
+          CURRENT=$(lazygit --version | awk -F'[,=]' '{print $6}')
+          test "$LATEST" != "$CURRENT"
+        opts:
+          command: |
+            cd $(mktemp -d)
+            VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
+            curl -Lo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${VERSION}_Linux_x86_64.tar.gz"
+            tar xf lazygit.tar.gz lazygit
+            sudo install lazygit /usr/local/bin
