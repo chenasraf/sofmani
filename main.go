@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/chenasraf/sofmani/installer"
 	"github.com/chenasraf/sofmani/logger"
@@ -13,7 +14,7 @@ import (
 var version []byte
 
 func main() {
-	cfg, err := LoadConfig(string(version))
+	cfg, err := LoadConfig(strings.TrimSpace(string(version)))
 	if err != nil {
 		fmt.Println(fmt.Errorf("Error loading config: %v", err))
 		return
