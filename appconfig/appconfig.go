@@ -1,10 +1,13 @@
 package appconfig
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/eschao/config"
 )
@@ -139,8 +142,7 @@ func ContainsPlatform(platforms *[]Platform, platform Platform) bool {
 	return false
 }
 
-func ParseConfig(version string) (*AppConfig, error) {
-	overrides := ParseCliConfig(version)
+func ParseConfig(version string, overrides *AppCliConfig) (*AppConfig, error) {
 	file := overrides.ConfigFile
 	ext := filepath.Ext(file)
 	switch ext {
@@ -157,7 +159,7 @@ func ParseConfig(version string) (*AppConfig, error) {
 		}
 		return appConfig, nil
 	}
-	return nil, fmt.Errorf("Unsupported config file extension %s", ext)
+	return nil, fmt.Errorf("Unsupported config file extension %s (filename: %s)", ext, file)
 }
 
 func ParseConfigFrom(file string) (*AppConfig, error) {
@@ -228,7 +230,14 @@ func ParseCliConfig(version string) *AppCliConfig {
 			fmt.Println(version)
 			os.Exit(0)
 		default:
-			file = args[0]
+			if strings.HasPrefix(strings.TrimSpace(args[0]), "-test.") {
+				break
+			}
+			_, err := os.Stat(file)
+			exists := !errors.Is(err, fs.ErrNotExist)
+			if exists {
+				file = args[0]
+			}
 		}
 		args = args[1:]
 	}

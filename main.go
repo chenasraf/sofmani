@@ -14,6 +14,7 @@ import (
 var version []byte
 
 func main() {
+	fmt.Println("Args: ", os.Args)
 	cfg, err := LoadConfig(strings.TrimSpace(string(version)))
 	if err != nil {
 		fmt.Println(fmt.Errorf("Error loading config: %v", err))

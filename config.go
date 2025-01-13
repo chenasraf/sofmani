@@ -5,7 +5,8 @@ import (
 )
 
 func LoadConfig(version string) (*appconfig.AppConfig, error) {
-	cfg, err := appconfig.ParseConfig(version)
+	overrides := appconfig.ParseCliConfig(version)
+	cfg, err := appconfig.ParseConfig(version, overrides)
 	if err != nil {
 		return nil, err
 	}
