@@ -1,0 +1,9 @@
+# To use on your manifest:
+#   - name: prettier
+#     type: manifest
+#     opts:
+#       source: git@github.com/chenasraf/sofmani.git
+#       path: docs/recipes/prettier.yml
+install:
+  - name: prettier
+    type: npm

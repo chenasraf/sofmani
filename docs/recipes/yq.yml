@@ -1,0 +1,11 @@
+# To use on your manifest:
+#   - name: yq
+#     type: manifest
+#     opts:
+#       source: git@github.com/chenasraf/sofmani.git
+#       path: docs/recipes/yq.yml
+install:
+  - name: yq
+    type: shell
+    opts:
+      command: pipx install yq

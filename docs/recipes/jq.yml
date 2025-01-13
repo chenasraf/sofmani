@@ -1,0 +1,9 @@
+# To use on your manifest:
+#   - name: jq
+#     type: manifest
+#     opts:
+#       source: git@github.com/chenasraf/sofmani.git
+#       path: docs/recipes/jq.yml
+install:
+  - name: jq
+    type: brew
