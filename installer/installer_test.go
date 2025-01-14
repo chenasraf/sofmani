@@ -40,7 +40,7 @@ func (m *MockInstaller) Update() error {
 
 func TestGetInstaller(t *testing.T) {
 	config := &appconfig.AppConfig{}
-	logger.InitLogger(config)
+	logger.InitLogger(config.Debug)
 	installer := &appconfig.Installer{Type: appconfig.InstallerTypeBrew}
 	err, inst := GetInstaller(config, installer)
 	assert.NoError(t, err)

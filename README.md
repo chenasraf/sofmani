@@ -111,14 +111,15 @@ See [the documentation](/docs) for more information and examples.
 
 The following flags are supported to customize behavior:
 
-| Flag                | Description                           |
-| ------------------- | ------------------------------------- |
-| `-d`, `--debug`     | Enable debug mode.                    |
-| `-D`, `--no-debug`  | Disable debug mode (default).         |
-| `-u`, `--update`    | Enable update checking.               |
-| `-U`, `--no-update` | Disable update checking (default).    |
-| `-h`, `--help`      | Display help information and exit.    |
-| `-v`, `--version`   | Display version information and exit. |
+| Flag                | Description                                           |
+| ------------------- | ----------------------------------------------------- |
+| `-d`, `--debug`     | Enable debug mode.                                    |
+| `-D`, `--no-debug`  | Disable debug mode (default).                         |
+| `-u`, `--update`    | Enable update checking.                               |
+| `-U`, `--no-update` | Disable update checking (default).                    |
+| `-f`, `--filter`    | Filter by installer name (can be used multiple times) |
+| `-h`, `--help`      | Display help information and exit.                    |
+| `-v`, `--version`   | Display version information and exit.                 |
 
 If a configuration file is not explicitly provided, `sofmani` attempts to locate a `sofmani.yaml` or
 `sofmani.json` in the following directories, ordered by priority:

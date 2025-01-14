@@ -68,7 +68,7 @@ func TestParseConfig(t *testing.T) {
 
 	// Test parsing the config file
 	overrides := AppCliConfig{ConfigFile: file.Name()}
-	config, err := ParseConfig("1.0.0", &overrides)
+	config, err := ParseConfig(&overrides)
 	assert.NoError(t, err)
 	assert.True(t, config.Debug)
 	assert.False(t, config.CheckUpdates)

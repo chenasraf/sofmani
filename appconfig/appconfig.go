@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/chenasraf/sofmani/logger"
 	"github.com/eschao/config"
 )
 
@@ -18,12 +19,14 @@ type AppConfig struct {
 	Install      []Installer        `json:"install"        yaml:"install"`
 	Defaults     *AppConfigDefaults `json:"defaults"       yaml:"defaults"`
 	Env          *map[string]string `json:"env"            yaml:"env"`
+	Filter       []string
 }
 
 type AppCliConfig struct {
 	ConfigFile   string
 	Debug        *bool
 	CheckUpdates *bool
+	Filter       []string
 }
 
 type AppConfigDefaults struct {
@@ -157,6 +160,7 @@ func ParseConfig(overrides *AppCliConfig) (*AppConfig, error) {
 		if overrides.CheckUpdates != nil {
 			appConfig.CheckUpdates = *overrides.CheckUpdates
 		}
+		appConfig.Filter = overrides.Filter
 		return appConfig, nil
 	}
 	return nil, fmt.Errorf("Unsupported config file extension %s (filename: %s)", ext, file)
@@ -204,9 +208,18 @@ func SetVersion(v string) {
 	AppVersion = v
 }
 
+func boolPtr(b bool) *bool {
+	return &b
+}
+
 func ParseCliConfig() *AppCliConfig {
 	args := os.Args[1:]
-	config := &AppCliConfig{}
+	config := &AppCliConfig{
+		ConfigFile:   "",
+		Debug:        boolPtr(false),
+		CheckUpdates: boolPtr(false),
+		Filter:       []string{},
+	}
 	file := FindConfigFile()
 	tVal := true
 	fVal := false
@@ -220,20 +233,16 @@ func ParseCliConfig() *AppCliConfig {
 			config.CheckUpdates = &tVal
 		case "-U", "--no-update":
 			config.CheckUpdates = &fVal
+		case "-f", "--filter":
+			if len(args) > 1 {
+				config.Filter = append(config.Filter, args[1])
+				args = args[1:]
+			}
 		case "-h", "--help":
-			fmt.Println("Usage: sofmani [options] [config_file]")
-			fmt.Println("Options:")
-			fmt.Println("  -d, --debug        Enable debug mode")
-			fmt.Println("  -D, --no-debug     Disable debug mode")
-			fmt.Println("  -u, --update       Enable update checks")
-			fmt.Println("  -U, --no-update    Disable update checks")
-			fmt.Println("  -h, --help         Show this help message")
-			fmt.Println("  -v, --version      Show version")
-			fmt.Println("")
-			fmt.Println("For online documentation, see https://github.com/chenasraf/sofmani/tree/master/docs")
+			printHelp()
 			os.Exit(0)
 		case "-v", "--version":
-			fmt.Println(AppVersion)
+			printVersion()
 			os.Exit(0)
 		default:
 			if strings.HasPrefix(strings.TrimSpace(args[0]), "-test.") {
@@ -248,11 +257,29 @@ func ParseCliConfig() *AppCliConfig {
 		args = args[1:]
 	}
 	if file == "" {
-		fmt.Println("No config file found")
+		logger.Error("No config file found")
 		os.Exit(1)
 	}
 	config.ConfigFile = file
 	return config
+}
+
+func printHelp() {
+	fmt.Println("Usage: sofmani [options] [config_file]")
+	fmt.Println("Options:")
+	fmt.Println("  -d, --debug        Enable debug mode")
+	fmt.Println("  -D, --no-debug     Disable debug mode")
+	fmt.Println("  -u, --update       Enable update checks")
+	fmt.Println("  -U, --no-update    Disable update checks")
+	fmt.Println("  -h, --help         Show this help message")
+	fmt.Println("  -f, --filter       Filter by installer name (can be used multiple times)")
+	fmt.Println("  -v, --version      Show version")
+	fmt.Println("")
+	fmt.Println("For online documentation, see https://github.com/chenasraf/sofmani/tree/master/docs")
+}
+
+func printVersion() {
+	fmt.Println(AppVersion)
 }
 
 func NewAppConfig() AppConfig {

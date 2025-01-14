@@ -57,15 +57,23 @@ repository.
 
 You can call `sofmani` with the following flags to alter the behavior for the current run:
 
-| Flag                | Description                           |
-| ------------------- | ------------------------------------- |
-| `-d`, `--debug`     | Enable debug mode.                    |
-| `-D`, `--no-debug`  | Disable debug mode (default).         |
-| `-u`, `--update`    | Enable update checking.               |
-| `-U`, `--no-update` | Disable update checking (default).    |
-| `-h`, `--help`      | Display help information and exit.    |
-| `-v`, `--version`   | Display version information and exit. |
+| Flag                | Description                                             |
+| ------------------- | ------------------------------------------------------- |
+| `-d`, `--debug`     | Enable debug mode.                                      |
+| `-D`, `--no-debug`  | Disable debug mode (default).                           |
+| `-u`, `--update`    | Enable update checking.                                 |
+| `-U`, `--no-update` | Disable update checking (default).                      |
+| `-f`, `--filter`    | Filter by installer name (can be used multiple times)\* |
+| `-h`, `--help`      | Display help information and exit.                      |
+| `-v`, `--version`   | Display version information and exit.                   |
 
 Each of these flags overrides the loaded config file, so while your default config can choose not to
 check for updates by default, you or another user can add the `--update` flag to override this
 behavior for a single run of the CLI.
+
+\* The filter argument accepts multiple values.
+
+- To only run installers that contain "sofmani" in their name, use `-f sofmani`.
+- To run all installers except those that contain "sofmani", use `-f "!sofmani".
+- To only installers that contain "sofmani", but exclude "sofmani-config", use
+  `-f sofmani -f "!sofmani-config"`.

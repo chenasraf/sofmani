@@ -106,6 +106,10 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 		logger.Debug("%s should not run on %s, skipping", name, curOS)
 		return nil
 	}
+	if !FilterIsMatch(config.Filter, name) {
+		logger.Debug("%s is filtered, skipping", name)
+		return nil
+	}
 	logger.Debug("Checking if %s (%s) is installed", name, info.Type)
 	err, installed := installer.CheckIsInstalled()
 	if err != nil {

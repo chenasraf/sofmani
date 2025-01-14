@@ -21,7 +21,7 @@ func main() {
 		fmt.Println(fmt.Errorf("Error loading config: %v", err))
 		return
 	}
-	logger.InitLogger(cfg)
+	logger.InitLogger(cfg.Debug)
 
 	if cfg.Env != nil {
 		for k, v := range *cfg.Env {

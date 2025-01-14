@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/fatih/color"
 )
@@ -40,7 +39,7 @@ func GetLogDir() string {
 	return logDir
 }
 
-func InitLogger(config *appconfig.AppConfig) *Logger {
+func InitLogger(debug bool) *Logger {
 	logDir := GetLogDir()
 	filePath := filepath.Join(logDir, "sofmani.log")
 	if _, err := os.Stat(logDir); os.IsNotExist(err) {
@@ -65,7 +64,7 @@ func InitLogger(config *appconfig.AppConfig) *Logger {
 		fileLogger: fileLogger,
 		consoleOut: consoleOut,
 		logFile:    logFile,
-		debug:      config.Debug,
+		debug:      debug,
 	}
 
 	return logger
