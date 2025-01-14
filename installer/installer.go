@@ -88,7 +88,7 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 	curOS := platform.GetPlatform()
 	logger.Debug("Checking if %s (%s) should run on %s", name, info.Type, curOS)
 	env := config.Environ()
-	if !GetShouldRunOnOS(installer, curOS) {
+	if !installer.GetInfo().Platforms.GetShouldRunOnOS(curOS) {
 		logger.Debug("%s should not run on %s, skipping", name, curOS)
 		return nil
 	}
@@ -154,21 +154,4 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 		return err
 	}
 	return nil
-}
-
-func GetShouldRunOnOS(installer IInstaller, curOS platform.Platform) bool {
-	platforms := installer.GetInfo().Platforms
-	if platforms == nil {
-		return true
-	}
-
-	if platforms.Only != nil {
-		logger.Debug("Checking if %s is in %s", curOS, platforms.Only)
-		return appconfig.ContainsPlatform(platforms.Only, curOS)
-	}
-	if platforms.Except != nil {
-		logger.Debug("Checking if %s is not in %s", curOS, platforms.Except)
-		return !appconfig.ContainsPlatform(platforms.Except, curOS)
-	}
-	return true
 }

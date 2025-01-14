@@ -60,11 +60,6 @@ func TestInstallerWithDefaults(t *testing.T) {
 	assert.Equal(t, "value", (*result.Opts)["key"])
 }
 
-func TestGetCurrentPlatform(t *testing.T) {
-	pl := platform.GetPlatform()
-	assert.Contains(t, []platform.Platform{platform.PlatformMacos, platform.PlatformLinux, platform.PlatformWindows}, pl)
-}
-
 func TestRunInstaller(t *testing.T) {
 	config := &appconfig.AppConfig{}
 	mockInstaller := &MockInstaller{
@@ -83,8 +78,8 @@ func TestGetShouldRunOnOS(t *testing.T) {
 			},
 		},
 	}
-	assert.True(t, GetShouldRunOnOS(installer, platform.PlatformMacos))
-	assert.False(t, GetShouldRunOnOS(installer, platform.PlatformLinux))
+	assert.True(t, installer.GetInfo().Platforms.GetShouldRunOnOS(platform.PlatformMacos))
+	assert.False(t, installer.GetInfo().Platforms.GetShouldRunOnOS(platform.PlatformLinux))
 }
 
 func strPtr(s string) *string {

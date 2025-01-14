@@ -48,12 +48,6 @@ func TestInstallerEnviron(t *testing.T) {
 	assert.ElementsMatch(t, expected, installer.Environ())
 }
 
-func TestContainsPlatform(t *testing.T) {
-	platforms := []platform.Platform{platform.PlatformMacos, platform.PlatformLinux}
-	assert.True(t, ContainsPlatform(&platforms, platform.PlatformMacos))
-	assert.False(t, ContainsPlatform(&platforms, platform.PlatformWindows))
-}
-
 func TestParseConfig(t *testing.T) {
 	// Create a temporary config file
 	file, err := os.CreateTemp("", "config.*.json")

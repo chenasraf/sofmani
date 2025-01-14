@@ -78,3 +78,26 @@ func (o *PlatformMap[T]) ResolveWithFallback(fallback PlatformMap[T]) T {
 	}
 	return *val
 }
+
+func ContainsPlatform(platforms *[]Platform, platform Platform) bool {
+	for _, p := range *platforms {
+		if p == platform {
+			return true
+		}
+	}
+	return false
+}
+
+func (p *Platforms) GetShouldRunOnOS(curOS Platform) bool {
+	if p == nil {
+		return true
+	}
+
+	if p.Only != nil {
+		return ContainsPlatform(p.Only, curOS)
+	}
+	if p.Except != nil {
+		return !ContainsPlatform(p.Except, curOS)
+	}
+	return true
+}

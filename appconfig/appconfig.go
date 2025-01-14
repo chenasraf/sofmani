@@ -87,15 +87,6 @@ func (i *Installer) Environ() []string {
 	return out
 }
 
-func ContainsPlatform(platforms *[]platform.Platform, platform platform.Platform) bool {
-	for _, p := range *platforms {
-		if p == platform {
-			return true
-		}
-	}
-	return false
-}
-
 func ParseConfig(overrides *AppCliConfig) (*AppConfig, error) {
 	file := overrides.ConfigFile
 	ext := filepath.Ext(file)
