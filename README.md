@@ -121,14 +121,14 @@ The following flags are supported to customize behavior:
 | `-h`, `--help`      | Display help information and exit.                    |
 | `-v`, `--version`   | Display version information and exit.                 |
 
-If a configuration file is not explicitly provided, `sofmani` attempts to locate a `sofmani.yaml` or
-`sofmani.json` in the following directories, ordered by priority:
+If a configuration file is not explicitly provided, `sofmani` attempts to locate a `sofmani.yaml`,
+`sofmani.yml` or `sofmani.json` in the following directories, in this order (first match is used):
 
 1. Current directory
 1. `$HOME/.config` directory
 1. Home directory
 
-If no file is found, sofmani will fail to start.
+If no file is found or provided, sofmani will fail to start.
 
 ---
 
