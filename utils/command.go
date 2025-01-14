@@ -101,6 +101,7 @@ func RunCmdAsFile(env []string, contents string, envShell *appconfig.PlatformMap
 		return err
 	}
 	err = os.WriteFile(tmpfile, []byte(commandStr), 0755)
+	defer os.RemoveAll(tmpdir)
 	if err != nil {
 		return err
 	}
