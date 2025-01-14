@@ -74,6 +74,6 @@ behavior for a single run of the CLI.
 \* The filter argument accepts multiple values.
 
 - To only run installers that contain "sofmani" in their name, use `-f sofmani`.
-- To run all installers except those that contain "sofmani", use `-f "!sofmani".
+- To run all installers except those that contain "sofmani", use `-f "!sofmani"`.
 - To only installers that contain "sofmani", but exclude "sofmani-config", use
   `-f sofmani -f "!sofmani-config"`.
