@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.3](https://github.com/chenasraf/sofmani/compare/v1.4.2...v1.4.3) (2025-01-14)
+
+
+### Bug Fixes
+
+* remove excess log ([a81bcc6](https://github.com/chenasraf/sofmani/commit/a81bcc678c6f3ea7f689e367ab048d9938a5e2bc))
+
 ## [1.4.2](https://github.com/chenasraf/sofmani/compare/v1.4.1...v1.4.2) (2025-01-13)
 
 
