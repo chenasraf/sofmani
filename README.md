@@ -105,6 +105,8 @@ Run `sofmani` with an optional configuration file or flags. Example:
 sofmani my-config.yaml
 ```
 
+See [the documentation](/docs) for more information and examples.
+
 ### Command-Line Flags
 
 The following flags are supported to customize behavior:
@@ -118,10 +120,7 @@ The following flags are supported to customize behavior:
 | `-h`, `--help`      | Display help information and exit.    |
 | `-v`, `--version`   | Display version information and exit. |
 
-If a configuration file is not explicitly provided, `sofmani` attempts to locate one automatically
-in the current directory.
-
-If a configuration file argument is not present, sofmani will try to find a `sofmani.yaml` or
+If a configuration file is not explicitly provided, `sofmani` attempts to locate a `sofmani.yaml` or
 `sofmani.json` in the following directories, ordered by priority:
 
 1. Current directory
