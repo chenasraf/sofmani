@@ -77,3 +77,23 @@ behavior for a single run of the CLI.
 - To run all installers except those that contain "sofmani", use `-f "!sofmani"`.
 - To only installers that contain "sofmani", but exclude "sofmani-config", use
   `-f sofmani -f "!sofmani-config"`.
+
+#### Examples
+
+Search for the config in one of the default directories, and enable update checking:
+
+```sh
+sofmani -u
+```
+
+Load a specific config file, and enable debug mode:
+
+```sh
+sofmani -d sofmani.yml
+```
+
+Load a config file, and only run installers matching `brew` in their name:
+
+```sh
+sofmani -f brew sofmani.yml
+```

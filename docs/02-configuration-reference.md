@@ -38,7 +38,7 @@ Here is a breakdown of all configuration options:
   - OS environment variables are passed and may be overridden for this config and all of its
     installers here.
 
-## Example config base
+## Example Config
 
 ```yaml
 debug: false
