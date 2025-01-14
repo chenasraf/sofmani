@@ -142,7 +142,7 @@ func ContainsPlatform(platforms *[]Platform, platform Platform) bool {
 	return false
 }
 
-func ParseConfig(version string, overrides *AppCliConfig) (*AppConfig, error) {
+func ParseConfig(overrides *AppCliConfig) (*AppConfig, error) {
 	file := overrides.ConfigFile
 	ext := filepath.Ext(file)
 	switch ext {
@@ -198,7 +198,13 @@ func tryConfigDir(dir string) string {
 	return ""
 }
 
-func ParseCliConfig(version string) *AppCliConfig {
+var AppVersion string
+
+func SetVersion(v string) {
+	AppVersion = v
+}
+
+func ParseCliConfig() *AppCliConfig {
 	args := os.Args[1:]
 	config := &AppCliConfig{}
 	file := FindConfigFile()
@@ -227,7 +233,7 @@ func ParseCliConfig(version string) *AppCliConfig {
 			fmt.Println("For online documentation, see https://github.com/chenasraf/sofmani/tree/master/docs")
 			os.Exit(0)
 		case "-v", "--version":
-			fmt.Println(version)
+			fmt.Println(AppVersion)
 			os.Exit(0)
 		default:
 			if strings.HasPrefix(strings.TrimSpace(args[0]), "-test.") {

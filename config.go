@@ -4,9 +4,9 @@ import (
 	"github.com/chenasraf/sofmani/appconfig"
 )
 
-func LoadConfig(version string) (*appconfig.AppConfig, error) {
-	overrides := appconfig.ParseCliConfig(version)
-	cfg, err := appconfig.ParseConfig(version, overrides)
+func LoadConfig() (*appconfig.AppConfig, error) {
+	overrides := appconfig.ParseCliConfig()
+	cfg, err := appconfig.ParseConfig(overrides)
 	if err != nil {
 		return nil, err
 	}

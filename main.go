@@ -6,15 +6,17 @@ import (
 	"os"
 	"strings"
 
+	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/installer"
 	"github.com/chenasraf/sofmani/logger"
 )
 
 //go:embed version.txt
-var version []byte
+var appVersion []byte
 
 func main() {
-	cfg, err := LoadConfig(strings.TrimSpace(string(version)))
+	appconfig.SetVersion(strings.TrimSpace(string(appVersion)))
+	cfg, err := LoadConfig()
 	if err != nil {
 		fmt.Println(fmt.Errorf("Error loading config: %v", err))
 		return
