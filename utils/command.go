@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"slices"
 	"strings"
 
 	"github.com/chenasraf/sofmani/appconfig"
@@ -19,7 +18,7 @@ const UNIX_DEFAULT_SHELL string = "bash"
 func RunCmdPassThrough(env []string, bin string, args ...string) error {
 	logger.Debug("Running command: %s %v", bin, args)
 	cmd := exec.Command(bin, args...)
-	cmd.Env = prepareEnv(slices.Concat(os.Environ(), cmd.Env, env))
+	cmd.Env = prepareEnv(os.Environ(), cmd.Env, env)
 	cmd.Stdin = os.Stdin
 	stdout, _ := cmd.StdoutPipe()
 	stderr, _ := cmd.StderrPipe()
@@ -46,7 +45,7 @@ func RunCmdPassThroughChained(env []string, commands [][]string) error {
 func RunCmdGetSuccess(env []string, bin string, args ...string) (error, bool) {
 	logger.Debug("Running command: %s %v", bin, args)
 	cmd := exec.Command(bin, args...)
-	cmd.Env = prepareEnv(slices.Concat(os.Environ(), cmd.Env, env))
+	cmd.Env = prepareEnv(os.Environ(), cmd.Env, env)
 	err := cmd.Run()
 	if err != nil {
 		return nil, false
@@ -57,7 +56,7 @@ func RunCmdGetSuccess(env []string, bin string, args ...string) (error, bool) {
 func RunCmdGetOutput(env []string, bin string, args ...string) ([]byte, error) {
 	logger.Debug("Running command: %s %v", bin, args)
 	cmd := exec.Command(bin, args...)
-	cmd.Env = prepareEnv(slices.Concat(os.Environ(), cmd.Env, env))
+	cmd.Env = prepareEnv(os.Environ(), cmd.Env, env)
 	out, err := cmd.Output()
 	return out, err
 }
@@ -148,14 +147,16 @@ func GetOSShellArgs(cmd string) []string {
 	return []string{}
 }
 
-func prepareEnv(envs []string) []string {
+func prepareEnv(envs ...[]string) []string {
 	out := []string{}
-	for _, env := range envs {
-		vals := strings.Split(env, "=")
-		if len(vals) != 2 {
-			continue
+	for _, e := range envs {
+		for _, env := range e {
+			vals := strings.Split(env, "=")
+			if len(vals) != 2 {
+				continue
+			}
+			out = append(out, fmt.Sprintf("%s=%s", vals[0], GetRealPath(e, vals[1])))
 		}
-		out = append(out, fmt.Sprintf("%s=%s", vals[0], GetRealPath(envs, vals[1])))
 	}
 	return out
 }
