@@ -1,10 +1,16 @@
 package platform
 
-import "fmt"
+import (
+	"fmt"
+	"runtime"
+)
 
-var osValue string
+var osValue string = runtime.GOOS
 
 func getOS() string {
+	if osValue == "" {
+		osValue = runtime.GOOS
+	}
 	return osValue
 }
 

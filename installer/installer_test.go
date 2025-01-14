@@ -1,7 +1,6 @@
 package installer
 
 import (
-	"runtime"
 	"testing"
 
 	"github.com/chenasraf/sofmani/appconfig"
@@ -42,7 +41,6 @@ func (m *MockInstaller) Update() error {
 
 func TestGetInstaller(t *testing.T) {
 	config := &appconfig.AppConfig{}
-	platform.SetOS(runtime.GOOS)
 	logger.InitLogger(config.Debug)
 	installer := &appconfig.Installer{Type: appconfig.InstallerTypeBrew}
 	err, inst := GetInstaller(config, installer)
@@ -63,7 +61,6 @@ func TestInstallerWithDefaults(t *testing.T) {
 }
 
 func TestGetCurrentPlatform(t *testing.T) {
-	platform.SetOS(runtime.GOOS)
 	pl := platform.GetPlatform()
 	assert.Contains(t, []platform.Platform{platform.PlatformMacos, platform.PlatformLinux, platform.PlatformWindows}, pl)
 }
