@@ -4,17 +4,20 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/installer"
 	"github.com/chenasraf/sofmani/logger"
+	"github.com/chenasraf/sofmani/platform"
 )
 
 //go:embed version.txt
 var appVersion []byte
 
 func main() {
+	platform.SetOS(runtime.GOOS)
 	appconfig.SetVersion(strings.TrimSpace(string(appVersion)))
 	cfg, err := LoadConfig()
 	if err != nil {

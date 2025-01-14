@@ -3,10 +3,10 @@ package appconfig
 import (
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
+	"github.com/chenasraf/sofmani/platform"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -23,10 +23,8 @@ func TestPlatformMapResolve(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if runtime.GOOS != tt.platform {
-				t.Skipf("Skipping test on %s", runtime.GOOS)
-			}
-			pm := PlatformMap[string]{
+			platform.SetOS(tt.platform)
+			pm := platform.PlatformMap[string]{
 				MacOS:   strPtr("macos"),
 				Linux:   strPtr("linux"),
 				Windows: strPtr("windows"),
@@ -51,9 +49,9 @@ func TestInstallerEnviron(t *testing.T) {
 }
 
 func TestContainsPlatform(t *testing.T) {
-	platforms := []Platform{PlatformMacos, PlatformLinux}
-	assert.True(t, ContainsPlatform(&platforms, PlatformMacos))
-	assert.False(t, ContainsPlatform(&platforms, PlatformWindows))
+	platforms := []platform.Platform{platform.PlatformMacos, platform.PlatformLinux}
+	assert.True(t, ContainsPlatform(&platforms, platform.PlatformMacos))
+	assert.False(t, ContainsPlatform(&platforms, platform.PlatformWindows))
 }
 
 func TestParseConfig(t *testing.T) {

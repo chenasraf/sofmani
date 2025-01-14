@@ -5,8 +5,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"runtime"
 
+	"github.com/chenasraf/sofmani/platform"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/fatih/color"
 )
@@ -22,17 +22,17 @@ var logger *Logger
 
 func GetLogDir() string {
 	var logDir string
-	switch runtime.GOOS {
-	case "linux":
+	switch platform.GetPlatform() {
+	case platform.PlatformLinux:
 		logDir = filepath.Join("var", "log", "sofmani")
-	case "darwin":
+	case platform.PlatformMacos:
 		home, err := os.UserHomeDir()
 		if err != nil {
 			fmt.Printf("Could not get user home directory: %v\n", err)
 			panic(err)
 		}
 		logDir = filepath.Join(home, "Library", "Logs", "sofmani")
-	case "windows":
+	case platform.PlatformWindows:
 		appData := os.Getenv("APPDATA")
 		logDir = filepath.Join(appData, "sofmani", "Logs")
 	}

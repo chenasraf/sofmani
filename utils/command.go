@@ -6,11 +6,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 
-	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
+	"github.com/chenasraf/sofmani/platform"
 )
 
 const UNIX_DEFAULT_SHELL string = "bash"
@@ -63,23 +62,23 @@ func RunCmdGetOutput(env []string, bin string, args ...string) ([]byte, error) {
 
 func getShellScript(dir string) string {
 	var filename string
-	switch runtime.GOOS {
-	case "windows":
+	switch platform.GetPlatform() {
+	case platform.PlatformWindows:
 		filename = "install.bat"
-	case "linux", "darwin":
+	case platform.PlatformLinux, platform.PlatformMacos:
 		filename = "install"
 	}
 	tmpfile := filepath.Join(dir, filename)
 	return tmpfile
 }
 
-func getScriptContents(script string, envShell *appconfig.PlatformMap[string]) (string, error) {
-	switch runtime.GOOS {
-	case "windows":
+func getScriptContents(script string, envShell *platform.PlatformMap[string]) (string, error) {
+	switch platform.GetPlatform() {
+	case platform.PlatformWindows:
 		preScript := "@echo off"
 		postScript := "exit /b %ERRORLEVEL%"
 		return fmt.Sprintf("%s\n%s\n\n%s\n", preScript, script, postScript), nil
-	case "linux", "darwin":
+	case platform.PlatformLinux, platform.PlatformMacos:
 		shell := GetOSShell(envShell)
 		preScript := fmt.Sprintf("#!/usr/bin/env %s", shell)
 		home, err := os.UserHomeDir()
@@ -90,10 +89,10 @@ func getScriptContents(script string, envShell *appconfig.PlatformMap[string]) (
 		postScript := "exit $?"
 		return fmt.Sprintf("%s\n%s\n\n%s\n", preScript, script, postScript), nil
 	}
-	return "", fmt.Errorf("unsupported OS: %s", runtime.GOOS)
+	return "", fmt.Errorf("unsupported OS: %s", platform.GetPlatform())
 }
 
-func RunCmdAsFile(env []string, contents string, envShell *appconfig.PlatformMap[string]) error {
+func RunCmdAsFile(env []string, contents string, envShell *platform.PlatformMap[string]) error {
 	tmpdir := os.TempDir()
 	tmpfile := getShellScript(tmpdir)
 	commandStr, err := getScriptContents(contents, envShell)
@@ -112,26 +111,26 @@ func RunCmdAsFile(env []string, contents string, envShell *appconfig.PlatformMap
 }
 
 func GetShellWhich() string {
-	switch runtime.GOOS {
-	case "windows":
+	switch platform.GetPlatform() {
+	case platform.PlatformWindows:
 		return "where"
-	case "linux", "darwin":
+	case platform.PlatformLinux, platform.PlatformMacos:
 		return "which"
 	}
 	return ""
 }
 
-func GetOSShell(envShell *appconfig.PlatformMap[string]) string {
-	switch runtime.GOOS {
-	case "windows":
+func GetOSShell(envShell *platform.PlatformMap[string]) string {
+	switch platform.GetPlatform() {
+	case platform.PlatformWindows:
 		return "cmd"
-	case "linux", "darwin":
+	case platform.PlatformLinux, platform.PlatformMacos:
 		def := os.Getenv("SHELL")
 		if def == "" {
 			def = UNIX_DEFAULT_SHELL
 		}
 		if envShell != nil {
-			return envShell.ResolveWithFallback(appconfig.PlatformMap[string]{Linux: &def, MacOS: &def})
+			return envShell.ResolveWithFallback(platform.PlatformMap[string]{Linux: &def, MacOS: &def})
 		}
 		return def
 	}
@@ -139,10 +138,10 @@ func GetOSShell(envShell *appconfig.PlatformMap[string]) string {
 }
 
 func GetOSShellArgs(cmd string) []string {
-	switch runtime.GOOS {
-	case "windows":
+	switch platform.GetPlatform() {
+	case platform.PlatformWindows:
 		return []string{"/C", cmd + " & exit %ERRORLEVEL%"}
-	case "linux", "darwin":
+	case platform.PlatformLinux, platform.PlatformMacos:
 		return []string{"-c", cmd + "; exit $?"}
 	}
 	return []string{}

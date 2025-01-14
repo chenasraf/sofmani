@@ -1,10 +1,12 @@
 package installer
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
+	"github.com/chenasraf/sofmani/platform"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -40,6 +42,7 @@ func (m *MockInstaller) Update() error {
 
 func TestGetInstaller(t *testing.T) {
 	config := &appconfig.AppConfig{}
+	platform.SetOS(runtime.GOOS)
 	logger.InitLogger(config.Debug)
 	installer := &appconfig.Installer{Type: appconfig.InstallerTypeBrew}
 	err, inst := GetInstaller(config, installer)
@@ -60,8 +63,9 @@ func TestInstallerWithDefaults(t *testing.T) {
 }
 
 func TestGetCurrentPlatform(t *testing.T) {
-	platform := GetCurrentPlatform()
-	assert.Contains(t, []appconfig.Platform{appconfig.PlatformMacos, appconfig.PlatformLinux, appconfig.PlatformWindows}, platform)
+	platform.SetOS(runtime.GOOS)
+	pl := platform.GetPlatform()
+	assert.Contains(t, []platform.Platform{platform.PlatformMacos, platform.PlatformLinux, platform.PlatformWindows}, pl)
 }
 
 func TestRunInstaller(t *testing.T) {
@@ -77,13 +81,13 @@ func TestRunInstaller(t *testing.T) {
 func TestGetShouldRunOnOS(t *testing.T) {
 	installer := &MockInstaller{
 		info: &appconfig.Installer{
-			Platforms: &appconfig.Platforms{
-				Only: &[]appconfig.Platform{appconfig.PlatformMacos},
+			Platforms: &platform.Platforms{
+				Only: &[]platform.Platform{platform.PlatformMacos},
 			},
 		},
 	}
-	assert.True(t, GetShouldRunOnOS(installer, appconfig.PlatformMacos))
-	assert.False(t, GetShouldRunOnOS(installer, appconfig.PlatformLinux))
+	assert.True(t, GetShouldRunOnOS(installer, platform.PlatformMacos))
+	assert.False(t, GetShouldRunOnOS(installer, platform.PlatformLinux))
 }
 
 func strPtr(s string) *string {

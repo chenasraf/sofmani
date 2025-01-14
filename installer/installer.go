@@ -1,11 +1,9 @@
 package installer
 
 import (
-	"fmt"
-	"runtime"
-
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
+	"github.com/chenasraf/sofmani/platform"
 	"github.com/chenasraf/sofmani/utils"
 )
 
@@ -84,23 +82,11 @@ func InstallerWithDefaults(
 	return installer
 }
 
-func GetCurrentPlatform() appconfig.Platform {
-	switch runtime.GOOS {
-	case "darwin":
-		return appconfig.PlatformMacos
-	case "linux":
-		return appconfig.PlatformLinux
-	case "windows":
-		return appconfig.PlatformWindows
-	}
-	panic(fmt.Sprintf("Unsupported platform %s", runtime.GOOS))
-}
-
 func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 	info := installer.GetInfo()
 	name := *info.Name
-	logger.Debug("Checking if %s (%s) should run on %s", name, info.Type, GetCurrentPlatform())
-	curOS := GetCurrentPlatform()
+	curOS := platform.GetPlatform()
+	logger.Debug("Checking if %s (%s) should run on %s", name, info.Type, curOS)
 	env := config.Environ()
 	if !GetShouldRunOnOS(installer, curOS) {
 		logger.Debug("%s should not run on %s, skipping", name, curOS)
@@ -170,7 +156,7 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 	return nil
 }
 
-func GetShouldRunOnOS(installer IInstaller, curOS appconfig.Platform) bool {
+func GetShouldRunOnOS(installer IInstaller, curOS platform.Platform) bool {
 	platforms := installer.GetInfo().Platforms
 	if platforms == nil {
 		return true
