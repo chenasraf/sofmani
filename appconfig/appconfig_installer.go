@@ -1,9 +1,8 @@
 package appconfig
 
 import (
-	"fmt"
-
 	"github.com/chenasraf/sofmani/platform"
+	"github.com/chenasraf/sofmani/utils"
 )
 
 type InstallerData struct {
@@ -40,18 +39,5 @@ const (
 )
 
 func (i *InstallerData) Environ() []string {
-	if i.Env == nil {
-		return []string{}
-	}
-	out := []string{}
-	for k, v := range *i.Env {
-		out = append(out, fmt.Sprintf("%s=%s", k, v))
-	}
-	if i.PlatformEnv != nil {
-		for k, v := range *i.PlatformEnv.Resolve() {
-			out = append(out, fmt.Sprintf("%s=%s", k, v))
-		}
-	}
-
-	return out
+	return utils.EnvMapAsSlice(utils.CombineEnvMaps(i.Env, i.PlatformEnv.Resolve()))
 }

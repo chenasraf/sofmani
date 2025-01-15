@@ -48,6 +48,18 @@ func TestInstallerEnviron(t *testing.T) {
 	assert.ElementsMatch(t, expected, installer.Environ())
 }
 
+func TestInstallerPlatformEnviron(t *testing.T) {
+	env := map[string]string{"KEY1": "value1", "KEY2": "value2"}
+	platformEnv := map[string]string{"KEY2": "value2-override", "KEY3": "value3"}
+	data := InstallerData{Env: &env, PlatformEnv: &platform.PlatformMap[map[string]string]{
+		MacOS:   &platformEnv,
+		Linux:   &platformEnv,
+		Windows: &platformEnv,
+	}}
+	expected := []string{"KEY1=value1", "KEY2=value2-override", "KEY3=value3"}
+	assert.ElementsMatch(t, expected, data.Environ())
+}
+
 func TestParseConfig(t *testing.T) {
 	// Create a temporary config file
 	file, err := os.CreateTemp("", "config.*.json")

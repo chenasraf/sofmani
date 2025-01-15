@@ -10,6 +10,7 @@ import (
 
 	"github.com/chenasraf/sofmani/logger"
 	"github.com/chenasraf/sofmani/platform"
+	"github.com/chenasraf/sofmani/utils"
 	"github.com/eschao/config"
 )
 
@@ -35,14 +36,7 @@ type AppConfigDefaults struct {
 }
 
 func (c *AppConfig) Environ() []string {
-	if c.Env == nil {
-		return []string{}
-	}
-	out := []string{}
-	for k, v := range *c.Env {
-		out = append(out, fmt.Sprintf("%s=%s", k, v))
-	}
-	return out
+	return utils.EnvMapAsSlice(utils.CombineEnvMaps(c.Env, c.PlatformEnv.Resolve()))
 }
 
 func ParseConfig(overrides *AppCliConfig) (*AppConfig, error) {
