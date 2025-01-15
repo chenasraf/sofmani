@@ -20,6 +20,7 @@ func TestFilterIsMatch(t *testing.T) {
 		{"Negation filter with match", []string{"example", "!test"}, "test", false},
 		{"Negation filter without match", []string{"example", "!test"}, "example", true},
 		{"Negation on included filter", []string{"example", "!example-test"}, "example-test", false},
+		{"Partial match", []string{"config"}, "example-config", true},
 	}
 
 	for _, tt := range tests {

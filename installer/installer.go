@@ -110,7 +110,7 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 				return err
 			}
 			if needsUpdate {
-				logger.Info("%s (%s) has an update", name, info.Type)
+				logger.Info("Updating %s (%s)", name, info.Type)
 				if info.PreUpdate != nil {
 					logger.Debug("Running pre-update command for %s (%s)", name, info.Type)
 					err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetInfo().EnvShell), utils.GetOSShellArgs(*info.PreUpdate)...)
@@ -118,7 +118,7 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 						return err
 					}
 				}
-				logger.Debug("Running update for %s (%s)", name, info.Type)
+				logger.Debug("Running update command for %s (%s)", name, info.Type)
 				installer.Update()
 				if info.PostUpdate != nil {
 					logger.Debug("Running post-update command for %s (%s)", name, info.Type)

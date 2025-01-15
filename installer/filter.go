@@ -13,13 +13,13 @@ func FilterIsMatch(filters []string, name string) bool {
 		if strings.HasPrefix(f, "!") {
 			continue
 		}
-		if strings.Contains(f, name) {
+		if strings.Contains(name, f) {
 			match = true
 			break
 		}
 	}
 	for _, f := range filters {
-		if strings.HasPrefix(f, "!") && strings.Contains(f[1:], name) {
+		if strings.HasPrefix(f, "!") && strings.Contains(name, f[1:]) {
 			return false
 		}
 	}
