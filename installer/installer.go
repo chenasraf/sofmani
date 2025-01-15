@@ -96,7 +96,7 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 		logger.Debug("%s is filtered, skipping", name)
 		return nil
 	}
-	logger.Debug("Checking if %s (%s) is installed", name, info.Type)
+	logger.Debug("Checking %s (%s)", name, info.Type)
 	err, installed := installer.CheckIsInstalled()
 	if err != nil {
 		return err
@@ -127,6 +127,8 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 						return err
 					}
 				}
+			} else {
+				logger.Info("%s (%s) is up-to-date", name, info.Type)
 			}
 			return nil
 		} else {
