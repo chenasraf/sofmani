@@ -47,8 +47,10 @@ func (i *InstallerData) Environ() []string {
 	for k, v := range *i.Env {
 		out = append(out, fmt.Sprintf("%s=%s", k, v))
 	}
-	for k, v := range *i.PlatformEnv.Resolve() {
-		out = append(out, fmt.Sprintf("%s=%s", k, v))
+	if i.PlatformEnv != nil {
+		for k, v := range *i.PlatformEnv.Resolve() {
+			out = append(out, fmt.Sprintf("%s=%s", k, v))
+		}
 	}
 
 	return out

@@ -120,9 +120,9 @@ func FillDefaults(data *appconfig.InstallerData) {
 		data.Opts = &opts
 	}
 	if data.PlatformEnv == nil {
-		mapLinux := make(map[string]string)
-		mapMacos := make(map[string]string)
-		mapWindows := make(map[string]string)
+		mapLinux := map[string]string{}
+		mapMacos := map[string]string{}
+		mapWindows := map[string]string{}
 		env := platform.PlatformMap[map[string]string]{
 			MacOS:   &mapMacos,
 			Linux:   &mapLinux,

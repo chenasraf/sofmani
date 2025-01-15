@@ -50,6 +50,9 @@ type PlatformMap[T any] struct {
 }
 
 func (p *PlatformMap[T]) Resolve() *T {
+	if p == nil {
+		return nil
+	}
 	switch getOS() {
 	case "darwin":
 		if p.MacOS != nil {
