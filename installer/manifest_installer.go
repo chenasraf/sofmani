@@ -12,7 +12,7 @@ import (
 
 type ManifestInstaller struct {
 	Config         *appconfig.AppConfig
-	Info           *appconfig.Installer
+	Info           *appconfig.InstallerData
 	ManifestConfig *appconfig.AppConfig
 }
 
@@ -29,7 +29,7 @@ func (i *ManifestInstaller) Install() error {
 	if err != nil {
 		return err
 	}
-	info := i.GetInfo()
+	info := i.GetData()
 	name := *info.Name
 	config := i.ManifestConfig
 	logger.Info("Installing manifest %s", name)
@@ -55,7 +55,7 @@ func (i *ManifestInstaller) Update() error {
 
 // CheckNeedsUpdate implements IInstaller.
 func (i *ManifestInstaller) CheckNeedsUpdate() (error, bool) {
-	info := i.GetInfo()
+	info := i.GetData()
 	if info.CheckHasUpdate != nil {
 		return utils.RunCmdGetSuccess(info.Environ(), utils.GetOSShell(info.EnvShell), utils.GetOSShellArgs(*info.CheckHasUpdate)...)
 	}
@@ -64,21 +64,21 @@ func (i *ManifestInstaller) CheckNeedsUpdate() (error, bool) {
 
 // CheckIsInstalled implements IInstaller.
 func (i *ManifestInstaller) CheckIsInstalled() (error, bool) {
-	info := i.GetInfo()
+	info := i.GetData()
 	if info.CheckInstalled != nil {
 		return utils.RunCmdGetSuccess(info.Environ(), utils.GetOSShell(info.EnvShell), utils.GetOSShellArgs(*info.CheckInstalled)...)
 	}
 	return nil, false
 }
 
-// GetInfo implements IInstaller.
-func (i *ManifestInstaller) GetInfo() *appconfig.Installer {
+// GetData implements IInstaller.
+func (i *ManifestInstaller) GetData() *appconfig.InstallerData {
 	return i.Info
 }
 
 func (i *ManifestInstaller) GetOpts() *ManifestOpts {
 	opts := &ManifestOpts{}
-	info := i.GetInfo()
+	info := i.GetData()
 	if info.Opts != nil {
 		if source, ok := (*info.Opts)["source"].(string); ok {
 			opts.Source = &source
@@ -97,7 +97,7 @@ func (i *ManifestInstaller) FetchManifest() error {
 	opts := i.GetOpts()
 	source := *opts.Source
 	isGit := utils.IsGitURL(source)
-	env := i.GetInfo().Environ()
+	env := i.GetData().Environ()
 	var path string
 	if opts.Path == nil {
 		path = ""
@@ -128,7 +128,7 @@ func (i *ManifestInstaller) FetchManifest() error {
 
 func (i *ManifestInstaller) getGitManifestConfig(source string) (string, error) {
 	opts := i.GetOpts()
-	info := i.GetInfo()
+	info := i.GetData()
 	tmpDir, err := os.MkdirTemp("", "sofmani")
 	defer os.RemoveAll(tmpDir)
 	if err != nil {
@@ -201,7 +201,7 @@ func (i *ManifestInstaller) inheritManifest(config *appconfig.AppConfig) *appcon
 	return config
 }
 
-func NewManifestInstaller(cfg *appconfig.AppConfig, installer *appconfig.Installer) *ManifestInstaller {
+func NewManifestInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *ManifestInstaller {
 	return &ManifestInstaller{
 		Config: cfg,
 		Info:   installer,

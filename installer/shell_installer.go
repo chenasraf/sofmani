@@ -7,7 +7,7 @@ import (
 
 type ShellInstaller struct {
 	Config *appconfig.AppConfig
-	Info   *appconfig.Installer
+	Info   *appconfig.InstallerData
 }
 
 type ShellOpts struct {
@@ -17,22 +17,22 @@ type ShellOpts struct {
 
 // Install implements IInstaller.
 func (i *ShellInstaller) Install() error {
-	return utils.RunCmdAsFile(i.Info.Environ(), *i.GetOpts().Command, i.GetInfo().EnvShell)
+	return utils.RunCmdAsFile(i.Info.Environ(), *i.GetOpts().Command, i.GetData().EnvShell)
 }
 
 // Update implements IInstaller.
 func (i *ShellInstaller) Update() error {
 	if i.GetOpts().UpdateCommand != nil {
-		return utils.RunCmdAsFile(i.Info.Environ(), *i.GetOpts().UpdateCommand, i.GetInfo().EnvShell)
+		return utils.RunCmdAsFile(i.Info.Environ(), *i.GetOpts().UpdateCommand, i.GetData().EnvShell)
 	}
 	return i.Install()
 }
 
 // CheckNeedsUpdate implements IInstaller.
 func (i *ShellInstaller) CheckNeedsUpdate() (error, bool) {
-	if i.GetInfo().CheckHasUpdate != nil {
-		shell := utils.GetOSShell(i.GetInfo().EnvShell)
-		args := utils.GetOSShellArgs(*i.GetInfo().CheckHasUpdate)
+	if i.GetData().CheckHasUpdate != nil {
+		shell := utils.GetOSShell(i.GetData().EnvShell)
+		args := utils.GetOSShellArgs(*i.GetData().CheckHasUpdate)
 		return utils.RunCmdGetSuccess(i.Info.Environ(), shell, args...)
 	}
 	return nil, false
@@ -40,16 +40,16 @@ func (i *ShellInstaller) CheckNeedsUpdate() (error, bool) {
 
 // CheckIsInstalled implements IInstaller.
 func (i *ShellInstaller) CheckIsInstalled() (error, bool) {
-	if i.GetInfo().CheckInstalled != nil {
-		shell := utils.GetOSShell(i.GetInfo().EnvShell)
-		args := utils.GetOSShellArgs(*i.GetInfo().CheckInstalled)
+	if i.GetData().CheckInstalled != nil {
+		shell := utils.GetOSShell(i.GetData().EnvShell)
+		args := utils.GetOSShellArgs(*i.GetData().CheckInstalled)
 		return utils.RunCmdGetSuccess(i.Info.Environ(), shell, args...)
 	}
 	return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetShellWhich(), i.GetBinName())
 }
 
-// GetInfo implements IInstaller.
-func (i *ShellInstaller) GetInfo() *appconfig.Installer {
+// GetData implements IInstaller.
+func (i *ShellInstaller) GetData() *appconfig.InstallerData {
 	return i.Info
 }
 
@@ -68,14 +68,14 @@ func (i *ShellInstaller) GetOpts() *ShellOpts {
 }
 
 func (i *ShellInstaller) GetBinName() string {
-	info := i.GetInfo()
+	info := i.GetData()
 	if info.BinName != nil && len(*info.BinName) > 0 {
 		return *info.BinName
 	}
 	return *info.Name
 }
 
-func NewShellInstaller(cfg *appconfig.AppConfig, installer *appconfig.Installer) *ShellInstaller {
+func NewShellInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *ShellInstaller {
 	return &ShellInstaller{
 		Config: cfg,
 		Info:   installer,

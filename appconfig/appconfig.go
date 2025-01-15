@@ -9,15 +9,17 @@ import (
 	"strings"
 
 	"github.com/chenasraf/sofmani/logger"
+	"github.com/chenasraf/sofmani/platform"
 	"github.com/eschao/config"
 )
 
 type AppConfig struct {
-	Debug        bool               `json:"debug"          yaml:"debug"`
-	CheckUpdates bool               `json:"check_updates"  yaml:"check_updates"`
-	Install      []Installer        `json:"install"        yaml:"install"`
-	Defaults     *AppConfigDefaults `json:"defaults"       yaml:"defaults"`
-	Env          *map[string]string `json:"env"            yaml:"env"`
+	Debug        bool                                     `json:"debug"          yaml:"debug"`
+	CheckUpdates bool                                     `json:"check_updates"  yaml:"check_updates"`
+	Install      []InstallerData                          `json:"install"        yaml:"install"`
+	Defaults     *AppConfigDefaults                       `json:"defaults"       yaml:"defaults"`
+	Env          *map[string]string                       `json:"env"            yaml:"env"`
+	PlatformEnv  *platform.PlatformMap[map[string]string] `json:"platform_env"   yaml:"platform_env"`
 	Filter       []string
 }
 
@@ -29,7 +31,7 @@ type AppCliConfig struct {
 }
 
 type AppConfigDefaults struct {
-	Type *map[InstallerType]Installer `json:"type" yaml:"type"`
+	Type *map[InstallerType]InstallerData `json:"type" yaml:"type"`
 }
 
 func (c *AppConfig) Environ() []string {
@@ -119,18 +121,16 @@ func ParseCliConfig() *AppCliConfig {
 		Filter:       []string{},
 	}
 	file := FindConfigFile()
-	tVal := true
-	fVal := false
 	for len(args) > 0 {
 		switch args[0] {
 		case "-d", "--debug":
-			config.Debug = &tVal
+			config.Debug = boolPtr(true)
 		case "-D", "--no-debug":
-			config.Debug = &fVal
+			config.Debug = boolPtr(false)
 		case "-u", "--update":
-			config.CheckUpdates = &tVal
+			config.CheckUpdates = boolPtr(true)
 		case "-U", "--no-update":
-			config.CheckUpdates = &fVal
+			config.CheckUpdates = boolPtr(false)
 		case "-f", "--filter":
 			if len(args) > 1 {
 				config.Filter = append(config.Filter, args[1])
@@ -182,6 +182,6 @@ func printVersion() {
 
 func NewAppConfig() AppConfig {
 	return AppConfig{
-		Install: []Installer{},
+		Install: []InstallerData{},
 	}
 }

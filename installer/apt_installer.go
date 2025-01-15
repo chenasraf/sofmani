@@ -7,7 +7,7 @@ import (
 
 type AptInstaller struct {
 	Config *appconfig.AppConfig
-	Info   *appconfig.Installer
+	Info   *appconfig.InstallerData
 }
 
 type AptOpts struct {
@@ -31,8 +31,8 @@ func (i *AptInstaller) Update() error {
 
 // CheckNeedsUpdate implements IInstaller.
 func (i *AptInstaller) CheckNeedsUpdate() (error, bool) {
-	if i.GetInfo().CheckHasUpdate != nil {
-		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetOSShell(i.GetInfo().EnvShell), utils.GetOSShellArgs(*i.GetInfo().CheckHasUpdate)...)
+	if i.GetData().CheckHasUpdate != nil {
+		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetOSShell(i.GetData().EnvShell), utils.GetOSShellArgs(*i.GetData().CheckHasUpdate)...)
 	}
 	err, success := utils.RunCmdGetSuccess(i.Info.Environ(), "apt", "--simulate", "upgrade", *i.Info.Name)
 	if err != nil {
@@ -46,8 +46,8 @@ func (i *AptInstaller) CheckIsInstalled() (error, bool) {
 	return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetShellWhich(), i.GetBinName())
 }
 
-// GetInfo implements IInstaller.
-func (i *AptInstaller) GetInfo() *appconfig.Installer {
+// GetData implements IInstaller.
+func (i *AptInstaller) GetData() *appconfig.InstallerData {
 	return i.Info
 }
 
@@ -61,14 +61,14 @@ func (i *AptInstaller) GetOpts() *AptOpts {
 }
 
 func (i *AptInstaller) GetBinName() string {
-	info := i.GetInfo()
+	info := i.GetData()
 	if info.BinName != nil && len(*info.BinName) > 0 {
 		return *info.BinName
 	}
 	return *info.Name
 }
 
-func NewAptInstaller(cfg *appconfig.AppConfig, installer *appconfig.Installer) *AptInstaller {
+func NewAptInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *AptInstaller {
 	i := &AptInstaller{
 		Config: cfg,
 		Info:   installer,

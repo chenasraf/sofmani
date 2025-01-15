@@ -8,87 +8,145 @@ import (
 )
 
 type IInstaller interface {
-	GetInfo() *appconfig.Installer
+	GetData() *appconfig.InstallerData
 	CheckIsInstalled() (error, bool)
 	CheckNeedsUpdate() (error, bool)
 	Install() error
 	Update() error
 }
 
-func GetInstaller(config *appconfig.AppConfig, installer *appconfig.Installer) (error, IInstaller) {
-	installer = InstallerWithDefaults(installer, installer.Type, config.Defaults)
-	switch installer.Type {
+func GetInstaller(config *appconfig.AppConfig, data *appconfig.InstallerData) (error, IInstaller) {
+	data = InstallerWithDefaults(data, data.Type, config.Defaults)
+	switch data.Type {
 	case appconfig.InstallerTypeGroup:
-		return nil, NewGroupInstaller(config, installer)
+		return nil, NewGroupInstaller(config, data)
 	case appconfig.InstallerTypeBrew:
-		return nil, NewBrewInstaller(config, installer)
+		return nil, NewBrewInstaller(config, data)
 	case appconfig.InstallerTypeShell:
-		return nil, NewShellInstaller(config, installer)
+		return nil, NewShellInstaller(config, data)
 	case appconfig.InstallerTypeRsync:
-		return nil, NewRsyncInstaller(config, installer)
+		return nil, NewRsyncInstaller(config, data)
 	case appconfig.InstallerTypeNpm, appconfig.InstallerTypePnpm, appconfig.InstallerTypeYarn:
-		return nil, NewNpmInstaller(config, installer)
+		return nil, NewNpmInstaller(config, data)
 	case appconfig.InstallerTypeApt:
-		return nil, NewAptInstaller(config, installer)
+		return nil, NewAptInstaller(config, data)
 	case appconfig.InstallerTypeGit:
-		return nil, NewGitInstaller(config, installer)
+		return nil, NewGitInstaller(config, data)
 	case appconfig.InstallerTypeManifest:
-		return nil, NewManifestInstaller(config, installer)
+		return nil, NewManifestInstaller(config, data)
 	}
 	return nil, nil
 }
 
 func InstallerWithDefaults(
-	installer *appconfig.Installer,
+	data *appconfig.InstallerData,
 	installerType appconfig.InstallerType,
 	defaults *appconfig.AppConfigDefaults,
-) *appconfig.Installer {
+) *appconfig.InstallerData {
+	// set base defaults
+	FillDefaults(data)
+
+	// per-type overrides from defaults
 	if defaults != nil && *defaults.Type != nil {
-		if val, ok := (*defaults.Type)[installerType]; ok {
+		if override, ok := (*defaults.Type)[installerType]; ok {
 			logger.Debug("Applying defaults for %s", installerType)
-			if val.Opts != nil {
-				o := *val.Opts
-				o2 := *installer.Opts
-				for k, v := range o {
-					o2[k] = v
+			if override.Opts != nil {
+				source := *override.Opts
+				target := *data.Opts
+				for k, v := range source {
+					target[k] = v
 				}
 			}
-			if val.EnvShell != nil {
-				installer.EnvShell = val.EnvShell
+			if override.Env != nil {
+				source := *override.Env
+				target := *data.Env
+				for k, v := range source {
+					target[k] = v
+				}
 			}
-			if val.Platforms != nil {
-				installer.Platforms = val.Platforms
+			if override.PlatformEnv != nil {
+				source := *override.PlatformEnv
+				targetBase := *data.PlatformEnv
+				target := *targetBase.MacOS
+				for k, v := range *source.MacOS {
+					target[k] = v
+				}
+				target = *targetBase.Linux
+				for k, v := range *source.Linux {
+					target[k] = v
+				}
+				target = *targetBase.Windows
+				for k, v := range *source.Windows {
+					target[k] = v
+				}
 			}
-			if val.PreUpdate != nil {
-				installer.PreUpdate = val.PreUpdate
+			if override.EnvShell != nil {
+				// TODO override key by key
+				data.EnvShell = override.EnvShell
 			}
-			if val.PostUpdate != nil {
-				installer.PostUpdate = val.PostUpdate
+			if override.Platforms != nil {
+				data.Platforms = override.Platforms
 			}
-			if val.PreInstall != nil {
-				installer.PreInstall = val.PreInstall
+			if override.PreUpdate != nil {
+				data.PreUpdate = override.PreUpdate
 			}
-			if val.PostInstall != nil {
-				installer.PostInstall = val.PostInstall
+			if override.PostUpdate != nil {
+				data.PostUpdate = override.PostUpdate
 			}
-			if val.CheckHasUpdate != nil {
-				installer.CheckHasUpdate = val.CheckHasUpdate
+			if override.PreInstall != nil {
+				data.PreInstall = override.PreInstall
 			}
-			if val.CheckInstalled != nil {
-				installer.CheckInstalled = val.CheckInstalled
+			if override.PostInstall != nil {
+				data.PostInstall = override.PostInstall
+			}
+			if override.CheckHasUpdate != nil {
+				data.CheckHasUpdate = override.CheckHasUpdate
+			}
+			if override.CheckInstalled != nil {
+				data.CheckInstalled = override.CheckInstalled
 			}
 		}
 	}
-	return installer
+	return data
+}
+
+func FillDefaults(data *appconfig.InstallerData) {
+	if data.Env == nil {
+		env := make(map[string]string)
+		data.Env = &env
+	}
+	if data.Opts == nil {
+		opts := make(map[string]any)
+		data.Opts = &opts
+	}
+	if data.PlatformEnv == nil {
+		mapLinux := make(map[string]string)
+		mapMacos := make(map[string]string)
+		mapWindows := make(map[string]string)
+		env := platform.PlatformMap[map[string]string]{
+			MacOS:   &mapMacos,
+			Linux:   &mapLinux,
+			Windows: &mapWindows,
+		}
+		data.PlatformEnv = &env
+	}
+	if data.Platforms == nil {
+		platforms := platform.Platforms{}
+		data.Platforms = &platforms
+	}
+	if data.Steps == nil {
+		steps := make([]appconfig.InstallerData, 0)
+		data.Steps = &steps
+	}
 }
 
 func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
-	info := installer.GetInfo()
+	info := installer.GetData()
 	name := *info.Name
 	curOS := platform.GetPlatform()
 	logger.Debug("Checking if %s (%s) should run on %s", name, info.Type, curOS)
 	env := config.Environ()
-	if !installer.GetInfo().Platforms.GetShouldRunOnOS(curOS) {
+	if !installer.GetData().Platforms.GetShouldRunOnOS(curOS) {
 		logger.Debug("%s should not run on %s, skipping", name, curOS)
 		return nil
 	}
@@ -113,7 +171,7 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 				logger.Info("Updating %s (%s)", name, info.Type)
 				if info.PreUpdate != nil {
 					logger.Debug("Running pre-update command for %s (%s)", name, info.Type)
-					err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetInfo().EnvShell), utils.GetOSShellArgs(*info.PreUpdate)...)
+					err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetData().EnvShell), utils.GetOSShellArgs(*info.PreUpdate)...)
 					if err != nil {
 						return err
 					}
@@ -122,7 +180,7 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 				installer.Update()
 				if info.PostUpdate != nil {
 					logger.Debug("Running post-update command for %s (%s)", name, info.Type)
-					err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetInfo().EnvShell), utils.GetOSShellArgs(*info.PostUpdate)...)
+					err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetData().EnvShell), utils.GetOSShellArgs(*info.PostUpdate)...)
 					if err != nil {
 						return err
 					}
@@ -135,10 +193,10 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 			return nil
 		}
 	}
-	logger.Info("Installing %s (%s)", name, installer.GetInfo().Type)
+	logger.Info("Installing %s (%s)", name, installer.GetData().Type)
 	if info.PreInstall != nil {
 		logger.Debug("Running pre-install command for %s (%s)", name, info.Type)
-		err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetInfo().EnvShell), utils.GetOSShellArgs(*info.PreInstall)...)
+		err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetData().EnvShell), utils.GetOSShellArgs(*info.PreInstall)...)
 		if err != nil {
 			return err
 		}
@@ -147,7 +205,7 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 	err = installer.Install()
 	if info.PostInstall != nil {
 		logger.Debug("Running post-install command for %s (%s)", name, info.Type)
-		err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetInfo().EnvShell), utils.GetOSShellArgs(*info.PostInstall)...)
+		err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetData().EnvShell), utils.GetOSShellArgs(*info.PostInstall)...)
 		if err != nil {
 			return err
 		}

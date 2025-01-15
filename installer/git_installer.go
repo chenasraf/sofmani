@@ -12,7 +12,7 @@ import (
 
 type GitInstaller struct {
 	Config *appconfig.AppConfig
-	Info   *appconfig.Installer
+	Info   *appconfig.InstallerData
 }
 
 type GitOpts struct {
@@ -40,8 +40,8 @@ func (i *GitInstaller) Update() error {
 
 // CheckNeedsUpdate implements IInstaller.
 func (i *GitInstaller) CheckNeedsUpdate() (error, bool) {
-	if i.GetInfo().CheckHasUpdate != nil {
-		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetOSShell(i.GetInfo().EnvShell), utils.GetOSShellArgs(*i.GetInfo().CheckHasUpdate)...)
+	if i.GetData().CheckHasUpdate != nil {
+		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetOSShell(i.GetData().EnvShell), utils.GetOSShellArgs(*i.GetData().CheckHasUpdate)...)
 	}
 	err, _ := utils.RunCmdGetSuccess(i.Info.Environ(), "git", "-C", i.GetInstallDir(), "fetch")
 	if err != nil {
@@ -62,8 +62,8 @@ func (i *GitInstaller) CheckIsInstalled() (error, bool) {
 	return utils.PathExists(i.GetInstallDir())
 }
 
-// GetInfo implements IInstaller.
-func (i *GitInstaller) GetInfo() *appconfig.Installer {
+// GetData implements IInstaller.
+func (i *GitInstaller) GetData() *appconfig.InstallerData {
 	return i.Info
 }
 
@@ -72,7 +72,7 @@ func (i *GitInstaller) GetOpts() *GitOpts {
 	info := i.Info
 	if info.Opts != nil {
 		if destination, ok := (*info.Opts)["destination"].(string); ok {
-			destination = utils.GetRealPath(i.GetInfo().Environ(), destination)
+			destination = utils.GetRealPath(i.GetData().Environ(), destination)
 			opts.Destination = &destination
 		}
 		if ref, ok := (*info.Opts)["ref"].(string); ok {
@@ -106,7 +106,7 @@ func (i *GitInstaller) GetInstallDir() string {
 	return filepath.Join(i.GetDestination(), filepath.Base(*i.Info.Name))
 }
 
-func NewGitInstaller(cfg *appconfig.AppConfig, installer *appconfig.Installer) *GitInstaller {
+func NewGitInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *GitInstaller {
 	i := &GitInstaller{
 		Config: cfg,
 		Info:   installer,

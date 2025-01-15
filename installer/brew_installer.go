@@ -7,7 +7,7 @@ import (
 
 type BrewInstaller struct {
 	Config *appconfig.AppConfig
-	Info   *appconfig.Installer
+	Info   *appconfig.InstallerData
 }
 
 type BrewOpts struct {
@@ -30,8 +30,8 @@ func (i *BrewInstaller) Update() error {
 
 // CheckNeedsUpdate implements IInstaller.
 func (i *BrewInstaller) CheckNeedsUpdate() (error, bool) {
-	if i.GetInfo().CheckHasUpdate != nil {
-		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetOSShell(i.GetInfo().EnvShell), utils.GetOSShellArgs(*i.GetInfo().CheckHasUpdate)...)
+	if i.GetData().CheckHasUpdate != nil {
+		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetOSShell(i.GetData().EnvShell), utils.GetOSShellArgs(*i.GetData().CheckHasUpdate)...)
 	}
 	err, success := utils.RunCmdGetSuccess(i.Info.Environ(), "brew", "outdated", "--json", *i.Info.Name)
 	if err != nil {
@@ -45,8 +45,8 @@ func (i *BrewInstaller) CheckIsInstalled() (error, bool) {
 	return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetShellWhich(), i.GetBinName())
 }
 
-// GetInfo implements IInstaller.
-func (i *BrewInstaller) GetInfo() *appconfig.Installer {
+// GetData implements IInstaller.
+func (i *BrewInstaller) GetData() *appconfig.InstallerData {
 	return i.Info
 }
 
@@ -62,14 +62,14 @@ func (i *BrewInstaller) GetOpts() *BrewOpts {
 }
 
 func (i *BrewInstaller) GetBinName() string {
-	info := i.GetInfo()
+	info := i.GetData()
 	if info.BinName != nil && len(*info.BinName) > 0 {
 		return *info.BinName
 	}
 	return *info.Name
 }
 
-func NewBrewInstaller(cfg *appconfig.AppConfig, installer *appconfig.Installer) *BrewInstaller {
+func NewBrewInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *BrewInstaller {
 	i := &BrewInstaller{
 		Config: cfg,
 		Info:   installer,

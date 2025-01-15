@@ -43,7 +43,7 @@ func TestAppConfigEnviron(t *testing.T) {
 
 func TestInstallerEnviron(t *testing.T) {
 	env := map[string]string{"KEY1": "value1", "KEY2": "value2"}
-	installer := Installer{Env: &env}
+	installer := InstallerData{Env: &env}
 	expected := []string{"KEY1=value1", "KEY2=value2"}
 	assert.ElementsMatch(t, expected, installer.Environ())
 }

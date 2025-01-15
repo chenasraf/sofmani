@@ -8,7 +8,7 @@ import (
 type NpmInstaller struct {
 	Config         *appconfig.AppConfig
 	PackageManager PackageManager
-	Info           *appconfig.Installer
+	Info           *appconfig.InstallerData
 }
 
 type NpmOpts struct {
@@ -35,8 +35,8 @@ func (i *NpmInstaller) Update() error {
 
 // CheckNeedsUpdate implements IInstaller.
 func (i *NpmInstaller) CheckNeedsUpdate() (error, bool) {
-	if i.GetInfo().CheckHasUpdate != nil {
-		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetShellWhich(), utils.GetOSShellArgs(*i.GetInfo().CheckHasUpdate)...)
+	if i.GetData().CheckHasUpdate != nil {
+		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetShellWhich(), utils.GetOSShellArgs(*i.GetData().CheckHasUpdate)...)
 	}
 	err, success := utils.RunCmdGetSuccess(i.Info.Environ(), string(i.PackageManager), "outdated", "--global", "--json", *i.Info.Name)
 	if err != nil {
@@ -47,14 +47,14 @@ func (i *NpmInstaller) CheckNeedsUpdate() (error, bool) {
 
 // CheckIsInstalled implements IInstaller.
 func (i *NpmInstaller) CheckIsInstalled() (error, bool) {
-	if i.GetInfo().CheckInstalled != nil {
-		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetOSShell(i.GetInfo().EnvShell), utils.GetOSShellArgs(*i.GetInfo().CheckInstalled)...)
+	if i.GetData().CheckInstalled != nil {
+		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetOSShell(i.GetData().EnvShell), utils.GetOSShellArgs(*i.GetData().CheckInstalled)...)
 	}
 	return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetShellWhich(), i.GetBinName())
 }
 
-// GetInfo implements IInstaller.
-func (i *NpmInstaller) GetInfo() *appconfig.Installer {
+// GetData implements IInstaller.
+func (i *NpmInstaller) GetData() *appconfig.InstallerData {
 	return i.Info
 }
 
@@ -65,14 +65,14 @@ func (i *NpmInstaller) GetOpts() *NpmOpts {
 }
 
 func (i *NpmInstaller) GetBinName() string {
-	info := i.GetInfo()
+	info := i.GetData()
 	if info.BinName != nil && len(*info.BinName) > 0 {
 		return *info.BinName
 	}
 	return *info.Name
 }
 
-func NewNpmInstaller(cfg *appconfig.AppConfig, installer *appconfig.Installer) *NpmInstaller {
+func NewNpmInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *NpmInstaller {
 	var packageManager PackageManager
 	switch installer.Type {
 	case appconfig.InstallerTypeNpm:

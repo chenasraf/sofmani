@@ -10,7 +10,7 @@ import (
 )
 
 type MockInstaller struct {
-	info         *appconfig.Installer
+	info         *appconfig.InstallerData
 	isInstalled  bool
 	needsUpdate  bool
 	installError error
@@ -19,7 +19,7 @@ type MockInstaller struct {
 	checkUpdate  error
 }
 
-func (m *MockInstaller) GetInfo() *appconfig.Installer {
+func (m *MockInstaller) GetData() *appconfig.InstallerData {
 	return m.info
 }
 
@@ -42,7 +42,7 @@ func (m *MockInstaller) Update() error {
 func TestGetInstaller(t *testing.T) {
 	config := &appconfig.AppConfig{}
 	logger.InitLogger(config.Debug)
-	installer := &appconfig.Installer{Type: appconfig.InstallerTypeBrew}
+	installer := &appconfig.InstallerData{Type: appconfig.InstallerTypeBrew}
 	err, inst := GetInstaller(config, installer)
 	assert.NoError(t, err)
 	assert.NotNil(t, inst)
@@ -51,11 +51,11 @@ func TestGetInstaller(t *testing.T) {
 func TestInstallerWithDefaults(t *testing.T) {
 	opts := map[string]any{"key": "value"}
 	defaults := &appconfig.AppConfigDefaults{
-		Type: &map[appconfig.InstallerType]appconfig.Installer{
+		Type: &map[appconfig.InstallerType]appconfig.InstallerData{
 			appconfig.InstallerTypeBrew: {Opts: &opts},
 		},
 	}
-	installer := &appconfig.Installer{Type: appconfig.InstallerTypeBrew, Opts: &map[string]any{}}
+	installer := &appconfig.InstallerData{Type: appconfig.InstallerTypeBrew, Opts: &map[string]any{}}
 	result := InstallerWithDefaults(installer, appconfig.InstallerTypeBrew, defaults)
 	assert.Equal(t, "value", (*result.Opts)["key"])
 }
@@ -63,7 +63,7 @@ func TestInstallerWithDefaults(t *testing.T) {
 func TestRunInstaller(t *testing.T) {
 	config := &appconfig.AppConfig{}
 	mockInstaller := &MockInstaller{
-		info:        &appconfig.Installer{Name: strPtr("test"), Type: appconfig.InstallerTypeBrew},
+		info:        &appconfig.InstallerData{Name: strPtr("test"), Type: appconfig.InstallerTypeBrew},
 		isInstalled: false,
 	}
 	err := RunInstaller(config, mockInstaller)
@@ -72,14 +72,14 @@ func TestRunInstaller(t *testing.T) {
 
 func TestGetShouldRunOnOS(t *testing.T) {
 	installer := &MockInstaller{
-		info: &appconfig.Installer{
+		info: &appconfig.InstallerData{
 			Platforms: &platform.Platforms{
 				Only: &[]platform.Platform{platform.PlatformMacos},
 			},
 		},
 	}
-	assert.True(t, installer.GetInfo().Platforms.GetShouldRunOnOS(platform.PlatformMacos))
-	assert.False(t, installer.GetInfo().Platforms.GetShouldRunOnOS(platform.PlatformLinux))
+	assert.True(t, installer.GetData().Platforms.GetShouldRunOnOS(platform.PlatformMacos))
+	assert.False(t, installer.GetData().Platforms.GetShouldRunOnOS(platform.PlatformLinux))
 }
 
 func strPtr(s string) *string {

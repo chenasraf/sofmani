@@ -10,7 +10,7 @@ import (
 
 type RsyncInstaller struct {
 	Config *appconfig.AppConfig
-	Info   *appconfig.Installer
+	Info   *appconfig.InstallerData
 }
 
 type RsyncOpts struct {
@@ -49,22 +49,22 @@ func (i *RsyncInstaller) Update() error {
 
 // CheckNeedsUpdate implements IInstaller.
 func (i *RsyncInstaller) CheckNeedsUpdate() (error, bool) {
-	if i.GetInfo().CheckHasUpdate != nil {
-		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetOSShell(i.GetInfo().EnvShell), utils.GetOSShellArgs(*i.GetInfo().CheckHasUpdate)...)
+	if i.GetData().CheckHasUpdate != nil {
+		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetOSShell(i.GetData().EnvShell), utils.GetOSShellArgs(*i.GetData().CheckHasUpdate)...)
 	}
 	return nil, true
 }
 
 // CheckIsInstalled implements IInstaller.
 func (i *RsyncInstaller) CheckIsInstalled() (error, bool) {
-	if i.GetInfo().CheckInstalled != nil {
-		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetOSShell(i.GetInfo().EnvShell), utils.GetOSShellArgs(*i.GetInfo().CheckInstalled)...)
+	if i.GetData().CheckInstalled != nil {
+		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetOSShell(i.GetData().EnvShell), utils.GetOSShellArgs(*i.GetData().CheckInstalled)...)
 	}
 	return nil, false
 }
 
-// GetInfo implements IInstaller.
-func (i *RsyncInstaller) GetInfo() *appconfig.Installer {
+// GetData implements IInstaller.
+func (i *RsyncInstaller) GetData() *appconfig.InstallerData {
 	return i.Info
 }
 
@@ -86,14 +86,14 @@ func (i *RsyncInstaller) GetOpts() *RsyncOpts {
 }
 
 func (i *RsyncInstaller) GetBinName() string {
-	info := i.GetInfo()
+	info := i.GetData()
 	if info.BinName != nil && len(*info.BinName) > 0 {
 		return *info.BinName
 	}
 	return *info.Name
 }
 
-func NewRsyncInstaller(cfg *appconfig.AppConfig, installer *appconfig.Installer) *RsyncInstaller {
+func NewRsyncInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *RsyncInstaller {
 	i := &RsyncInstaller{
 		Config: cfg,
 		Info:   installer,
