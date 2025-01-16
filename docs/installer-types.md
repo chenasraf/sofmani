@@ -20,6 +20,13 @@ These fields are shared by all installer types. Some fields may vary in behavior
   - **Description**: Type of the step. See [supported types](#supported-type-of-installers) for a
     comprehensive list of supported values.
 
+- **`tags`**
+
+  - **Type** String (optional)
+  - **Description**: Arbitrary tags to attach to an installer. These can later be used to filter
+    this installer in or out when running sofmani. This should be a string containing
+    space-separated tags.
+
 - **`platforms`**
 
   - **Type**: Object (optional)

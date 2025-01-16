@@ -10,7 +10,7 @@ import (
 )
 
 type MockInstaller struct {
-	info         *appconfig.InstallerData
+	data         *appconfig.InstallerData
 	isInstalled  bool
 	needsUpdate  bool
 	installError error
@@ -20,7 +20,7 @@ type MockInstaller struct {
 }
 
 func (m *MockInstaller) GetData() *appconfig.InstallerData {
-	return m.info
+	return m.data
 }
 
 func (m *MockInstaller) CheckIsInstalled() (error, bool) {
@@ -63,7 +63,7 @@ func TestInstallerWithDefaults(t *testing.T) {
 func TestRunInstaller(t *testing.T) {
 	config := &appconfig.AppConfig{}
 	mockInstaller := &MockInstaller{
-		info:        &appconfig.InstallerData{Name: strPtr("test"), Type: appconfig.InstallerTypeBrew},
+		data:        &appconfig.InstallerData{Name: strPtr("test"), Type: appconfig.InstallerTypeBrew},
 		isInstalled: false,
 	}
 	err := RunInstaller(config, mockInstaller)
@@ -72,7 +72,7 @@ func TestRunInstaller(t *testing.T) {
 
 func TestGetShouldRunOnOS(t *testing.T) {
 	installer := &MockInstaller{
-		info: &appconfig.InstallerData{
+		data: &appconfig.InstallerData{
 			Platforms: &platform.Platforms{
 				Only: &[]platform.Platform{platform.PlatformMacos},
 			},

@@ -3,29 +3,94 @@ package installer
 import (
 	"testing"
 
+	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFilterIsMatch(t *testing.T) {
+func TestFilterInstaller(t *testing.T) {
 	tests := []struct {
-		name     string
-		filters  []string
-		input    string
-		expected bool
+		name      string
+		installer IInstaller
+		filters   []string
+		expected  bool
 	}{
-		{"No filters", []string{}, "test", true},
-		{"Match found", []string{"test"}, "test", true},
-		{"No match", []string{"example"}, "test", false},
-		{"Negation filter", []string{"!test"}, "test", false},
-		{"Negation filter with match", []string{"example", "!test"}, "test", false},
-		{"Negation filter without match", []string{"example", "!test"}, "example", true},
-		{"Negation on included filter", []string{"example", "!example-test"}, "example-test", false},
-		{"Partial match", []string{"config"}, "example-config", true},
+		{
+			name: "No filters",
+			installer: &MockInstaller{
+				data: &appconfig.InstallerData{Name: strPtr("test"), Tags: strPtr("tag1")},
+			},
+			filters:  []string{},
+			expected: true,
+		},
+		{
+			name: "Positive filter match",
+			installer: &MockInstaller{
+				data: &appconfig.InstallerData{Name: strPtr("test"), Tags: strPtr("tag1")},
+			},
+			filters:  []string{"test"},
+			expected: true,
+		},
+		{
+			name: "Positive filter no match",
+			installer: &MockInstaller{
+				data: &appconfig.InstallerData{Name: strPtr("test"), Tags: strPtr("tag1")},
+			},
+			filters:  []string{"example"},
+			expected: false,
+		},
+		{
+			name: "Negative filter match",
+			installer: &MockInstaller{
+				data: &appconfig.InstallerData{Name: strPtr("test"), Tags: strPtr("tag1")},
+			},
+			filters:  []string{"!test"},
+			expected: false,
+		},
+		{
+			name: "Negative filter no match",
+			installer: &MockInstaller{
+				data: &appconfig.InstallerData{Name: strPtr("test"), Tags: strPtr("tag1")},
+			},
+			filters:  []string{"!example"},
+			expected: true,
+		},
+		{
+			name: "Tag filter match",
+			installer: &MockInstaller{
+				data: &appconfig.InstallerData{Name: strPtr("test"), Tags: strPtr("tag1")},
+			},
+			filters:  []string{"tag:tag1"},
+			expected: true,
+		},
+		{
+			name: "Tag filter no match",
+			installer: &MockInstaller{
+				data: &appconfig.InstallerData{Name: strPtr("test"), Tags: strPtr("tag1")},
+			},
+			filters:  []string{"tag:tag2"},
+			expected: false,
+		},
+		{
+			name: "Type filter match",
+			installer: &MockInstaller{
+				data: &appconfig.InstallerData{Name: strPtr("test"), Type: appconfig.InstallerTypeBrew},
+			},
+			filters:  []string{"type:brew"},
+			expected: true,
+		},
+		{
+			name: "Type filter no match",
+			installer: &MockInstaller{
+				data: &appconfig.InstallerData{Name: strPtr("test"), Type: appconfig.InstallerTypeBrew},
+			},
+			filters:  []string{"type:npm"},
+			expected: false,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := FilterIsMatch(tt.filters, tt.input)
+			result := FilterInstaller(tt.installer, tt.filters)
 			assert.Equal(t, tt.expected, result)
 		})
 	}

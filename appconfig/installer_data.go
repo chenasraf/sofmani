@@ -1,13 +1,17 @@
 package appconfig
 
 import (
+	"strings"
+
 	"github.com/chenasraf/sofmani/platform"
 	"github.com/chenasraf/sofmani/utils"
+	"github.com/samber/lo"
 )
 
 type InstallerData struct {
 	Name           *string                                  `json:"name"              yaml:"name"`
 	Type           InstallerType                            `json:"type"              yaml:"type"`
+	Tags           *string                                  `json:"tags"              yaml:"tags"`
 	Env            *map[string]string                       `json:"env"               yaml:"env"`
 	PlatformEnv    *platform.PlatformMap[map[string]string] `json:"platform_env"      yaml:"platform_env"`
 	Platforms      *platform.Platforms                      `json:"platforms"         yaml:"platforms"`
@@ -40,4 +44,10 @@ const (
 
 func (i *InstallerData) Environ() []string {
 	return utils.EnvMapAsSlice(utils.CombineEnvMaps(i.Env, i.PlatformEnv.Resolve()))
+}
+
+func (i *InstallerData) GetTagsList() []string {
+	return lo.Map(strings.Split(*i.Tags, " "), func(tag string, i int) string {
+		return strings.TrimSpace(tag)
+	})
 }

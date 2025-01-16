@@ -112,21 +112,16 @@ func InstallerWithDefaults(
 
 func FillDefaults(data *appconfig.InstallerData) {
 	if data.Env == nil {
-		env := make(map[string]string)
-		data.Env = &env
+		data.Env = &map[string]string{}
 	}
 	if data.Opts == nil {
-		opts := make(map[string]any)
-		data.Opts = &opts
+		data.Opts = &map[string]any{}
 	}
 	if data.PlatformEnv == nil {
-		mapLinux := map[string]string{}
-		mapMacos := map[string]string{}
-		mapWindows := map[string]string{}
 		env := platform.PlatformMap[map[string]string]{
-			MacOS:   &mapMacos,
-			Linux:   &mapLinux,
-			Windows: &mapWindows,
+			MacOS:   &map[string]string{},
+			Linux:   &map[string]string{},
+			Windows: &map[string]string{},
 		}
 		data.PlatformEnv = &env
 	}
@@ -135,8 +130,11 @@ func FillDefaults(data *appconfig.InstallerData) {
 		data.Platforms = &platforms
 	}
 	if data.Steps == nil {
-		steps := make([]appconfig.InstallerData, 0)
-		data.Steps = &steps
+		data.Steps = &[]appconfig.InstallerData{}
+	}
+	if data.Tags == nil {
+		str := ""
+		data.Tags = &str
 	}
 }
 
@@ -150,7 +148,7 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 		logger.Debug("%s should not run on %s, skipping", name, curOS)
 		return nil
 	}
-	if !FilterIsMatch(config.Filter, name) {
+	if !FilterInstaller(installer, config.Filter) {
 		logger.Debug("%s is filtered, skipping", name)
 		return nil
 	}
