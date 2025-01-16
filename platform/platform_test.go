@@ -16,3 +16,15 @@ func TestContainsPlatform(t *testing.T) {
 	assert.True(t, ContainsPlatform(&platforms, PlatformMacos))
 	assert.False(t, ContainsPlatform(&platforms, PlatformWindows))
 }
+
+func TestGetShouldRunOnOSOnly(t *testing.T) {
+	platforms := Platforms{Only: &[]Platform{PlatformMacos}}
+	assert.True(t, platforms.GetShouldRunOnOS(PlatformMacos))
+	assert.False(t, platforms.GetShouldRunOnOS(PlatformLinux))
+}
+
+func TestGetShouldRunOnOSExcept(t *testing.T) {
+	platforms := Platforms{Except: &[]Platform{PlatformMacos}}
+	assert.False(t, platforms.GetShouldRunOnOS(PlatformMacos))
+	assert.True(t, platforms.GetShouldRunOnOS(PlatformLinux))
+}

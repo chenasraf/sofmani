@@ -5,7 +5,6 @@ import (
 
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
-	"github.com/chenasraf/sofmani/platform"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -68,18 +67,6 @@ func TestRunInstaller(t *testing.T) {
 	}
 	err := RunInstaller(config, mockInstaller)
 	assert.NoError(t, err)
-}
-
-func TestGetShouldRunOnOS(t *testing.T) {
-	installer := &MockInstaller{
-		data: &appconfig.InstallerData{
-			Platforms: &platform.Platforms{
-				Only: &[]platform.Platform{platform.PlatformMacos},
-			},
-		},
-	}
-	assert.True(t, installer.GetData().Platforms.GetShouldRunOnOS(platform.PlatformMacos))
-	assert.False(t, installer.GetData().Platforms.GetShouldRunOnOS(platform.PlatformLinux))
 }
 
 func strPtr(s string) *string {
