@@ -130,7 +130,7 @@ If a configuration file is not explicitly provided, `sofmani` attempts to locate
 
 If no file is found or provided, sofmani will fail to start.
 
-For more information, see [Configuration Reference](./docs/02-configuration-reference.md)
+For more information, see [Configuration Reference](./docs/configuration-reference.md)
 
 ---
 
