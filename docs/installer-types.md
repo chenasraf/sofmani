@@ -181,6 +181,7 @@ the [Recipes](./recipes)?
 install:
   - name: pyenv
     type: group
+    tags: python
     steps:
       - name: pyenv
         type: brew
@@ -221,6 +222,7 @@ install:
 install:
   - name: fnm
     type: shell
+    tags: node
     post_install: |
       fnm install --lts
       fnm use lts-latest
@@ -232,8 +234,9 @@ install:
 
 ```yaml
 install:
-  - name: config
+  - name: xdg-config
     type: rsync
+    tags: config
     opts:
       source: ~/.dotfiles/.config
       destination: ~/.config
@@ -255,6 +258,7 @@ install:
 install:
   - name: prettier
     type: pnpm
+    tags: node
 ```
 
 ### apt
@@ -263,6 +267,7 @@ install:
 install:
   - name: pipx
     type: apt
+    tags: python
     platforms:
       only: ['linux']
 ```
