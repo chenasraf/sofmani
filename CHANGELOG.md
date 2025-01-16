@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.5.0](https://github.com/chenasraf/sofmani/compare/v1.4.3...v1.5.0) (2025-01-16)
+
+
+### Features
+
+* add `--filter` flag ([3f1cfb6](https://github.com/chenasraf/sofmani/commit/3f1cfb6aed088ed8d9bfa2f6a37199b139657a8f))
+* platform-specific env ([3d25d68](https://github.com/chenasraf/sofmani/commit/3d25d68ce2c501cb78afa819160c8e68c7ec7ef7))
+* tag filters ([28c9264](https://github.com/chenasraf/sofmani/commit/28c9264bfa4d8ffc994ce6ae9da5cc9d3619df6c))
+
+
+### Bug Fixes
+
+* filter behavior ([f373216](https://github.com/chenasraf/sofmani/commit/f373216de2993aef2f70da635d016714c8b395ef))
+* platform env nil pointer ([94491be](https://github.com/chenasraf/sofmani/commit/94491be4dc574337abafd9cde937a4568c6e101e))
+* remove tmpdir from commands ([008165d](https://github.com/chenasraf/sofmani/commit/008165d6765ee4dce70133f64f5ca24e21ab3863))
+
 ## [1.4.3](https://github.com/chenasraf/sofmani/compare/v1.4.2...v1.4.3) (2025-01-14)
 
 
