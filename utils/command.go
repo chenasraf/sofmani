@@ -93,7 +93,10 @@ func getScriptContents(script string, envShell *platform.PlatformMap[string]) (s
 }
 
 func RunCmdAsFile(env []string, contents string, envShell *platform.PlatformMap[string]) error {
-	tmpdir := os.TempDir()
+	tmpdir, err := os.MkdirTemp("", "sofmani-*")
+	if err != nil {
+		return err
+	}
 	tmpfile := getShellScript(tmpdir)
 	commandStr, err := getScriptContents(contents, envShell)
 	if err != nil {
