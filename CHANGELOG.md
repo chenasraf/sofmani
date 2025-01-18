@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/chenasraf/sofmani/compare/v1.5.1...v1.6.0) (2025-01-18)
+
+
+### Features
+
+* **installer:** add `enabled` option ([e5460d2](https://github.com/chenasraf/sofmani/commit/e5460d255ea61f86de92e76faee3702394306877))
+
 ## [1.5.1](https://github.com/chenasraf/sofmani/compare/v1.5.0...v1.5.1) (2025-01-18)
 
 
