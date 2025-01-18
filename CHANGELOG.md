@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/chenasraf/sofmani/compare/v1.5.0...v1.5.1) (2025-01-18)
+
+
+### Bug Fixes
+
+* temp dir location ([d76a3f9](https://github.com/chenasraf/sofmani/commit/d76a3f9f757f8e555b1cf9393fa54c452ddc2709))
+
 ## [1.5.0](https://github.com/chenasraf/sofmani/compare/v1.4.3...v1.5.0) (2025-01-16)
 
 
