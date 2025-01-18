@@ -20,6 +20,13 @@ These fields are shared by all installer types. Some fields may vary in behavior
   - **Description**: Type of the step. See [supported types](#supported-type-of-installers) for a
     comprehensive list of supported values.
 
+- **`enabled`**
+
+  - **Type**: String or Boolean (optional)
+  - **Description**: Enable or disable the step. Disabled steps are not run. This can either be a
+    static boolean (`true` or `false`), or a command that returns a success status code for true, or
+    a failure for false.
+
 - **`tags`**
 
   - **Type** String (optional)

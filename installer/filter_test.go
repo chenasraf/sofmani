@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/chenasraf/sofmani/appconfig"
+	"github.com/chenasraf/sofmani/logger"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -91,6 +92,65 @@ func TestFilterInstaller(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := FilterInstaller(tt.installer, tt.filters)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestInstallerIsEnabled(t *testing.T) {
+	logger.InitLogger(true)
+	tests := []struct {
+		name      string
+		installer IInstaller
+		expected  bool
+		expectErr bool
+	}{
+		{
+			name: "Enabled is nil",
+			installer: &MockInstaller{
+				data: &appconfig.InstallerData{Enabled: nil},
+			},
+			expected: true,
+		},
+		{
+			name: "Enabled is true",
+			installer: &MockInstaller{
+				data: &appconfig.InstallerData{Enabled: strPtr("true")},
+			},
+			expected: true,
+		},
+		{
+			name: "Enabled is false",
+			installer: &MockInstaller{
+				data: &appconfig.InstallerData{Enabled: strPtr("false")},
+			},
+			expected: false,
+		},
+		{
+			name: "Enabled is a command that succeeds",
+			installer: &MockInstaller{
+				data: &appconfig.InstallerData{Enabled: strPtr("exit 0")},
+			},
+			expected: true,
+		},
+		{
+			name: "Enabled is a command that fails",
+			installer: &MockInstaller{
+				data: &appconfig.InstallerData{Enabled: strPtr("exit 1")},
+			},
+			expected:  false,
+			expectErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := InstallerIsEnabled(tt.installer)
+			if tt.expectErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 			assert.Equal(t, tt.expected, result)
 		})
 	}

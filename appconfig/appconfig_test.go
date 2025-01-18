@@ -60,13 +60,59 @@ func TestInstallerPlatformEnviron(t *testing.T) {
 	assert.ElementsMatch(t, expected, data.Environ())
 }
 
-func TestParseConfig(t *testing.T) {
+func TestParseJsonConfig(t *testing.T) {
 	// Create a temporary config file
 	file, err := os.CreateTemp("", "config.*.json")
 	assert.NoError(t, err)
 	defer os.Remove(file.Name())
 
 	_, err = file.WriteString(`{"debug": true, "check_updates": false}`)
+	assert.NoError(t, err)
+	file.Close()
+
+	// Test parsing the config file
+	overrides := AppCliConfig{ConfigFile: file.Name()}
+	config, err := ParseConfig(&overrides)
+	assert.NoError(t, err)
+	assert.True(t, config.Debug)
+	assert.False(t, config.CheckUpdates)
+}
+
+func TestParseYamlConfig(t *testing.T) {
+	// Create a temporary config file
+	file, err := os.CreateTemp("", "config.*.yaml")
+	assert.NoError(t, err)
+	defer os.Remove(file.Name())
+
+	_, err = file.WriteString(`
+debug: true
+check_updates: false
+`)
+	assert.NoError(t, err)
+	file.Close()
+
+	// Test parsing the config file
+	overrides := AppCliConfig{ConfigFile: file.Name()}
+	config, err := ParseConfig(&overrides)
+	assert.NoError(t, err)
+	assert.True(t, config.Debug)
+	assert.False(t, config.CheckUpdates)
+}
+
+func TestParseYamlConfigEnabled(t *testing.T) {
+	// Create a temporary config file
+	file, err := os.CreateTemp("", "config.*.yaml")
+	assert.NoError(t, err)
+	defer os.Remove(file.Name())
+
+	_, err = file.WriteString(`
+debug: true
+check_updates: false
+install:
+  - name: test
+    type: shell
+    enabled: true
+`)
 	assert.NoError(t, err)
 	file.Close()
 

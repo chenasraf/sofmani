@@ -175,33 +175,24 @@ actions. Steps can be of **several types**, such as `brew`, `rsync`, `shell`, an
 
 ### Supported `type` of Installers
 
+For a full list with all the supported options, see [the docs](./docs/installer-types.md).
+
 - **`rsync`**
 
   - Copy files from `source` to `destination` using rsync.
-  - **Options**:
-    - `opts.source`: Source directory/file.
-    - `opts.destination`: Destination directory/file.
-    - `opts.flags`: Additional rsync flags (e.g., `--delete`, `--exclude`).
 
 - **`group`**
 
   - Executes a logical group of steps in sequence.
   - Allows nesting multiple steps together.
-  - **Options**:
-    - `steps`: List of nested steps.
 
 - **`brew`**
 
   - Installs packages using Homebrew.
-  - **Options**:
-    - `opts.tap`: Name of the tap to install the package from.
 
 - **`shell`**
 
   - Executes arbitrary shell commands.
-  - **Options**:
-    - `opts.command`: The command to execute for installing.
-    - `opts.update_command`: The command to execute for updating.
 
 - **`npm`/`pnpm`/`yarn`**
 
@@ -214,9 +205,6 @@ actions. Steps can be of **several types**, such as `brew`, `rsync`, `shell`, an
   - Clones a git repository to a local directory.
   - If `name` is a full git URL (https or SSH), the repository is cloned directly. If it is a
     repository path, e.g. `chenasraf/sofmani`, GitHub is assumed.
-  - **Options**:
-    - `opts.destination`: The local directory to clone the repository to.
-    - `opts.ref`: The branch, tag, or commit to checkout after cloning.
 
 - **`manifest`**
 
@@ -225,12 +213,6 @@ actions. Steps can be of **several types**, such as `brew`, `rsync`, `shell`, an
     installers.
   - `debug` and `check_updates` will be inherited by the loaded config.
   - `env` and `defaults` will be merged into the loaded config, overriding any existing values.
-  - **Options**:
-    - `opts.source`: The local file, or remote git URL (https or SSH) containing the manifest.
-    - `opts.path`: The path to the manifest file within the repository. If `opts.source` is a local
-      file, `opts.path` will be appended to it.
-    - `opts.ref`: The branch, tag, or commit to checkout after cloning if `opts.source` is a git
-      URL. For local manifests, this value will be ignored.
 
 - **`apt`**
 

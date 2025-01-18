@@ -152,6 +152,19 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 		logger.Debug("%s is filtered, skipping", name)
 		return nil
 	}
+
+	enabled, err := InstallerIsEnabled(installer)
+
+	if err != nil {
+		logger.Error("Failed to check if %s is enabled: %s", name, err)
+		return nil
+	}
+
+	if !enabled {
+		logger.Debug("%s is disabled, skipping", name)
+		return nil
+	}
+
 	logger.Debug("Checking %s (%s)", name, info.Type)
 	err, installed := installer.CheckIsInstalled()
 	if err != nil {

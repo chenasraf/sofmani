@@ -3,6 +3,7 @@ package installer
 import (
 	"strings"
 
+	"github.com/chenasraf/sofmani/utils"
 	"github.com/samber/lo"
 )
 
@@ -56,4 +57,31 @@ func isFilteredIn(installer IInstaller, filter string) bool {
 		}
 	}
 	return strings.Contains(*data.Name, filter)
+}
+
+func InstallerIsEnabled(i IInstaller) (bool, error) {
+	enabledCmd := i.GetData().Enabled
+
+	if enabledCmd == nil {
+		return true, nil
+	}
+
+	if strings.ToLower(*enabledCmd) == "true" {
+		return true, nil
+	}
+
+	if strings.ToLower(*enabledCmd) == "false" {
+		return false, nil
+	}
+
+	shell := utils.GetOSShell(i.GetData().EnvShell)
+	args := utils.GetOSShellArgs(*enabledCmd)
+
+	err, success := utils.RunCmdGetSuccess(i.GetData().Environ(), shell, args...)
+
+	if err != nil {
+		return false, err
+	}
+
+	return success, nil
 }

@@ -9,6 +9,7 @@ import (
 )
 
 type InstallerData struct {
+	Enabled        *string                                  `json:"enabled"           yaml:"enabled"`
 	Name           *string                                  `json:"name"              yaml:"name"`
 	Type           InstallerType                            `json:"type"              yaml:"type"`
 	Tags           *string                                  `json:"tags"              yaml:"tags"`
