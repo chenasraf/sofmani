@@ -136,7 +136,9 @@ For more information, see [Configuration Reference](./docs/configuration-referen
 
 ## 📚 Configuration Reference
 
-Here is a detailed breakdown of all configuration options:
+Here is a quick breakdown of all configuration options.
+
+For a full breakdown with all the supported options, see [the docs](./docs/installer-types.md).
 
 ### Global Options
 
@@ -177,28 +179,14 @@ actions. Steps can be of **several types**, such as `brew`, `rsync`, `shell`, an
 
 For a full list with all the supported options, see [the docs](./docs/installer-types.md).
 
-- **`rsync`**
+- **`shell`**
 
-  - Copy files from `source` to `destination` using rsync.
+  - Executes arbitrary shell commands.
 
 - **`group`**
 
   - Executes a logical group of steps in sequence.
   - Allows nesting multiple steps together.
-
-- **`brew`**
-
-  - Installs packages using Homebrew.
-
-- **`shell`**
-
-  - Executes arbitrary shell commands.
-
-- **`npm`/`pnpm`/`yarn`**
-
-  - Installs packages using npm/pnpm/yarn.
-  - Use `type: npm` for `npm install`, `type: pnpm` for `pnpm install`, and `type: yarn` for
-    `yarn install`.
 
 - **`git`**
 
@@ -214,9 +202,24 @@ For a full list with all the supported options, see [the docs](./docs/installer-
   - `debug` and `check_updates` will be inherited by the loaded config.
   - `env` and `defaults` will be merged into the loaded config, overriding any existing values.
 
+- **`rsync`**
+
+  - Copy files from `source` to `destination` using rsync.
+
+- **`brew`**
+
+  - Installs packages using Homebrew.
+
+- **`npm`/`pnpm`/`yarn`**
+
+  - Installs packages using npm/pnpm/yarn.
+  - Use `type: npm` for `npm install`, `type: pnpm` for `pnpm install`, and `type: yarn` for
+    `yarn install`.
+
 - **`apt`/`apk`**
 
   - Installs packages using apt/apk install.
+  - Use `type: apt` for `apt install`, and `type: apk` for `apk add`.
 
 - **`pipx`**
 

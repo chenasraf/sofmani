@@ -117,27 +117,6 @@ These fields are shared by all installer types. Some fields may vary in behavior
 
 ## Supported `type` of Installers
 
-- **`rsync`**
-
-  - **Description**: Copy files from `source` to `destination` using rsync.
-  - **Options**:
-    - `opts.source`: Source directory/file.
-    - `opts.destination`: Destination directory/file.
-    - `opts.flags`: Additional rsync flags (e.g., `--delete`, `--exclude`).
-
-- **`group`**
-
-  - **Description**: Executes a logical group of steps in sequence.
-    - Allows nesting multiple steps together.
-  - **Options**:
-    - `steps`: List of nested steps.
-
-- **`brew`**
-
-  - **Description**: Installs packages using Homebrew.
-  - **Options**:
-    - `opts.tap`: Name of the tap to install the package from.
-
 - **`shell`**
 
   - **Description**: Executes arbitrary shell commands.
@@ -145,11 +124,12 @@ These fields are shared by all installer types. Some fields may vary in behavior
     - `opts.command`: The command to execute for installing.
     - `opts.update_command`: The command to execute for updating.
 
-- **`npm`/`pnpm`/`yarn`**
+- **`group`**
 
-  - **Description**: Installs packages using npm/pnpm/yarn.
-    - Use `type: npm` for `npm install`, `type: pnpm` for `pnpm install`, and `type: yarn` for
-      `yarn install`.
+  - **Description**: Executes a logical group of steps in sequence.
+    - Allows nesting multiple steps together.
+  - **Options**:
+    - `steps`: List of nested steps.
 
 - **`git`**
 
@@ -173,6 +153,26 @@ These fields are shared by all installer types. Some fields may vary in behavior
       file, `opts.path` will be appended to it.
     - `opts.ref`: The branch, tag, or commit to checkout after cloning if `opts.source` is a git
       URL. For local manifests, this value will be ignored.
+
+- **`rsync`**
+
+  - **Description**: Copy files from `source` to `destination` using rsync.
+  - **Options**:
+    - `opts.source`: Source directory/file.
+    - `opts.destination`: Destination directory/file.
+    - `opts.flags`: Additional rsync flags (e.g., `--delete`, `--exclude`).
+
+- **`brew`**
+
+  - **Description**: Installs packages using Homebrew.
+  - **Options**:
+    - `opts.tap`: Name of the tap to install the package from.
+
+- **`npm`/`pnpm`/`yarn`**
+
+  - **Description**: Installs packages using npm/pnpm/yarn.
+    - Use `type: npm` for `npm install`, `type: pnpm` for `pnpm install`, and `type: yarn` for
+      `yarn install`.
 
 - **`apt`/`apk`**
 
