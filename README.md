@@ -6,8 +6,8 @@ provisioning for both personal and work computers. With a single config file, `s
 locating, installing, or updating software and configurations, making system setup quick and
 reproducible.
 
-![Downloads](https://img.shields.io/github/downloads/chenasraf/sofmani/total?style=flat-square)
-![Go Version](https://img.shields.io/github/go-mod/go-version/chenasraf/sofmani)
+![Release](https://img.shields.io/github/v/release/chenasraf/sofmani)
+![Downloads](https://img.shields.io/github/downloads/chenasraf/sofmani/total)
 ![License](https://img.shields.io/github/license/chenasraf/sofmani)
 
 ---
