@@ -55,6 +55,13 @@ location.
   curl https://raw.githubusercontent.com/chenasraf/sofmani/master/install.sh | sh
   ```
 
+  To change the install location, provide an env variable `$INSTALL_DIR` to the script:
+
+  ```sh
+  # below is the default value, change as needed:
+  curl https://raw.githubusercontent.com/chenasraf/sofmani/master/install.sh | INSTALL_DIR=~/.local/bin sh
+  ```
+
 ## ✨ Getting Started
 
 `sofmani` works based on a configuration file written in **YAML** or **JSON**. Below is an annotated

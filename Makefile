@@ -9,3 +9,7 @@ run:
 .PHONY: test
 test:
 	go test -v ./...
+
+.PHONY: install
+install: build
+	cp sofmani ~/.local/bin
