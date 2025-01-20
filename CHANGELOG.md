@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.7.0](https://github.com/chenasraf/sofmani/compare/v1.6.0...v1.7.0) (2025-01-20)
+
+
+### Features
+
+* apk installer ([9d0a6fc](https://github.com/chenasraf/sofmani/commit/9d0a6fc173f74c9d2b302a568d32f834f01cf373))
+* pipx installer ([fcebf7c](https://github.com/chenasraf/sofmani/commit/fcebf7c176d1faa6e75ad080f1ab3933f8b8747a))
+
 ## [1.6.0](https://github.com/chenasraf/sofmani/compare/v1.5.1...v1.6.0) (2025-01-18)
 
 
