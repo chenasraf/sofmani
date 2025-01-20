@@ -218,6 +218,10 @@ For a full list with all the supported options, see [the docs](./docs/installer-
 
   - Installs packages using apt install.
 
+- **`pipx`**
+
+  - Installs packages using pipx.
+
 ---
 
 ## 📂 Example Workflow

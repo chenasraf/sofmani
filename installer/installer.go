@@ -30,6 +30,8 @@ func GetInstaller(config *appconfig.AppConfig, data *appconfig.InstallerData) (e
 		return nil, NewNpmInstaller(config, data)
 	case appconfig.InstallerTypeApt:
 		return nil, NewAptInstaller(config, data)
+	case appconfig.InstallerTypePipx:
+		return nil, NewPipxInstaller(config, data)
 	case appconfig.InstallerTypeGit:
 		return nil, NewGitInstaller(config, data)
 	case appconfig.InstallerTypeManifest:

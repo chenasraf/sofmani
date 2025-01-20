@@ -177,6 +177,9 @@ These fields are shared by all installer types. Some fields may vary in behavior
 - **`apt`**
   - **Description**: Installs packages using apt install.
 
+- **`pipx`**
+  - **Description**: Installs packages using pipx. 
+
 ## Installer Examples
 
 All of these examples should be usable, but don't count on them being maintained. Why not look at

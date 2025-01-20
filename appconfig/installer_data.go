@@ -40,6 +40,7 @@ const (
 	InstallerTypeNpm      InstallerType = "npm"
 	InstallerTypePnpm     InstallerType = "pnpm"
 	InstallerTypeYarn     InstallerType = "yarn"
+	InstallerTypePipx     InstallerType = "pipx"
 	InstallerTypeManifest InstallerType = "manifest"
 )
 
