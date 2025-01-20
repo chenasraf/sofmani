@@ -35,6 +35,7 @@ const (
 	InstallerTypeShell    InstallerType = "shell"
 	InstallerTypeBrew     InstallerType = "brew"
 	InstallerTypeApt      InstallerType = "apt"
+	InstallerTypeApk      InstallerType = "apk"
 	InstallerTypeGit      InstallerType = "git"
 	InstallerTypeRsync    InstallerType = "rsync"
 	InstallerTypeNpm      InstallerType = "npm"

@@ -214,9 +214,9 @@ For a full list with all the supported options, see [the docs](./docs/installer-
   - `debug` and `check_updates` will be inherited by the loaded config.
   - `env` and `defaults` will be merged into the loaded config, overriding any existing values.
 
-- **`apt`**
+- **`apt`/`apk`**
 
-  - Installs packages using apt install.
+  - Installs packages using apt/apk install.
 
 - **`pipx`**
 

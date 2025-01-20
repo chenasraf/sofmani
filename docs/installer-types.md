@@ -174,11 +174,13 @@ These fields are shared by all installer types. Some fields may vary in behavior
     - `opts.ref`: The branch, tag, or commit to checkout after cloning if `opts.source` is a git
       URL. For local manifests, this value will be ignored.
 
-- **`apt`**
-  - **Description**: Installs packages using apt install.
+- **`apt`/`apk`**
+
+  - **Description**: Installs packages using apt install or apt add.
+    - Use `type: apt` for `apt install`, and `type: apk` for `apk add`.
 
 - **`pipx`**
-  - **Description**: Installs packages using pipx. 
+  - **Description**: Installs packages using pipx.
 
 ## Installer Examples
 
