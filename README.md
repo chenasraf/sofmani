@@ -201,6 +201,10 @@ For a full list with all the supported options, see [the docs](./docs/installer-
   - If `name` is a full git URL (https or SSH), the repository is cloned directly. If it is a
     repository path, e.g. `chenasraf/sofmani`, GitHub is assumed.
 
+- **`github-release`**
+
+  - Downloads a GitHub release asset. Optionally untar/unzip the downloaded file.
+
 - **`manifest`**
 
   - Installs an entire manifest from a local or remote file.

@@ -140,6 +140,38 @@ These fields are shared by all installer types. Some fields may vary in behavior
     - `opts.destination`: The local directory to clone the repository to.
     - `opts.ref`: The branch, tag, or commit to checkout after cloning.
 
+- **`github-release`**
+
+  - **Description**: Downloads a GitHub release asset. Optionally untar/unzip the downloaded file.
+  - **Options**:
+
+    - `opts.repository`: The repository to download from. Should be in the format:
+      `user/repository-name`
+    - `opts.destination`: The target directory to extract the files to.
+    - `opts.strategy`: The download strategy. Can be one of: `tar`, `zip`, `none` (default)
+      - `none` - the release file is not compressed, and should be copied directly
+      - `tar` - the release file is a tar file, and should be extracted
+      - `zip` - the release file is a zip file, and should be extracted
+    - `opts.download_filename`: The filename of the release asset to download.
+
+      This should either be a string, or a map of platforms to filenames.
+
+      You can use `{tag}` and `{version}` to replace the relevant tokens in the filename:
+
+      - `{tag}` - will be replaced by the full tag name, e.g. `v1.0.0`
+      - `{version}` - will be replaced by the version, e.g. `1.0.0`
+
+      Examples:
+
+      ```yaml
+      download_filename: myapp_{tag}_linux.tar.gz # will output: myapp_v1.0.0_linux.tar.gz
+      download_filename: myapp_{version}_linux.tar.gz # will output: myapp_1.0.0_linux.tar.gz
+      download_filename:
+        macos: myapp_{tag}_macos.tar.gz
+        linux: myapp_{tag}_linux.tar.gz
+        windows: myapp_{tag}_windows.zip
+      ```
+
 - **`manifest`**
 
   - **Description**: Installs an entire manifest from a local or remote file.
@@ -226,6 +258,19 @@ install:
     type: git
     opts:
       destination: ~/.gitignore-templates
+```
+
+### github-release
+
+```yaml
+install:
+  - name: lazygit
+    type: github-release
+    opts:
+      repository: jesseduffield/lazygit
+      strategy: tar
+      destination: /usr/local/bin
+      download_filename: lazygit_{tag}_Linux_x86_64.tar.gz
 ```
 
 ### shell

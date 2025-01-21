@@ -1,6 +1,8 @@
 package installer
 
 import (
+	"fmt"
+
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
 	"github.com/chenasraf/sofmani/platform"
@@ -36,6 +38,8 @@ func GetInstaller(config *appconfig.AppConfig, data *appconfig.InstallerData) (I
 		return NewAptInstaller(config, data), nil
 	case appconfig.InstallerTypePipx:
 		return NewPipxInstaller(config, data), nil
+	case appconfig.InstallerTypeGitHubRelease:
+		return NewGitHubReleaseInstaller(config, data), nil
 	case appconfig.InstallerTypeGit:
 		return NewGitInstaller(config, data), nil
 	case appconfig.InstallerTypeManifest:
@@ -105,8 +109,7 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 	enabled, err := InstallerIsEnabled(installer)
 
 	if err != nil {
-		logger.Error("Failed to check if %s is enabled: %s", name, err)
-		return nil
+		return fmt.Errorf("Failed to check if %s is enabled: %s", name, err)
 	}
 
 	if !enabled {
