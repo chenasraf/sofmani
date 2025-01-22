@@ -14,14 +14,15 @@ import (
 )
 
 type GitHubReleaseInstaller struct {
+	InstallerBase
 	Config *appconfig.AppConfig
 	Info   *appconfig.InstallerData
 }
 
 type GitHubReleaseOpts struct {
-	Repository  *string
-	Destination *string
-	Filename    *string
+	Repository       *string
+	Destination      *string
+	DownloadFilename *string
 }
 
 // Install implements IInstaller.
@@ -39,7 +40,7 @@ func (i *GitHubReleaseInstaller) Install() error {
 		return err
 	}
 
-	filename := strings.ReplaceAll(*opts.Filename, "{tag}", tag)
+	filename := strings.ReplaceAll(*opts.DownloadFilename, "{tag}", tag)
 	downloadUrl := fmt.Sprintf("https://github.com/%s/releases/download/%s/%s", *opts.Repository, tag, filename)
 	resp, err := http.Get(downloadUrl)
 	if err != nil {
@@ -64,26 +65,29 @@ func (i *GitHubReleaseInstaller) Update() error {
 }
 
 // CheckNeedsUpdate implements IInstaller.
-func (i *GitHubReleaseInstaller) CheckNeedsUpdate() (error, bool) {
-	if i.GetData().CheckHasUpdate != nil {
-		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetOSShell(i.GetData().EnvShell), utils.GetOSShellArgs(*i.GetData().CheckHasUpdate)...)
+func (i *GitHubReleaseInstaller) CheckNeedsUpdate() (bool, error) {
+	if i.HasCustomUpdateCheck() {
+		return i.RunCustomUpdateCheck()
 	}
-	err, _ := utils.RunCmdGetSuccess(i.Info.Environ(), "git", "-C", i.GetInstallDir(), "fetch")
+	_, err := i.RunCmdGetSuccess("git", "-C", i.GetInstallDir(), "fetch")
 	if err != nil {
-		return err, false
+		return false, err
 	}
-	output, err := utils.RunCmdGetOutput(i.Info.Environ(), "git", "-C", i.GetInstallDir(), "status", "-uno")
+	output, err := i.RunCmdGetOutput("git", "-C", i.GetInstallDir(), "status", "-uno")
 	if err != nil {
-		return err, false
+		return false, err
 	}
 	if strings.Contains(string(output), "Your branch is behind") {
-		return nil, true
+		return true, nil
 	}
-	return nil, false
+	return false, nil
 }
 
 // CheckIsInstalled implements IInstaller.
-func (i *GitHubReleaseInstaller) CheckIsInstalled() (error, bool) {
+func (i *GitHubReleaseInstaller) CheckIsInstalled() (bool, error) {
+	if i.HasCustomInstallCheck() {
+		return i.RunCustomInstallCheck()
+	}
 	return utils.PathExists(i.GetInstallDir())
 }
 
@@ -104,8 +108,8 @@ func (i *GitHubReleaseInstaller) GetOpts() *GitHubReleaseOpts {
 			destination = utils.GetRealPath(i.GetData().Environ(), destination)
 			opts.Repository = &destination
 		}
-		if filename, ok := (*info.Opts)["filename"].(string); ok {
-			opts.Filename = &filename
+		if filename, ok := (*info.Opts)["download_filename"].(string); ok {
+			opts.DownloadFilename = &filename
 		}
 	}
 	return opts

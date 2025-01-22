@@ -31,18 +31,19 @@ type InstallerData struct {
 type InstallerType string
 
 const (
-	InstallerTypeGroup    InstallerType = "group"
-	InstallerTypeShell    InstallerType = "shell"
-	InstallerTypeBrew     InstallerType = "brew"
-	InstallerTypeApt      InstallerType = "apt"
-	InstallerTypeApk      InstallerType = "apk"
-	InstallerTypeGit      InstallerType = "git"
-	InstallerTypeRsync    InstallerType = "rsync"
-	InstallerTypeNpm      InstallerType = "npm"
-	InstallerTypePnpm     InstallerType = "pnpm"
-	InstallerTypeYarn     InstallerType = "yarn"
-	InstallerTypePipx     InstallerType = "pipx"
-	InstallerTypeManifest InstallerType = "manifest"
+	InstallerTypeGroup         InstallerType = "group"
+	InstallerTypeShell         InstallerType = "shell"
+	InstallerTypeBrew          InstallerType = "brew"
+	InstallerTypeApt           InstallerType = "apt"
+	InstallerTypeApk           InstallerType = "apk"
+	InstallerTypeGit           InstallerType = "git"
+	InstallerTypeGitHubRelease InstallerType = "github-release"
+	InstallerTypeRsync         InstallerType = "rsync"
+	InstallerTypeNpm           InstallerType = "npm"
+	InstallerTypePnpm          InstallerType = "pnpm"
+	InstallerTypeYarn          InstallerType = "yarn"
+	InstallerTypePipx          InstallerType = "pipx"
+	InstallerTypeManifest      InstallerType = "manifest"
 )
 
 func (i *InstallerData) Environ() []string {

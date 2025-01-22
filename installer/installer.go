@@ -1,6 +1,8 @@
 package installer
 
 import (
+	"fmt"
+
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
 	"github.com/chenasraf/sofmani/platform"
@@ -105,8 +107,7 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 	enabled, err := InstallerIsEnabled(installer)
 
 	if err != nil {
-		logger.Error("Failed to check if %s is enabled: %s", name, err)
-		return nil
+		return fmt.Errorf("Failed to check if %s is enabled: %s", name, err)
 	}
 
 	if !enabled {
