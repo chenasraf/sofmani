@@ -22,12 +22,12 @@ func (m *MockInstaller) GetData() *appconfig.InstallerData {
 	return m.data
 }
 
-func (m *MockInstaller) CheckIsInstalled() (error, bool) {
-	return m.checkInstall, m.isInstalled
+func (m *MockInstaller) CheckIsInstalled() (bool, error) {
+	return m.isInstalled, m.checkInstall
 }
 
-func (m *MockInstaller) CheckNeedsUpdate() (error, bool) {
-	return m.checkUpdate, m.needsUpdate
+func (m *MockInstaller) CheckNeedsUpdate() (bool, error) {
+	return m.needsUpdate, m.checkUpdate
 }
 
 func (m *MockInstaller) Install() error {
@@ -42,7 +42,7 @@ func TestGetInstaller(t *testing.T) {
 	config := &appconfig.AppConfig{}
 	logger.InitLogger(config.Debug)
 	installer := &appconfig.InstallerData{Type: appconfig.InstallerTypeBrew}
-	err, inst := GetInstaller(config, installer)
+	inst, err := GetInstaller(config, installer)
 	assert.NoError(t, err)
 	assert.NotNil(t, inst)
 }

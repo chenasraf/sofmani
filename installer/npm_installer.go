@@ -6,6 +6,7 @@ import (
 )
 
 type NpmInstaller struct {
+	InstallerBase
 	Config         *appconfig.AppConfig
 	PackageManager PackageManager
 	Info           *appconfig.InstallerData
@@ -25,32 +26,32 @@ const (
 
 // Install implements IInstaller.
 func (i *NpmInstaller) Install() error {
-	return utils.RunCmdPassThrough(i.Info.Environ(), string(i.PackageManager), "install", "--global", *i.Info.Name)
+	return i.RunCmdPassThrough(string(i.PackageManager), "install", "--global", *i.Info.Name)
 }
 
 // Update implements IInstaller.
 func (i *NpmInstaller) Update() error {
-	return utils.RunCmdPassThrough(i.Info.Environ(), string(i.PackageManager), "install", "--global", *i.Info.Name+"@latest")
+	return i.RunCmdPassThrough(string(i.PackageManager), "install", "--global", *i.Info.Name+"@latest")
 }
 
 // CheckNeedsUpdate implements IInstaller.
-func (i *NpmInstaller) CheckNeedsUpdate() (error, bool) {
-	if i.GetData().CheckHasUpdate != nil {
-		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetShellWhich(), utils.GetOSShellArgs(*i.GetData().CheckHasUpdate)...)
+func (i *NpmInstaller) CheckNeedsUpdate() (bool, error) {
+	if i.HasCustomUpdateCheck() {
+		return i.RunCustomUpdateCheck()
 	}
-	err, success := utils.RunCmdGetSuccess(i.Info.Environ(), string(i.PackageManager), "outdated", "--global", "--json", *i.Info.Name)
+	success, err := i.RunCmdGetSuccess(string(i.PackageManager), "outdated", "--global", "--json", *i.Info.Name)
 	if err != nil {
-		return err, false
+		return false, err
 	}
-	return nil, !success
+	return !success, nil
 }
 
 // CheckIsInstalled implements IInstaller.
-func (i *NpmInstaller) CheckIsInstalled() (error, bool) {
-	if i.GetData().CheckInstalled != nil {
-		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetOSShell(i.GetData().EnvShell), utils.GetOSShellArgs(*i.GetData().CheckInstalled)...)
+func (i *NpmInstaller) CheckIsInstalled() (bool, error) {
+	if i.HasCustomInstallCheck() {
+		return i.RunCustomInstallCheck()
 	}
-	return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetShellWhich(), i.GetBinName())
+	return i.RunCmdGetSuccess(utils.GetShellWhich(), i.GetBinName())
 }
 
 // GetData implements IInstaller.
@@ -83,6 +84,7 @@ func NewNpmInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerDat
 		packageManager = PackageManagerYarn
 	}
 	i := &NpmInstaller{
+		InstallerBase:  InstallerBase{Data: installer},
 		Config:         cfg,
 		PackageManager: packageManager,
 		Info:           installer,

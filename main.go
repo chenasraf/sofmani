@@ -32,7 +32,7 @@ func main() {
 
 	logger.Info("Checking all installers...")
 	for _, i := range cfg.Install {
-		err, installerInstance := installer.GetInstaller(cfg, &i)
+		installerInstance, err := installer.GetInstaller(cfg, &i)
 		if err != nil {
 			logger.Error("%s", err)
 			return

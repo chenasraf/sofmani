@@ -77,7 +77,7 @@ func InstallerIsEnabled(i IInstaller) (bool, error) {
 	shell := utils.GetOSShell(i.GetData().EnvShell)
 	args := utils.GetOSShellArgs(*enabledCmd)
 
-	err, success := utils.RunCmdGetSuccess(i.GetData().Environ(), shell, args...)
+	success, err := utils.RunCmdGetSuccess(i.GetData().Environ(), shell, args...)
 
 	if err != nil {
 		return false, err

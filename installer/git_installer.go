@@ -11,6 +11,7 @@ import (
 )
 
 type GitInstaller struct {
+	InstallerBase
 	Config *appconfig.AppConfig
 	Info   *appconfig.InstallerData
 }
@@ -23,42 +24,45 @@ type GitOpts struct {
 // Install implements IInstaller.
 func (i *GitInstaller) Install() error {
 	args := []string{"clone", i.GetRepositoryUrl(), i.GetInstallDir()}
-	err := utils.RunCmdPassThrough(i.Info.Environ(), "git", args...)
+	err := i.RunCmdPassThrough("git", args...)
 	if err != nil {
 		return err
 	}
 	if i.GetOpts().Ref != nil {
-		return utils.RunCmdPassThrough(i.Info.Environ(), "git", "-C", i.GetInstallDir(), "checkout", *i.GetOpts().Ref)
+		return i.RunCmdPassThrough("git", "-C", i.GetInstallDir(), "checkout", *i.GetOpts().Ref)
 	}
 	return nil
 }
 
 // Update implements IInstaller.
 func (i *GitInstaller) Update() error {
-	return utils.RunCmdPassThrough(i.Info.Environ(), "git", "-C", i.GetInstallDir(), "pull")
+	return i.RunCmdPassThrough("git", "-C", i.GetInstallDir(), "pull")
 }
 
 // CheckNeedsUpdate implements IInstaller.
-func (i *GitInstaller) CheckNeedsUpdate() (error, bool) {
-	if i.GetData().CheckHasUpdate != nil {
-		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetOSShell(i.GetData().EnvShell), utils.GetOSShellArgs(*i.GetData().CheckHasUpdate)...)
+func (i *GitInstaller) CheckNeedsUpdate() (bool, error) {
+	if i.HasCustomUpdateCheck() {
+		return i.RunCustomUpdateCheck()
 	}
-	err, _ := utils.RunCmdGetSuccess(i.Info.Environ(), "git", "-C", i.GetInstallDir(), "fetch")
+	_, err := i.RunCmdGetSuccess("git", "-C", i.GetInstallDir(), "fetch")
 	if err != nil {
-		return err, false
+		return false, err
 	}
-	output, err := utils.RunCmdGetOutput(i.Info.Environ(), "git", "-C", i.GetInstallDir(), "status", "-uno")
+	output, err := i.RunCmdGetOutput("git", "-C", i.GetInstallDir(), "status", "-uno")
 	if err != nil {
-		return err, false
+		return false, err
 	}
 	if strings.Contains(string(output), "Your branch is behind") {
-		return nil, true
+		return true, nil
 	}
-	return nil, false
+	return false, nil
 }
 
 // CheckIsInstalled implements IInstaller.
-func (i *GitInstaller) CheckIsInstalled() (error, bool) {
+func (i *GitInstaller) CheckIsInstalled() (bool, error) {
+	if i.HasCustomInstallCheck() {
+		return i.RunCustomInstallCheck()
+	}
 	return utils.PathExists(i.GetInstallDir())
 }
 
@@ -108,8 +112,9 @@ func (i *GitInstaller) GetInstallDir() string {
 
 func NewGitInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *GitInstaller {
 	i := &GitInstaller{
-		Config: cfg,
-		Info:   installer,
+		InstallerBase: InstallerBase{Data: installer},
+		Config:        cfg,
+		Info:          installer,
 	}
 
 	return i

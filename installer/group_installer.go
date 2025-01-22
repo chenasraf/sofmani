@@ -7,6 +7,7 @@ import (
 )
 
 type GroupInstaller struct {
+	InstallerBase
 	Config *appconfig.AppConfig
 	Data   *appconfig.InstallerData
 }
@@ -21,7 +22,7 @@ func (i *GroupInstaller) Install() error {
 	name := *info.Name
 	logger.Debug("Installing group %s", name)
 	for _, step := range *i.Data.Steps {
-		err, installer := GetInstaller(i.Config, &step)
+		installer, err := GetInstaller(i.Config, &step)
 		if err != nil {
 			return err
 		}
@@ -40,19 +41,19 @@ func (i *GroupInstaller) Update() error {
 }
 
 // CheckNeedsUpdate implements IInstaller.
-func (i *GroupInstaller) CheckNeedsUpdate() (error, bool) {
-	if i.GetData().CheckHasUpdate != nil {
-		return utils.RunCmdGetSuccess(i.Data.Environ(), utils.GetOSShell(i.GetData().EnvShell), utils.GetOSShellArgs(*i.GetData().CheckHasUpdate)...)
+func (i *GroupInstaller) CheckNeedsUpdate() (bool, error) {
+	if i.HasCustomUpdateCheck() {
+		return i.RunCustomUpdateCheck()
 	}
-	return nil, true
+	return true, nil
 }
 
 // CheckIsInstalled implements IInstaller.
-func (i *GroupInstaller) CheckIsInstalled() (error, bool) {
-	if i.GetData().CheckInstalled != nil {
-		return utils.RunCmdGetSuccess(i.Data.Environ(), utils.GetOSShell(i.GetData().EnvShell), utils.GetOSShellArgs(*i.GetData().CheckInstalled)...)
+func (i *GroupInstaller) CheckIsInstalled() (bool, error) {
+	if i.HasCustomInstallCheck() {
+		return i.RunCustomInstallCheck()
 	}
-	return utils.RunCmdGetSuccess(i.Data.Environ(), utils.GetShellWhich(), i.GetBinName())
+	return i.RunCmdGetSuccess(utils.GetShellWhich(), i.GetBinName())
 }
 
 // GetData implements IInstaller.
@@ -79,7 +80,8 @@ func (i *GroupInstaller) GetBinName() string {
 
 func NewGroupInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *GroupInstaller {
 	return &GroupInstaller{
-		Config: cfg,
-		Data:   installer,
+		InstallerBase: InstallerBase{Data: installer},
+		Config:        cfg,
+		Data:          installer,
 	}
 }

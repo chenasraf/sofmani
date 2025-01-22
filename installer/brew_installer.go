@@ -6,6 +6,7 @@ import (
 )
 
 type BrewInstaller struct {
+	InstallerBase
 	Config *appconfig.AppConfig
 	Info   *appconfig.InstallerData
 }
@@ -20,29 +21,32 @@ func (i *BrewInstaller) Install() error {
 	if i.GetOpts().Tap != nil {
 		name = *i.GetOpts().Tap + "/" + name
 	}
-	return utils.RunCmdPassThrough(i.Info.Environ(), "brew", "install", name)
+	return i.RunCmdPassThrough("brew", "install", name)
 }
 
 // Update implements IInstaller.
 func (i *BrewInstaller) Update() error {
-	return utils.RunCmdPassThrough(i.Info.Environ(), "brew", "upgrade", *i.Info.Name)
+	return i.RunCmdPassThrough("brew", "upgrade", *i.Info.Name)
 }
 
 // CheckNeedsUpdate implements IInstaller.
-func (i *BrewInstaller) CheckNeedsUpdate() (error, bool) {
-	if i.GetData().CheckHasUpdate != nil {
-		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetOSShell(i.GetData().EnvShell), utils.GetOSShellArgs(*i.GetData().CheckHasUpdate)...)
+func (i *BrewInstaller) CheckNeedsUpdate() (bool, error) {
+	if i.HasCustomUpdateCheck() {
+		return i.RunCustomUpdateCheck()
 	}
-	err, success := utils.RunCmdGetSuccess(i.Info.Environ(), "brew", "outdated", "--json", *i.Info.Name)
+	success, err := i.RunCmdGetSuccess("brew", "outdated", "--json", *i.Info.Name)
 	if err != nil {
-		return err, false
+		return false, err
 	}
-	return nil, !success
+	return !success, nil
 }
 
 // CheckIsInstalled implements IInstaller.
-func (i *BrewInstaller) CheckIsInstalled() (error, bool) {
-	return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetShellWhich(), i.GetBinName())
+func (i *BrewInstaller) CheckIsInstalled() (bool, error) {
+	if i.HasCustomInstallCheck() {
+		return i.RunCustomInstallCheck()
+	}
+	return i.RunCmdGetSuccess(utils.GetShellWhich(), i.GetBinName())
 }
 
 // GetData implements IInstaller.
@@ -71,8 +75,9 @@ func (i *BrewInstaller) GetBinName() string {
 
 func NewBrewInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *BrewInstaller {
 	i := &BrewInstaller{
-		Config: cfg,
-		Info:   installer,
+		InstallerBase: InstallerBase{Data: installer},
+		Config:        cfg,
+		Info:          installer,
 	}
 
 	return i

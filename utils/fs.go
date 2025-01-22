@@ -33,8 +33,8 @@ func GetRealPath(env []string, path string) string {
 	return strings.TrimSpace(string(path))
 }
 
-func PathExists(path string) (error, bool) {
+func PathExists(path string) (bool, error) {
 	_, err := os.Stat(path)
 	exists := !errors.Is(err, fs.ErrNotExist)
-	return nil, exists
+	return exists, nil
 }

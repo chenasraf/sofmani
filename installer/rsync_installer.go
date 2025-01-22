@@ -9,6 +9,7 @@ import (
 )
 
 type RsyncInstaller struct {
+	InstallerBase
 	Config *appconfig.AppConfig
 	Info   *appconfig.InstallerData
 }
@@ -31,15 +32,16 @@ func (i *RsyncInstaller) Install() error {
 			flags = append(flags, flag)
 		}
 	}
-
-	src := utils.GetRealPath(i.Info.Environ(), *i.GetOpts().Source)
-	dest := utils.GetRealPath(i.Info.Environ(), *i.GetOpts().Destination)
+	data := i.GetData()
+	env := data.Environ()
+	src := utils.GetRealPath(env, *i.GetOpts().Source)
+	dest := utils.GetRealPath(env, *i.GetOpts().Destination)
 
 	flags = append(flags, src)
 	flags = append(flags, dest)
 
 	logger.Debug("rsync %s to %s", src, dest)
-	return utils.RunCmdPassThrough(i.Info.Environ(), "rsync", flags...)
+	return i.RunCmdPassThrough("rsync", flags...)
 }
 
 // Update implements IInstaller.
@@ -48,19 +50,19 @@ func (i *RsyncInstaller) Update() error {
 }
 
 // CheckNeedsUpdate implements IInstaller.
-func (i *RsyncInstaller) CheckNeedsUpdate() (error, bool) {
-	if i.GetData().CheckHasUpdate != nil {
-		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetOSShell(i.GetData().EnvShell), utils.GetOSShellArgs(*i.GetData().CheckHasUpdate)...)
+func (i *RsyncInstaller) CheckNeedsUpdate() (bool, error) {
+	if i.HasCustomUpdateCheck() {
+		return i.RunCustomUpdateCheck()
 	}
-	return nil, true
+	return true, nil
 }
 
 // CheckIsInstalled implements IInstaller.
-func (i *RsyncInstaller) CheckIsInstalled() (error, bool) {
-	if i.GetData().CheckInstalled != nil {
-		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetOSShell(i.GetData().EnvShell), utils.GetOSShellArgs(*i.GetData().CheckInstalled)...)
+func (i *RsyncInstaller) CheckIsInstalled() (bool, error) {
+	if i.HasCustomInstallCheck() {
+		return i.RunCustomInstallCheck()
 	}
-	return nil, false
+	return false, nil
 }
 
 // GetData implements IInstaller.
@@ -95,8 +97,9 @@ func (i *RsyncInstaller) GetBinName() string {
 
 func NewRsyncInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *RsyncInstaller {
 	i := &RsyncInstaller{
-		Config: cfg,
-		Info:   installer,
+		InstallerBase: InstallerBase{Data: installer},
+		Config:        cfg,
+		Info:          installer,
 	}
 
 	return i

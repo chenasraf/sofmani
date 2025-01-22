@@ -41,15 +41,15 @@ func RunCmdPassThroughChained(env []string, commands [][]string) error {
 	return nil
 }
 
-func RunCmdGetSuccess(env []string, bin string, args ...string) (error, bool) {
+func RunCmdGetSuccess(env []string, bin string, args ...string) (bool, error) {
 	logger.Debug("Running command: %s %v", bin, args)
 	cmd := exec.Command(bin, args...)
 	cmd.Env = ResolveEnvPaths(os.Environ(), cmd.Env, env)
 	err := cmd.Run()
 	if err != nil {
-		return nil, false
+		return false, nil
 	}
-	return nil, true
+	return true, nil
 }
 
 func RunCmdGetOutput(env []string, bin string, args ...string) ([]byte, error) {

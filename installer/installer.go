@@ -9,35 +9,82 @@ import (
 
 type IInstaller interface {
 	GetData() *appconfig.InstallerData
-	CheckIsInstalled() (error, bool)
-	CheckNeedsUpdate() (error, bool)
+	CheckIsInstalled() (bool, error)
+	CheckNeedsUpdate() (bool, error)
 	Install() error
 	Update() error
 }
 
-func GetInstaller(config *appconfig.AppConfig, data *appconfig.InstallerData) (error, IInstaller) {
+type InstallerBase struct {
+	Data *appconfig.InstallerData
+}
+
+func GetInstaller(config *appconfig.AppConfig, data *appconfig.InstallerData) (IInstaller, error) {
 	data = InstallerWithDefaults(data, data.Type, config.Defaults)
 	switch data.Type {
 	case appconfig.InstallerTypeGroup:
-		return nil, NewGroupInstaller(config, data)
+		return NewGroupInstaller(config, data), nil
 	case appconfig.InstallerTypeBrew:
-		return nil, NewBrewInstaller(config, data)
+		return NewBrewInstaller(config, data), nil
 	case appconfig.InstallerTypeShell:
-		return nil, NewShellInstaller(config, data)
+		return NewShellInstaller(config, data), nil
 	case appconfig.InstallerTypeRsync:
-		return nil, NewRsyncInstaller(config, data)
+		return NewRsyncInstaller(config, data), nil
 	case appconfig.InstallerTypeNpm, appconfig.InstallerTypePnpm, appconfig.InstallerTypeYarn:
-		return nil, NewNpmInstaller(config, data)
+		return NewNpmInstaller(config, data), nil
 	case appconfig.InstallerTypeApt, appconfig.InstallerTypeApk:
-		return nil, NewAptInstaller(config, data)
+		return NewAptInstaller(config, data), nil
 	case appconfig.InstallerTypePipx:
-		return nil, NewPipxInstaller(config, data)
+		return NewPipxInstaller(config, data), nil
 	case appconfig.InstallerTypeGit:
-		return nil, NewGitInstaller(config, data)
+		return NewGitInstaller(config, data), nil
 	case appconfig.InstallerTypeManifest:
-		return nil, NewManifestInstaller(config, data)
+		return NewManifestInstaller(config, data), nil
 	}
 	return nil, nil
+}
+
+func (i *InstallerBase) GetData() *appconfig.InstallerData {
+	return i.Data
+}
+
+func (i *InstallerBase) RunCustomUpdateCheck() (bool, error) {
+	envShell := utils.GetOSShell(i.GetData().EnvShell)
+	args := utils.GetOSShellArgs(*i.GetData().CheckHasUpdate)
+	return utils.RunCmdGetSuccess(i.Data.Environ(), envShell, args...)
+}
+
+func (i *InstallerBase) RunCustomInstallCheck() (bool, error) {
+	envShell := utils.GetOSShell(i.GetData().EnvShell)
+	args := utils.GetOSShellArgs(*i.GetData().CheckInstalled)
+	return utils.RunCmdGetSuccess(i.Data.Environ(), envShell, args...)
+}
+
+func (i *InstallerBase) HasCustomUpdateCheck() bool {
+	return i.GetData().CheckHasUpdate != nil
+}
+
+func (i *InstallerBase) HasCustomInstallCheck() bool {
+	return i.GetData().CheckInstalled != nil
+}
+
+func (i *InstallerBase) RunCmdAsFile(command string) error {
+	data := i.GetData()
+	return utils.RunCmdAsFile(data.Environ(), command, data.EnvShell)
+}
+
+func (i *InstallerBase) RunCmdPassThrough(command string, args ...string) error {
+	data := i.GetData()
+	return utils.RunCmdPassThrough(data.Environ(), command, args...)
+}
+
+func (i *InstallerBase) RunCmdGetSuccess(command string, args ...string) (bool, error) {
+	data := i.GetData()
+	return utils.RunCmdGetSuccess(data.Environ(), command, args...)
+}
+func (i *InstallerBase) RunCmdGetOutput(command string, args ...string) ([]byte, error) {
+	data := i.GetData()
+	return utils.RunCmdGetOutput(data.Environ(), command, args...)
 }
 
 func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
@@ -68,7 +115,7 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 	}
 
 	logger.Debug("Checking %s (%s)", name, info.Type)
-	err, installed := installer.CheckIsInstalled()
+	installed, err := installer.CheckIsInstalled()
 	if err != nil {
 		return err
 	}
@@ -76,7 +123,7 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 		logger.Debug("%s (%s) is already installed", name, info.Type)
 		if config.CheckUpdates {
 			logger.Info("Checking updates for %s (%s)", name, info.Type)
-			err, needsUpdate := installer.CheckNeedsUpdate()
+			needsUpdate, err := installer.CheckNeedsUpdate()
 			if err != nil {
 				return err
 			}

@@ -6,6 +6,7 @@ import (
 )
 
 type AptInstaller struct {
+	InstallerBase
 	Config         *appconfig.AppConfig
 	Info           *appconfig.InstallerData
 	PackageManager PackageManager
@@ -23,7 +24,7 @@ const (
 // Install implements IInstaller.
 func (i *AptInstaller) Install() error {
 	name := *i.Info.Name
-	err := utils.RunCmdPassThrough(i.Info.Environ(), string(i.PackageManager), "update")
+	err := i.RunCmdPassThrough(string(i.PackageManager), "update")
 	if err != nil {
 		return err
 	}
@@ -31,7 +32,7 @@ func (i *AptInstaller) Install() error {
 	if i.PackageManager == PackageManagerApk {
 		install = "add"
 	}
-	return utils.RunCmdPassThrough(i.Info.Environ(), string(i.PackageManager), install, i.getConfirmArg(), name)
+	return i.RunCmdPassThrough(string(i.PackageManager), install, i.getConfirmArg(), name)
 }
 
 func (i *AptInstaller) getConfirmArg() string {
@@ -44,28 +45,31 @@ func (i *AptInstaller) getConfirmArg() string {
 
 // Update implements IInstaller.
 func (i *AptInstaller) Update() error {
-	return utils.RunCmdPassThrough(i.Info.Environ(), string(i.PackageManager), "upgrade", i.getConfirmArg(), *i.Info.Name)
+	return i.RunCmdPassThrough(string(i.PackageManager), "upgrade", i.getConfirmArg(), *i.Info.Name)
 }
 
 // CheckNeedsUpdate implements IInstaller.
-func (i *AptInstaller) CheckNeedsUpdate() (error, bool) {
-	if i.GetData().CheckHasUpdate != nil {
-		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetOSShell(i.GetData().EnvShell), utils.GetOSShellArgs(*i.GetData().CheckHasUpdate)...)
+func (i *AptInstaller) CheckNeedsUpdate() (bool, error) {
+	if i.HasCustomUpdateCheck() {
+		return i.RunCustomUpdateCheck()
 	}
-	err := utils.RunCmdPassThrough(i.Info.Environ(), "apk", "update")
+	err := i.RunCmdPassThrough("apk", "update")
 	if err != nil {
-		return err, false
+		return false, err
 	}
-	err, success := utils.RunCmdGetSuccess(i.Info.Environ(), string(i.PackageManager), "--simulate", "upgrade", *i.Info.Name)
+	success, err := i.RunCmdGetSuccess(string(i.PackageManager), "--simulate", "upgrade", *i.Info.Name)
 	if err != nil {
-		return err, false
+		return false, err
 	}
-	return nil, !success
+	return !success, nil
 }
 
 // CheckIsInstalled implements IInstaller.
-func (i *AptInstaller) CheckIsInstalled() (error, bool) {
-	return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetShellWhich(), i.GetBinName())
+func (i *AptInstaller) CheckIsInstalled() (bool, error) {
+	if i.HasCustomInstallCheck() {
+		return i.RunCustomInstallCheck()
+	}
+	return i.RunCmdGetSuccess(utils.GetShellWhich(), i.GetBinName())
 }
 
 // GetData implements IInstaller.
@@ -99,6 +103,7 @@ func NewAptInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerDat
 		packageManager = PackageManagerApk
 	}
 	i := &AptInstaller{
+		InstallerBase:  InstallerBase{Data: installer},
 		Config:         cfg,
 		Info:           installer,
 		PackageManager: packageManager,

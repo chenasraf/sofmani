@@ -6,6 +6,7 @@ import (
 )
 
 type ShellInstaller struct {
+	InstallerBase
 	Config *appconfig.AppConfig
 	Info   *appconfig.InstallerData
 }
@@ -17,35 +18,31 @@ type ShellOpts struct {
 
 // Install implements IInstaller.
 func (i *ShellInstaller) Install() error {
-	return utils.RunCmdAsFile(i.Info.Environ(), *i.GetOpts().Command, i.GetData().EnvShell)
+	return i.RunCmdAsFile(*i.GetOpts().Command)
 }
 
 // Update implements IInstaller.
 func (i *ShellInstaller) Update() error {
 	if i.GetOpts().UpdateCommand != nil {
-		return utils.RunCmdAsFile(i.Info.Environ(), *i.GetOpts().UpdateCommand, i.GetData().EnvShell)
+		return i.RunCmdAsFile(*i.GetOpts().UpdateCommand)
 	}
 	return i.Install()
 }
 
 // CheckNeedsUpdate implements IInstaller.
-func (i *ShellInstaller) CheckNeedsUpdate() (error, bool) {
-	if i.GetData().CheckHasUpdate != nil {
-		shell := utils.GetOSShell(i.GetData().EnvShell)
-		args := utils.GetOSShellArgs(*i.GetData().CheckHasUpdate)
-		return utils.RunCmdGetSuccess(i.Info.Environ(), shell, args...)
+func (i *ShellInstaller) CheckNeedsUpdate() (bool, error) {
+	if i.HasCustomUpdateCheck() {
+		return i.RunCustomUpdateCheck()
 	}
-	return nil, false
+	return false, nil
 }
 
 // CheckIsInstalled implements IInstaller.
-func (i *ShellInstaller) CheckIsInstalled() (error, bool) {
-	if i.GetData().CheckInstalled != nil {
-		shell := utils.GetOSShell(i.GetData().EnvShell)
-		args := utils.GetOSShellArgs(*i.GetData().CheckInstalled)
-		return utils.RunCmdGetSuccess(i.Info.Environ(), shell, args...)
+func (i *ShellInstaller) CheckIsInstalled() (bool, error) {
+	if i.HasCustomInstallCheck() {
+		return i.RunCustomInstallCheck()
 	}
-	return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetShellWhich(), i.GetBinName())
+	return i.RunCmdGetSuccess(utils.GetShellWhich(), i.GetBinName())
 }
 
 // GetData implements IInstaller.
@@ -77,7 +74,8 @@ func (i *ShellInstaller) GetBinName() string {
 
 func NewShellInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *ShellInstaller {
 	return &ShellInstaller{
-		Config: cfg,
-		Info:   installer,
+		InstallerBase: InstallerBase{Data: installer},
+		Config:        cfg,
+		Info:          installer,
 	}
 }

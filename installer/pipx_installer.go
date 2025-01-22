@@ -6,6 +6,7 @@ import (
 )
 
 type PipxInstaller struct {
+	InstallerBase
 	Config *appconfig.AppConfig
 	Info   *appconfig.InstallerData
 }
@@ -17,29 +18,32 @@ type PipxOpts struct {
 // Install implements IInstaller.
 func (i *PipxInstaller) Install() error {
 	name := *i.Info.Name
-	return utils.RunCmdPassThrough(i.Info.Environ(), "pipx", "install", name)
+	return i.RunCmdPassThrough("pipx", "install", name)
 }
 
 // Update implements IInstaller.
 func (i *PipxInstaller) Update() error {
-	return utils.RunCmdPassThrough(i.Info.Environ(), "pipx", "upgrade", *i.Info.Name)
+	return i.RunCmdPassThrough("pipx", "upgrade", *i.Info.Name)
 }
 
 // CheckNeedsUpdate implements IInstaller.
-func (i *PipxInstaller) CheckNeedsUpdate() (error, bool) {
-	if i.GetData().CheckHasUpdate != nil {
-		return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetOSShell(i.GetData().EnvShell), utils.GetOSShellArgs(*i.GetData().CheckHasUpdate)...)
+func (i *PipxInstaller) CheckNeedsUpdate() (bool, error) {
+	if i.HasCustomUpdateCheck() {
+		return i.RunCustomUpdateCheck()
 	}
-	err, success := utils.RunCmdGetSuccess(i.Info.Environ(), "pipx", "upgrade", "--pip-args=--dry-run", *i.Info.Name)
+	success, err := i.RunCmdGetSuccess("pipx", "upgrade", "--pip-args=--dry-run", *i.Info.Name)
 	if err != nil {
-		return err, false
+		return false, err
 	}
-	return nil, !success
+	return !success, nil
 }
 
 // CheckIsInstalled implements IInstaller.
-func (i *PipxInstaller) CheckIsInstalled() (error, bool) {
-	return utils.RunCmdGetSuccess(i.Info.Environ(), utils.GetShellWhich(), i.GetBinName())
+func (i *PipxInstaller) CheckIsInstalled() (bool, error) {
+	if i.HasCustomInstallCheck() {
+		return i.RunCustomInstallCheck()
+	}
+	return i.RunCmdGetSuccess(utils.GetShellWhich(), i.GetBinName())
 }
 
 // GetData implements IInstaller.
@@ -66,8 +70,9 @@ func (i *PipxInstaller) GetBinName() string {
 
 func NewPipxInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *PipxInstaller {
 	i := &PipxInstaller{
-		Config: cfg,
-		Info:   installer,
+		InstallerBase: InstallerBase{Data: installer},
+		Config:        cfg,
+		Info:          installer,
 	}
 
 	return i

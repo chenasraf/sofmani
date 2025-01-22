@@ -11,6 +11,7 @@ import (
 )
 
 type ManifestInstaller struct {
+	InstallerBase
 	Config         *appconfig.AppConfig
 	Info           *appconfig.InstallerData
 	ManifestConfig *appconfig.AppConfig
@@ -35,7 +36,7 @@ func (i *ManifestInstaller) Install() error {
 	logger.Info("Installing manifest %s", name)
 	for _, step := range config.Install {
 		logger.Debug("Checking step %s", *step.Name)
-		err, installer := GetInstaller(config, &step)
+		installer, err := GetInstaller(config, &step)
 		if err != nil {
 			return err
 		}
@@ -54,21 +55,19 @@ func (i *ManifestInstaller) Update() error {
 }
 
 // CheckNeedsUpdate implements IInstaller.
-func (i *ManifestInstaller) CheckNeedsUpdate() (error, bool) {
-	info := i.GetData()
-	if info.CheckHasUpdate != nil {
-		return utils.RunCmdGetSuccess(info.Environ(), utils.GetOSShell(info.EnvShell), utils.GetOSShellArgs(*info.CheckHasUpdate)...)
+func (i *ManifestInstaller) CheckNeedsUpdate() (bool, error) {
+	if i.HasCustomUpdateCheck() {
+		return i.RunCustomUpdateCheck()
 	}
-	return nil, true
+	return true, nil
 }
 
 // CheckIsInstalled implements IInstaller.
-func (i *ManifestInstaller) CheckIsInstalled() (error, bool) {
-	info := i.GetData()
-	if info.CheckInstalled != nil {
-		return utils.RunCmdGetSuccess(info.Environ(), utils.GetOSShell(info.EnvShell), utils.GetOSShellArgs(*info.CheckInstalled)...)
+func (i *ManifestInstaller) CheckIsInstalled() (bool, error) {
+	if i.HasCustomInstallCheck() {
+		return i.RunCustomInstallCheck()
 	}
-	return nil, false
+	return false, nil
 }
 
 // GetData implements IInstaller.
@@ -128,17 +127,16 @@ func (i *ManifestInstaller) FetchManifest() error {
 
 func (i *ManifestInstaller) getGitManifestConfig(source string) (string, error) {
 	opts := i.GetOpts()
-	info := i.GetData()
 	tmpDir, err := os.MkdirTemp("", "sofmani")
 	defer os.RemoveAll(tmpDir)
 	if err != nil {
 		return "", err
 	}
 	logger.Debug("Cloning %s to %s", source, tmpDir)
-	err, success := utils.RunCmdGetSuccess(info.Environ(), "git", "clone", "--depth=1", source, tmpDir)
+	success, err := i.RunCmdGetSuccess("git", "clone", "--depth=1", source, tmpDir)
 	if opts.Ref != nil {
 		logger.Debug("Checking out ref %s", *opts.Ref)
-		err = utils.RunCmdPassThrough(info.Environ(), "git", "-C", tmpDir, "checkout", *opts.Ref)
+		err = i.RunCmdPassThrough("git", "-C", tmpDir, "checkout", *opts.Ref)
 		if err != nil {
 			return "", err
 		}
@@ -203,7 +201,8 @@ func (i *ManifestInstaller) inheritManifest(config *appconfig.AppConfig) *appcon
 
 func NewManifestInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *ManifestInstaller {
 	return &ManifestInstaller{
-		Config: cfg,
-		Info:   installer,
+		InstallerBase: InstallerBase{Data: installer},
+		Config:        cfg,
+		Info:          installer,
 	}
 }
