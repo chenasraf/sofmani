@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/chenasraf/sofmani/appconfig"
+	"github.com/chenasraf/sofmani/platform"
 	"github.com/chenasraf/sofmani/utils"
 )
 
@@ -20,9 +21,10 @@ type GitHubReleaseInstaller struct {
 }
 
 type GitHubReleaseOpts struct {
-	Repository       *string
-	Destination      *string
-	DownloadFilename *string
+	Repository                *string
+	Destination               *string
+	DownloadFilename          *string
+	PlatformDownloadFilenames *platform.PlatformMap[string]
 }
 
 // Install implements IInstaller.
@@ -40,7 +42,7 @@ func (i *GitHubReleaseInstaller) Install() error {
 		return err
 	}
 
-	filename := strings.ReplaceAll(*opts.DownloadFilename, "{tag}", tag)
+	filename := strings.ReplaceAll(i.GetFilename(), "{tag}", tag)
 	downloadUrl := fmt.Sprintf("https://github.com/%s/releases/download/%s/%s", *opts.Repository, tag, filename)
 	resp, err := http.Get(downloadUrl)
 	if err != nil {
@@ -111,6 +113,13 @@ func (i *GitHubReleaseInstaller) GetOpts() *GitHubReleaseOpts {
 		if filename, ok := (*info.Opts)["download_filename"].(string); ok {
 			opts.DownloadFilename = &filename
 		}
+		if platformDownloadFilenames, ok := (*info.Opts)["platform_download_filenames"].(map[string]*string); ok {
+			opts.PlatformDownloadFilenames = &platform.PlatformMap[string]{
+				MacOS:   platformDownloadFilenames["macos"],
+				Linux:   platformDownloadFilenames["linux"],
+				Windows: platformDownloadFilenames["windows"],
+			}
+		}
 	}
 	return opts
 }
@@ -135,6 +144,22 @@ func (i *GitHubReleaseInstaller) GetLatestTag() (string, error) {
 	// get the release tag
 	tag := jsonMap["tag_name"].(string)
 	return tag, nil
+}
+
+func (i *GitHubReleaseInstaller) GetFilename() string {
+	opts := i.GetOpts()
+	if opts.PlatformDownloadFilenames != nil {
+		filename := *opts.DownloadFilename
+		return opts.PlatformDownloadFilenames.ResolveWithFallback(platform.PlatformMap[string]{
+			MacOS:   &filename,
+			Linux:   &filename,
+			Windows: &filename,
+		})
+	}
+	if opts.DownloadFilename != nil {
+		return *opts.DownloadFilename
+	}
+	return ""
 }
 
 func (i *GitHubReleaseInstaller) GetDestination() string {
