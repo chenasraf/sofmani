@@ -101,6 +101,11 @@ func (i *GitHubReleaseInstaller) Install() error {
 		return errors.Join(fmt.Errorf("Failed to extract the downloaded file"), err)
 	}
 
+	err = i.UpdateCache(tag)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -114,18 +119,55 @@ func (i *GitHubReleaseInstaller) CheckNeedsUpdate() (bool, error) {
 	if i.HasCustomUpdateCheck() {
 		return i.RunCustomUpdateCheck()
 	}
-	_, err := i.RunCmdGetSuccess("git", "-C", i.GetInstallDir(), "fetch")
+	cachedTag, err := i.GetCachedTag()
 	if err != nil {
 		return false, err
 	}
-	output, err := i.RunCmdGetOutput("git", "-C", i.GetInstallDir(), "status", "-uno")
+	if cachedTag == "" {
+		return true, nil
+	}
+	latest, err := i.GetLatestTag()
 	if err != nil {
 		return false, err
 	}
-	if strings.Contains(string(output), "Your branch is behind") {
+	if latest != strings.TrimSpace(latest) {
 		return true, nil
 	}
 	return false, nil
+}
+
+func (i *GitHubReleaseInstaller) GetCachedTag() (string, error) {
+	cacheDir, err := utils.GetCacheDir()
+	if err != nil {
+		return "", err
+	}
+	cacheFile := fmt.Sprintf("%s/%s", cacheDir, *i.Info.Name)
+	exists, err := utils.PathExists(cacheFile)
+	if err != nil {
+		return "", err
+	}
+	if !exists {
+		return "", nil
+	}
+	reader, err := os.Open(cacheFile)
+	contents, err := io.ReadAll(reader)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(contents)), nil
+}
+
+func (i *GitHubReleaseInstaller) UpdateCache(tag string) error {
+	cacheDir, err := utils.GetCacheDir()
+	if err != nil {
+		return err
+	}
+	cacheFile := fmt.Sprintf("%s/%s", cacheDir, *i.Info.Name)
+	err = os.WriteFile(cacheFile, []byte(tag), 0644)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // CheckIsInstalled implements IInstaller.
@@ -178,7 +220,6 @@ func (i *GitHubReleaseInstaller) GetLatestTag() (string, error) {
 		return "", err
 	}
 	defer resp.Body.Close()
-	// parse json
 	contents, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
@@ -188,7 +229,6 @@ func (i *GitHubReleaseInstaller) GetLatestTag() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// get the release tag
 	tag := jsonMap["tag_name"].(string)
 	return tag, nil
 }
