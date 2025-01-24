@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/chenasraf/sofmani/appconfig"
+	"github.com/chenasraf/sofmani/logger"
 	"github.com/chenasraf/sofmani/platform"
 	"github.com/chenasraf/sofmani/utils"
 )
@@ -18,7 +19,7 @@ import (
 type GitHubReleaseInstaller struct {
 	InstallerBase
 	Config *appconfig.AppConfig
-	Info   *appconfig.InstallerData
+	Data   *appconfig.InstallerData
 }
 
 type GitHubReleaseOpts struct {
@@ -47,8 +48,15 @@ func (i *GitHubReleaseInstaller) Install() error {
 		return err
 	}
 	tmpOut, err := os.Create(fmt.Sprintf("%s/%s", tmpDir, name))
+	logger.Debug("tmpOut: %v", tmpOut)
+
+	err = os.MkdirAll(*opts.Destination, 0755)
+	if err != nil {
+		return err
+	}
 
 	out, err := os.Create(fmt.Sprintf("%s/%s", *opts.Destination, name))
+	logger.Debug("out: %v, %v", out, err)
 	defer out.Close()
 	if err != nil {
 		return err
@@ -59,11 +67,16 @@ func (i *GitHubReleaseInstaller) Install() error {
 		return err
 	}
 
-	filename := strings.ReplaceAll(i.GetFilename(), "{tag}", tag)
+	replTag := tag
+	if strings.HasPrefix(tag, "v") {
+		replTag = strings.TrimPrefix(tag, "v")
+	}
+	filename := strings.ReplaceAll(i.GetFilename(), "{tag}", replTag)
 	if filename == "" {
 		return fmt.Errorf("No download filename provided")
 	}
 	downloadUrl := fmt.Sprintf("https://github.com/%s/releases/download/%s/%s", *opts.Repository, tag, filename)
+	logger.Debug("Downloading %s", downloadUrl)
 	resp, err := http.Get(downloadUrl)
 	if err != nil {
 		return err
@@ -138,10 +151,11 @@ func (i *GitHubReleaseInstaller) CheckNeedsUpdate() (bool, error) {
 
 func (i *GitHubReleaseInstaller) GetCachedTag() (string, error) {
 	cacheDir, err := utils.GetCacheDir()
+	logger.Debug("cacheDir: %v", cacheDir)
 	if err != nil {
 		return "", err
 	}
-	cacheFile := fmt.Sprintf("%s/%s", cacheDir, *i.Info.Name)
+	cacheFile := fmt.Sprintf("%s/%s", cacheDir, *i.Data.Name)
 	exists, err := utils.PathExists(cacheFile)
 	if err != nil {
 		return "", err
@@ -162,7 +176,7 @@ func (i *GitHubReleaseInstaller) UpdateCache(tag string) error {
 	if err != nil {
 		return err
 	}
-	cacheFile := fmt.Sprintf("%s/%s", cacheDir, *i.Info.Name)
+	cacheFile := fmt.Sprintf("%s/%s", cacheDir, *i.Data.Name)
 	err = os.WriteFile(cacheFile, []byte(tag), 0644)
 	if err != nil {
 		return err
@@ -180,12 +194,12 @@ func (i *GitHubReleaseInstaller) CheckIsInstalled() (bool, error) {
 
 // GetData implements IInstaller.
 func (i *GitHubReleaseInstaller) GetData() *appconfig.InstallerData {
-	return i.Info
+	return i.Data
 }
 
 func (i *GitHubReleaseInstaller) GetOpts() *GitHubReleaseOpts {
 	opts := &GitHubReleaseOpts{}
-	info := i.Info
+	info := i.Data
 	if info.Opts != nil {
 		if repository, ok := (*info.Opts)["repository"].(string); ok {
 			repository = utils.GetRealPath(i.GetData().Environ(), repository)
@@ -193,7 +207,7 @@ func (i *GitHubReleaseInstaller) GetOpts() *GitHubReleaseOpts {
 		}
 		if destination, ok := (*info.Opts)["destination"].(string); ok {
 			destination = utils.GetRealPath(i.GetData().Environ(), destination)
-			opts.Repository = &destination
+			opts.Destination = &destination
 		}
 		if filename, ok := (*info.Opts)["download_filename"].(string); ok {
 			opts.DownloadFilename = &filename
@@ -210,6 +224,7 @@ func (i *GitHubReleaseInstaller) GetOpts() *GitHubReleaseOpts {
 			opts.Strategy = &strat
 		}
 	}
+	logger.Debug("GitHubReleaseInstaller.GetOpts: %v", opts.DownloadFilename)
 	return opts
 }
 
@@ -230,6 +245,7 @@ func (i *GitHubReleaseInstaller) GetLatestTag() (string, error) {
 		return "", err
 	}
 	tag := jsonMap["tag_name"].(string)
+
 	return tag, nil
 }
 
@@ -261,13 +277,14 @@ func (i *GitHubReleaseInstaller) GetDestination() string {
 }
 
 func (i *GitHubReleaseInstaller) GetInstallDir() string {
-	return filepath.Join(i.GetDestination(), filepath.Base(*i.Info.Name))
+	return filepath.Join(i.GetDestination(), filepath.Base(*i.Data.Name))
 }
 
 func NewGitHubReleaseInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *GitHubReleaseInstaller {
 	i := &GitHubReleaseInstaller{
-		Config: cfg,
-		Info:   installer,
+		InstallerBase: InstallerBase{Data: installer},
+		Config:        cfg,
+		Data:          installer,
 	}
 
 	return i

@@ -38,6 +38,8 @@ func GetInstaller(config *appconfig.AppConfig, data *appconfig.InstallerData) (I
 		return NewAptInstaller(config, data), nil
 	case appconfig.InstallerTypePipx:
 		return NewPipxInstaller(config, data), nil
+	case appconfig.InstallerTypeGitHubRelease:
+		return NewGitHubReleaseInstaller(config, data), nil
 	case appconfig.InstallerTypeGit:
 		return NewGitInstaller(config, data), nil
 	case appconfig.InstallerTypeManifest:
@@ -67,6 +69,7 @@ func (i *InstallerBase) HasCustomUpdateCheck() bool {
 }
 
 func (i *InstallerBase) HasCustomInstallCheck() bool {
+	logger.Debug("CheckInstalled: %v, %v", i, i.GetData())
 	return i.GetData().CheckInstalled != nil
 }
 
