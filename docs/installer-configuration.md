@@ -1,4 +1,4 @@
-# Installer Types
+# Installer Configuration
 
 The `install` field describes the steps to execute. Each step represents an action or group of
 actions. Steps can be of **several types**, such as `brew`, `rsync`, `shell`, and more.

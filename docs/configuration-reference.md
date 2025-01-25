@@ -8,8 +8,8 @@ Here is a breakdown of all configuration options:
 
   - Installation steps to execute.
 
-  - See [Installer Types](./installer-types.md) for supported types and options that you can
-    provide.
+  - See [Installer Configuration](./installer-configuration.md) for supported types and options that
+    you can provide.
 
 - **`debug`** (Boolean)
 
@@ -30,8 +30,8 @@ Here is a breakdown of all configuration options:
 
     A mapping between each type (key) and their default options (value).
 
-    - See [Installer Types](./installer-types.md) for supported types and options that you can
-      override.
+    - See [Installer Configuration](./installer-configuration.md) for supported types and options
+      that you can override.
 
 - **`env`** (Object)
   - Environment variables that will be set for the context of the installer.
