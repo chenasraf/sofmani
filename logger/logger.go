@@ -78,6 +78,10 @@ func (l *Logger) log(level string, colorizer *color.Color, format string, args .
 	// Write to file
 	l.fileLogger.Println(message)
 
+	if level == "DEBUG" && !l.debug {
+		return
+	}
+
 	// Write to console with color
 	if colorizer != nil {
 		l.consoleOut.Println(colorizer.Sprint(message))
@@ -102,9 +106,6 @@ func Error(format string, args ...interface{}) {
 }
 
 func Debug(format string, args ...interface{}) {
-	if !logger.debug {
-		return
-	}
 	colorGreen := color.New(color.FgGreen).Add(color.Bold)
 	logger.log("DEBUG", colorGreen, format, args...)
 }
