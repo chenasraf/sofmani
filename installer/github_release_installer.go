@@ -23,19 +23,18 @@ type GitHubReleaseInstaller struct {
 }
 
 type GitHubReleaseOpts struct {
-	Repository                *string
-	Destination               *string
-	DownloadFilename          *string
-	PlatformDownloadFilenames *platform.PlatformMap[string]
-	Strategy                  *GitHubReleaseInstallStrategy
+	Repository       *string
+	Destination      *string
+	DownloadFilename *platform.PlatformMap[string]
+	Strategy         *GitHubReleaseInstallStrategy
 }
 
 type GitHubReleaseInstallStrategy string
 
 const (
-	StrategyNone GitHubReleaseInstallStrategy = "none"
-	StrategyTar  GitHubReleaseInstallStrategy = "tar"
-	StrategyZip  GitHubReleaseInstallStrategy = "zip"
+	GitHubReleaseInstallStrategyNone GitHubReleaseInstallStrategy = "none"
+	GitHubReleaseInstallStrategyTar  GitHubReleaseInstallStrategy = "tar"
+	GitHubReleaseInstallStrategyZip  GitHubReleaseInstallStrategy = "zip"
 )
 
 // Install implements IInstaller.
@@ -71,7 +70,9 @@ func (i *GitHubReleaseInstaller) Install() error {
 	if strings.HasPrefix(tag, "v") {
 		replTag = strings.TrimPrefix(tag, "v")
 	}
-	filename := strings.ReplaceAll(i.GetFilename(), "{tag}", replTag)
+	filename := i.GetFilename()
+	filename = strings.ReplaceAll(filename, "{tag}", replTag)
+	filename = strings.ReplaceAll(filename, "{version}", tag)
 	if filename == "" {
 		return fmt.Errorf("No download filename provided")
 	}
@@ -91,7 +92,7 @@ func (i *GitHubReleaseInstaller) Install() error {
 		return fmt.Errorf("No data was written to the file")
 	}
 
-	strategy := StrategyNone
+	strategy := GitHubReleaseInstallStrategyNone
 
 	if opts.Strategy != nil {
 		strategy = *opts.Strategy
@@ -100,9 +101,9 @@ func (i *GitHubReleaseInstaller) Install() error {
 	success := false
 
 	switch strategy {
-	case StrategyTar:
+	case GitHubReleaseInstallStrategyTar:
 		success, err = i.RunCmdGetSuccess("tar", "-xvf", tmpOut.Name(), "-C", *opts.Destination)
-	case StrategyZip:
+	case GitHubReleaseInstallStrategyZip:
 		success, err = i.RunCmdGetSuccess("unzip", tmpOut.Name(), "-d", *opts.Destination)
 	default:
 		io.Copy(out, tmpOut)
@@ -210,13 +211,16 @@ func (i *GitHubReleaseInstaller) GetOpts() *GitHubReleaseOpts {
 			opts.Destination = &destination
 		}
 		if filename, ok := (*info.Opts)["download_filename"].(string); ok {
-			opts.DownloadFilename = &filename
-		}
-		if platformDownloadFilenames, ok := (*info.Opts)["platform_download_filenames"].(map[string]*string); ok {
-			opts.PlatformDownloadFilenames = &platform.PlatformMap[string]{
-				MacOS:   platformDownloadFilenames["macos"],
-				Linux:   platformDownloadFilenames["linux"],
-				Windows: platformDownloadFilenames["windows"],
+			opts.DownloadFilename = &platform.PlatformMap[string]{
+				MacOS:   &filename,
+				Linux:   &filename,
+				Windows: &filename,
+			}
+		} else if filenameMap, ok := (*info.Opts)["download_filename"].(map[string]*string); ok {
+			opts.DownloadFilename = &platform.PlatformMap[string]{
+				MacOS:   filenameMap["macos"],
+				Linux:   filenameMap["linux"],
+				Windows: filenameMap["windows"],
 			}
 		}
 		if strategy, ok := (*info.Opts)["strategy"].(string); ok {

@@ -69,7 +69,6 @@ func (i *InstallerBase) HasCustomUpdateCheck() bool {
 }
 
 func (i *InstallerBase) HasCustomInstallCheck() bool {
-	logger.Debug("CheckInstalled: %v, %v", i, i.GetData())
 	return i.GetData().CheckInstalled != nil
 }
 
