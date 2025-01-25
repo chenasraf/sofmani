@@ -145,7 +145,8 @@ For more information, see [Configuration Reference](./docs/configuration-referen
 
 Here is a quick breakdown of all configuration options.
 
-For a full breakdown with all the supported options, see [the docs](./docs/installer-types.md).
+For a full breakdown with all the supported options, see
+[the docs](./docs/installer-configuration.md).
 
 ### Global Options
 
@@ -184,7 +185,7 @@ actions. Steps can be of **several types**, such as `brew`, `rsync`, `shell`, an
 
 ### Supported `type` of Installers
 
-For a full list with all the supported options, see [the docs](./docs/installer-types.md).
+For a full list with all the supported options, see [the docs](./docs/installer-configuration.md).
 
 - **`shell`**
 

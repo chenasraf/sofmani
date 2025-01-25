@@ -37,7 +37,7 @@ The following filter types are available:
 
 Each of the above filters can be negated by prefixing with `!`. For example, to exclude installers
 containing the tag `"system"`, use `-f "!tag:system"`. See more information about tags in the
-documentation for (Installer Types)[./installer-types.md#fields].
+documentation for (Installer Configuration)[./installer-configuration.md#fields].
 
 If there are no filters in the command flags, then all the installers will run.
 
