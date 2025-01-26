@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.8.0](https://github.com/chenasraf/sofmani/compare/v1.7.0...v1.8.0) (2025-01-26)
+
+
+### Features
+
+* github release installer ([00934e9](https://github.com/chenasraf/sofmani/commit/00934e98f9b675eaea3d0b17ea85e2dc4bd6a756))
+
+
+### Bug Fixes
+
+* always log everything to file ([fa59a40](https://github.com/chenasraf/sofmani/commit/fa59a4006bcd938cfe8873c4a5b2b9001ae330c2))
+
 ## [1.7.0](https://github.com/chenasraf/sofmani/compare/v1.6.0...v1.7.0) (2025-01-20)
 
 
