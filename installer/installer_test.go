@@ -158,8 +158,7 @@ func TestGitValidation(t *testing.T) {
 		},
 	}
 	errors = newTestGitInstaller(missingRefData).Validate()
-	assert.Len(t, errors, 1)
-	assert.Equal(t, "ref", errors[0].FieldName)
+	assert.Empty(t, errors)
 
 	// 🔴 Invalid: Missing destination
 	missingDestData := &appconfig.InstallerData{
@@ -180,8 +179,8 @@ func TestGitValidation(t *testing.T) {
 		Opts: &map[string]any{},
 	}
 	errors = newTestGitInstaller(missingBothData).Validate()
-	assert.Len(t, errors, 2)
-	assert.ElementsMatch(t, []string{"destination", "ref"}, []string{errors[0].FieldName, errors[1].FieldName})
+	assert.Len(t, errors, 1)
+	assert.Equal(t, "destination", errors[0].FieldName)
 }
 
 func newTestGitHubReleaseInstaller(data *appconfig.InstallerData) *GitHubReleaseInstaller {
@@ -546,8 +545,7 @@ func TestShellValidation(t *testing.T) {
 		},
 	}
 	errors = newTestShellInstaller(missingUpdate).Validate()
-	assert.Len(t, errors, 1)
-	assert.Equal(t, "update_command", errors[0].FieldName)
+	assert.Empty(t, errors)
 
 	// 🔴 Missing both
 	missingBoth := &appconfig.InstallerData{
@@ -556,9 +554,8 @@ func TestShellValidation(t *testing.T) {
 		Opts: &map[string]any{},
 	}
 	errors = newTestShellInstaller(missingBoth).Validate()
-	assert.Len(t, errors, 2)
-	assert.ElementsMatch(t, []string{"command", "update_command"},
-		[]string{errors[0].FieldName, errors[1].FieldName})
+	assert.Len(t, errors, 1)
+	assert.Equal(t, "command", errors[0].FieldName)
 }
 
 func strPtr(s string) *string {

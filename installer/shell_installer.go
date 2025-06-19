@@ -23,7 +23,7 @@ func (i *ShellInstaller) Validate() []ValidationError {
 	if opts.Command == nil || len(*opts.Command) == 0 {
 		errors = append(errors, ValidationError{FieldName: "command", Message: validationIsRequired(), InstallerName: *info.Name})
 	}
-	if opts.UpdateCommand == nil || len(*opts.UpdateCommand) == 0 {
+	if opts.UpdateCommand != nil && len(*opts.UpdateCommand) == 0 {
 		errors = append(errors, ValidationError{FieldName: "update_command", Message: validationIsRequired(), InstallerName: *info.Name})
 	}
 	return errors

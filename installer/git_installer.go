@@ -28,8 +28,8 @@ func (i *GitInstaller) Validate() []ValidationError {
 	if opts.Destination == nil || len(*opts.Destination) == 0 {
 		errors = append(errors, ValidationError{FieldName: "destination", Message: validationIsRequired(), InstallerName: *info.Name})
 	}
-	if opts.Ref == nil || len(*opts.Ref) == 0 {
-		errors = append(errors, ValidationError{FieldName: "ref", Message: validationIsRequired(), InstallerName: *info.Name})
+	if opts.Ref != nil && len(*opts.Ref) == 0 {
+		errors = append(errors, ValidationError{FieldName: "ref", Message: validationIsNotEmpty(), InstallerName: *info.Name})
 	}
 	return errors
 }
