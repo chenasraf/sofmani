@@ -2,6 +2,7 @@ package installer
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 
@@ -180,7 +181,7 @@ func (i *ManifestInstaller) getLocalManifestConfig(path string) (*appconfig.AppC
 
 func (i *ManifestInstaller) inheritManifest(config *appconfig.AppConfig) *appconfig.AppConfig {
 	self := i.Config
-	if *self.Debug {
+	if self.Debug != nil {
 		config.Debug = self.Debug
 	}
 	if *self.CheckUpdates {
@@ -194,9 +195,7 @@ func (i *ManifestInstaller) inheritManifest(config *appconfig.AppConfig) *appcon
 		} else {
 			env = *config.Env
 		}
-		for k, v := range *self.Env {
-			env[k] = v
-		}
+		maps.Copy(env, *self.Env)
 	}
 	if self.Defaults != nil {
 		defs := self.Defaults

@@ -59,6 +59,8 @@ func main() {
 				for _, e := range errors {
 					logger.Error(e.Error())
 				}
+			} else {
+				instances = append(instances, installerInstance)
 			}
 		}
 	}
