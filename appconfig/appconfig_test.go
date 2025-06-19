@@ -74,8 +74,8 @@ func TestParseJsonConfig(t *testing.T) {
 	overrides := AppCliConfig{ConfigFile: file.Name()}
 	config, err := ParseConfig(&overrides)
 	assert.NoError(t, err)
-	assert.True(t, config.Debug)
-	assert.False(t, config.CheckUpdates)
+	assert.True(t, *config.Debug)
+	assert.False(t, *config.CheckUpdates)
 }
 
 func TestParseYamlConfig(t *testing.T) {
@@ -95,8 +95,8 @@ check_updates: false
 	overrides := AppCliConfig{ConfigFile: file.Name()}
 	config, err := ParseConfig(&overrides)
 	assert.NoError(t, err)
-	assert.True(t, config.Debug)
-	assert.False(t, config.CheckUpdates)
+	assert.True(t, *config.Debug)
+	assert.False(t, *config.CheckUpdates)
 }
 
 func TestParseYamlConfigEnabled(t *testing.T) {
@@ -120,8 +120,8 @@ install:
 	overrides := AppCliConfig{ConfigFile: file.Name()}
 	config, err := ParseConfig(&overrides)
 	assert.NoError(t, err)
-	assert.True(t, config.Debug)
-	assert.False(t, config.CheckUpdates)
+	assert.True(t, *config.Debug)
+	assert.False(t, *config.CheckUpdates)
 }
 
 func TestFindConfigFile(t *testing.T) {
