@@ -98,8 +98,16 @@ func tryConfigDir(dir string) string {
 
 func (c *AppConfig) GetConfigDesc() []string {
 	desc := []string{}
-	desc = append(desc, fmt.Sprintf("Debug: %t", *c.Debug))
-	desc = append(desc, fmt.Sprintf("CheckUpdates: %t", *c.CheckUpdates))
+	isDebug := false
+	if c.Debug != nil {
+		isDebug = *c.Debug
+	}
+	checkUpdates := false
+	if c.CheckUpdates != nil {
+		checkUpdates = *c.CheckUpdates
+	}
+	desc = append(desc, fmt.Sprintf("Debug: %t", isDebug))
+	desc = append(desc, fmt.Sprintf("CheckUpdates: %t", checkUpdates))
 
 	if c.Env != nil {
 		desc = append(desc, "Environment Variables:")
