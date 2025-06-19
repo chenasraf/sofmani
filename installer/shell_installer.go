@@ -16,6 +16,19 @@ type ShellOpts struct {
 	UpdateCommand *string
 }
 
+func (i *ShellInstaller) Validate() []ValidationError {
+	errors := i.BaseValidate()
+	info := i.GetData()
+	opts := i.GetOpts()
+	if opts.Command == nil || len(*opts.Command) == 0 {
+		errors = append(errors, ValidationError{FieldName: "command", Message: validationIsRequired(), InstallerName: *info.Name})
+	}
+	if opts.UpdateCommand == nil || len(*opts.UpdateCommand) == 0 {
+		errors = append(errors, ValidationError{FieldName: "update_command", Message: validationIsRequired(), InstallerName: *info.Name})
+	}
+	return errors
+}
+
 // Install implements IInstaller.
 func (i *ShellInstaller) Install() error {
 	return i.RunCmdAsFile(*i.GetOpts().Command)

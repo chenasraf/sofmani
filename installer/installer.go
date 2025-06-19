@@ -15,6 +15,7 @@ type IInstaller interface {
 	CheckNeedsUpdate() (bool, error)
 	Install() error
 	Update() error
+	Validate() []ValidationError
 }
 
 type InstallerBase struct {
@@ -50,6 +51,15 @@ func GetInstaller(config *appconfig.AppConfig, data *appconfig.InstallerData) (I
 
 func (i *InstallerBase) GetData() *appconfig.InstallerData {
 	return i.Data
+}
+
+func (i *InstallerBase) BaseValidate() []ValidationError {
+	errors := []ValidationError{}
+	info := i.GetData()
+	if info.Name == nil || len(*info.Name) == 0 {
+		errors = append(errors, ValidationError{FieldName: "name", Message: "Name is required"})
+	}
+	return errors
 }
 
 func (i *InstallerBase) RunCustomUpdateCheck() (bool, error) {

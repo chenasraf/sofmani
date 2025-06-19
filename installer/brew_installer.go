@@ -1,6 +1,8 @@
 package installer
 
 import (
+	"strings"
+
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/utils"
 )
@@ -13,6 +15,18 @@ type BrewInstaller struct {
 
 type BrewOpts struct {
 	Tap *string
+}
+
+func (i *BrewInstaller) Validate() []ValidationError {
+	errors := i.BaseValidate()
+	info := i.GetData()
+	opts := i.GetOpts()
+	if opts.Tap != nil {
+		if !strings.Contains(*opts.Tap, "/") || len(*opts.Tap) < 3 {
+			errors = append(errors, ValidationError{FieldName: "tap", Message: validationInvalidFormat(), InstallerName: *info.Name})
+		}
+	}
+	return errors
 }
 
 // Install implements IInstaller.

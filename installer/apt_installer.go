@@ -21,6 +21,11 @@ const (
 	PackageManagerApt PackageManager = "apt"
 )
 
+func (i *AptInstaller) Validate() []ValidationError {
+	errors := i.BaseValidate()
+	return errors
+}
+
 // Install implements IInstaller.
 func (i *AptInstaller) Install() error {
 	name := *i.Info.Name

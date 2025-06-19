@@ -24,6 +24,11 @@ const (
 	PackageManagerPnpm PackageManager = "pnpm"
 )
 
+func (i *NpmInstaller) Validate() []ValidationError {
+	errors := i.BaseValidate()
+	return errors
+}
+
 // Install implements IInstaller.
 func (i *NpmInstaller) Install() error {
 	return i.RunCmdPassThrough(string(i.PackageManager), "install", "--global", *i.Info.Name)

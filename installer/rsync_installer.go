@@ -20,6 +20,22 @@ type RsyncOpts struct {
 	Flags       *string
 }
 
+func (i *RsyncInstaller) Validate() []ValidationError {
+	errors := i.BaseValidate()
+	info := i.GetData()
+	opts := i.GetOpts()
+	if opts.Source == nil || len(*opts.Source) == 0 {
+		errors = append(errors, ValidationError{FieldName: "source", Message: validationIsRequired(), InstallerName: *info.Name})
+	}
+	if opts.Destination == nil || len(*opts.Destination) == 0 {
+		errors = append(errors, ValidationError{FieldName: "destination", Message: validationIsRequired(), InstallerName: *info.Name})
+	}
+	if opts.Flags != nil && len(*opts.Flags) == 0 {
+		errors = append(errors, ValidationError{FieldName: "flags", Message: validationIsNotEmpty(), InstallerName: *info.Name})
+	}
+	return errors
+}
+
 // Install implements IInstaller.
 func (i *RsyncInstaller) Install() error {
 	defaultFlags := "-tr"
