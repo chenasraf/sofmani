@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.9.1](https://github.com/chenasraf/sofmani/compare/v1.9.0...v1.9.1) (2025-06-19)
+
+
+### Bug Fixes
+
+* panic on missing debug/check_updates ([dc5c3ca](https://github.com/chenasraf/sofmani/commit/dc5c3caa815d5a21e8c9b85af30e02b58cb55f4c))
+* wrong config validations ([28f3c1c](https://github.com/chenasraf/sofmani/commit/28f3c1c6dbc6e50cb78674099bd9f3e5e4cf29cb))
+
 ## [1.9.0](https://github.com/chenasraf/sofmani/compare/v1.8.0...v1.9.0) (2025-06-19)
 
 
