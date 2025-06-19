@@ -19,7 +19,7 @@ import (
 type GitHubReleaseInstaller struct {
 	InstallerBase
 	Config *appconfig.AppConfig
-	Data   *appconfig.InstallerData
+	Info   *appconfig.InstallerData
 }
 
 type GitHubReleaseOpts struct {
@@ -36,6 +36,31 @@ const (
 	GitHubReleaseInstallStrategyTar  GitHubReleaseInstallStrategy = "tar"
 	GitHubReleaseInstallStrategyZip  GitHubReleaseInstallStrategy = "zip"
 )
+
+func (i *GitHubReleaseInstaller) Validate() []ValidationError {
+	errors := i.BaseValidate()
+	info := i.GetData()
+	opts := i.GetOpts()
+	if opts.Repository == nil || len(*opts.Repository) == 0 {
+		errors = append(errors, ValidationError{FieldName: "repository", Message: validationIsRequired(), InstallerName: *info.Name})
+	}
+	if opts.Destination == nil || len(*opts.Destination) == 0 {
+		errors = append(errors, ValidationError{FieldName: "destination", Message: validationIsRequired(), InstallerName: *info.Name})
+	}
+	if opts.DownloadFilename == nil || len(*opts.DownloadFilename.Resolve()) == 0 {
+		errors = append(errors, ValidationError{FieldName: "download_filename", Message: validationIsRequired(), InstallerName: *info.Name})
+	} else {
+		if (*opts.DownloadFilename).Resolve() == nil || len(*(*opts.DownloadFilename).Resolve()) == 0 {
+			errors = append(errors, ValidationError{FieldName: fmt.Sprintf("download_filename.%s", platform.GetPlatform()), Message: validationIsRequired(), InstallerName: *info.Name})
+		}
+	}
+	if opts.Strategy != nil {
+		if *opts.Strategy != GitHubReleaseInstallStrategyNone && *opts.Strategy != GitHubReleaseInstallStrategyTar && *opts.Strategy != GitHubReleaseInstallStrategyZip {
+			errors = append(errors, ValidationError{FieldName: "strategy", Message: validationInvalidFormat(), InstallerName: *info.Name})
+		}
+	}
+	return errors
+}
 
 // Install implements IInstaller.
 func (i *GitHubReleaseInstaller) Install() error {
@@ -60,10 +85,7 @@ func (i *GitHubReleaseInstaller) Install() error {
 		return err
 	}
 
-	version := tag
-	if strings.HasPrefix(tag, "v") {
-		version = strings.TrimPrefix(tag, "v")
-	}
+	version, _ := strings.CutPrefix(tag, "v")
 	filename := i.GetFilename()
 	filename = strings.ReplaceAll(filename, "{tag}", tag)
 	filename = strings.ReplaceAll(filename, "{version}", version)
@@ -152,8 +174,8 @@ func (i *GitHubReleaseInstaller) CheckIsInstalled() (bool, error) {
 	if i.HasCustomInstallCheck() {
 		return i.RunCustomInstallCheck()
 	}
-	logger.Debug("Checking if %s is installed on %s", *i.Data.Name, filepath.Join(i.GetInstallDir(), *i.Data.Name))
-	return utils.PathExists(filepath.Join(i.GetInstallDir(), *i.Data.Name))
+	logger.Debug("Checking if %s is installed on %s", *i.Info.Name, filepath.Join(i.GetInstallDir(), *i.Info.Name))
+	return utils.PathExists(filepath.Join(i.GetInstallDir(), *i.Info.Name))
 }
 
 // CheckNeedsUpdate implements IInstaller.
@@ -179,10 +201,10 @@ func (i *GitHubReleaseInstaller) CheckNeedsUpdate() (bool, error) {
 }
 
 func (i *GitHubReleaseInstaller) GetBinName() string {
-	if i.Data.BinName != nil {
-		return *i.Data.BinName
+	if i.Info.BinName != nil {
+		return *i.Info.BinName
 	}
-	return filepath.Base(*i.Data.Name)
+	return filepath.Base(*i.Info.Name)
 }
 
 func (i *GitHubReleaseInstaller) CopyExtractedFile(out *os.File, tmpDir string) (bool, error) {
@@ -205,12 +227,12 @@ func (i *GitHubReleaseInstaller) CopyExtractedFile(out *os.File, tmpDir string) 
 }
 
 func (i *GitHubReleaseInstaller) GetCachedTag() (string, error) {
-	logger.Debug("Getting cached tag for %s", *i.Data.Name)
+	logger.Debug("Getting cached tag for %s", *i.Info.Name)
 	cacheDir, err := utils.GetCacheDir()
 	if err != nil {
 		return "", err
 	}
-	cacheFile := fmt.Sprintf("%s/%s", cacheDir, *i.Data.Name)
+	cacheFile := fmt.Sprintf("%s/%s", cacheDir, *i.Info.Name)
 	exists, err := utils.PathExists(cacheFile)
 	if err != nil {
 		return "", err
@@ -223,7 +245,7 @@ func (i *GitHubReleaseInstaller) GetCachedTag() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	logger.Debug("Got cached tag %s for %s", strings.TrimSpace(string(contents)), *i.Data.Name)
+	logger.Debug("Got cached tag %s for %s", strings.TrimSpace(string(contents)), *i.Info.Name)
 	return strings.TrimSpace(string(contents)), nil
 }
 
@@ -232,7 +254,7 @@ func (i *GitHubReleaseInstaller) UpdateCache(tag string) error {
 	if err != nil {
 		return err
 	}
-	cacheFile := fmt.Sprintf("%s/%s", cacheDir, *i.Data.Name)
+	cacheFile := fmt.Sprintf("%s/%s", cacheDir, *i.Info.Name)
 	logger.Debug("Updating cache file %s with %s", cacheFile, tag)
 	err = os.WriteFile(cacheFile, []byte(tag), 0644)
 	if err != nil {
@@ -243,12 +265,12 @@ func (i *GitHubReleaseInstaller) UpdateCache(tag string) error {
 
 // GetData implements IInstaller.
 func (i *GitHubReleaseInstaller) GetData() *appconfig.InstallerData {
-	return i.Data
+	return i.Info
 }
 
 func (i *GitHubReleaseInstaller) GetOpts() *GitHubReleaseOpts {
 	opts := &GitHubReleaseOpts{}
-	info := i.Data
+	info := i.Info
 	if info.Opts != nil {
 		if repository, ok := (*info.Opts)["repository"].(string); ok {
 			repository = utils.GetRealPath(i.GetData().Environ(), repository)
@@ -328,7 +350,7 @@ func NewGitHubReleaseInstaller(cfg *appconfig.AppConfig, installer *appconfig.In
 	i := &GitHubReleaseInstaller{
 		InstallerBase: InstallerBase{Data: installer},
 		Config:        cfg,
-		Data:          installer,
+		Info:          installer,
 	}
 
 	return i

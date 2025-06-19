@@ -15,6 +15,11 @@ type PipxOpts struct {
 	//
 }
 
+func (i *PipxInstaller) Validate() []ValidationError {
+	errors := i.BaseValidate()
+	return errors
+}
+
 // Install implements IInstaller.
 func (i *PipxInstaller) Install() error {
 	name := *i.Info.Name

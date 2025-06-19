@@ -21,6 +21,19 @@ type GitOpts struct {
 	Ref         *string
 }
 
+func (i *GitInstaller) Validate() []ValidationError {
+	errors := i.BaseValidate()
+	info := i.GetData()
+	opts := i.GetOpts()
+	if opts.Destination == nil || len(*opts.Destination) == 0 {
+		errors = append(errors, ValidationError{FieldName: "destination", Message: validationIsRequired(), InstallerName: *info.Name})
+	}
+	if opts.Ref == nil || len(*opts.Ref) == 0 {
+		errors = append(errors, ValidationError{FieldName: "ref", Message: validationIsRequired(), InstallerName: *info.Name})
+	}
+	return errors
+}
+
 // Install implements IInstaller.
 func (i *GitInstaller) Install() error {
 	args := []string{"clone", i.GetRepositoryUrl(), i.GetInstallDir()}

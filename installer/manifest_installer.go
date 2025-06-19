@@ -23,6 +23,22 @@ type ManifestOpts struct {
 	Ref    *string
 }
 
+func (i *ManifestInstaller) Validate() []ValidationError {
+	errors := i.BaseValidate()
+	info := i.GetData()
+	opts := i.GetOpts()
+	if opts.Source == nil || len(*opts.Source) == 0 {
+		errors = append(errors, ValidationError{FieldName: "source", Message: validationIsRequired(), InstallerName: *info.Name})
+	}
+	if opts.Path == nil || len(*opts.Path) == 0 {
+		errors = append(errors, ValidationError{FieldName: "path", Message: validationIsRequired(), InstallerName: *info.Name})
+	}
+	if opts.Ref != nil && len(*opts.Ref) == 0 {
+		errors = append(errors, ValidationError{FieldName: "ref", Message: validationIsNotEmpty(), InstallerName: *info.Name})
+	}
+	return errors
+}
+
 // Install implements IInstaller.
 func (i *ManifestInstaller) Install() error {
 	logger.Debug("Getting manifest info...")

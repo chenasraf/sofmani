@@ -3,6 +3,7 @@ package platform
 import (
 	"fmt"
 	"runtime"
+	"slices"
 )
 
 var osValue string = runtime.GOOS
@@ -83,14 +84,8 @@ func (o *PlatformMap[T]) ResolveWithFallback(fallback PlatformMap[T]) T {
 }
 
 func ContainsPlatform(platforms *[]Platform, platform Platform) bool {
-	for _, p := range *platforms {
-		if p == platform {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(*platforms, platform)
 }
-
 func (p *Platforms) GetShouldRunOnOS(curOS Platform) bool {
 	if p == nil {
 		return true
@@ -103,4 +98,22 @@ func (p *Platforms) GetShouldRunOnOS(curOS Platform) bool {
 		return !ContainsPlatform(p.Except, curOS)
 	}
 	return true
+}
+
+func NewPlatformMap[T any](values map[string]T) *PlatformMap[T] {
+	p := &PlatformMap[T]{}
+	for k, v := range values {
+		val := v // capture value for pointer
+		switch Platform(k) {
+		case PlatformMacos:
+			p.MacOS = &val
+		case PlatformLinux:
+			p.Linux = &val
+		case PlatformWindows:
+			p.Windows = &val
+		default:
+			panic(fmt.Sprintf("Unsupported platform key: %q", k))
+		}
+	}
+	return p
 }

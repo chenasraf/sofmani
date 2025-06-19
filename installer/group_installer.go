@@ -16,6 +16,15 @@ type GroupOpts struct {
 	//
 }
 
+func (i *GroupInstaller) Validate() []ValidationError {
+	errors := i.BaseValidate()
+	info := i.GetData()
+	if info.Steps == nil || len(*info.Steps) == 0 {
+		errors = append(errors, ValidationError{FieldName: "steps", Message: "Must have at least one step", InstallerName: *info.Name})
+	}
+	return errors
+}
+
 // Install implements IInstaller.
 func (i *GroupInstaller) Install() error {
 	info := i.GetData()
