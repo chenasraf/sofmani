@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.9.0](https://github.com/chenasraf/sofmani/compare/v1.8.0...v1.9.0) (2025-06-19)
+
+
+### Features
+
+* validations ([70357d1](https://github.com/chenasraf/sofmani/commit/70357d1436e41cf5dde9e5796d09c6d9688cd66a))
+
+
+### Bug Fixes
+
+* config file/cli overrides ([f92093f](https://github.com/chenasraf/sofmani/commit/f92093f6dc9f43ebd890bec029671fb835022e90))
+
 ## [1.8.0](https://github.com/chenasraf/sofmani/compare/v1.7.0...v1.8.0) (2025-01-26)
 
 
