@@ -117,32 +117,33 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 		return nil
 	}
 
-	logger.Debug("Checking %s (%s)", name, info.Type)
+	logger.Debug("Checking %s: %s", info.Type, name)
 	installed, err := installer.CheckIsInstalled()
 	if err != nil {
 		return err
 	}
 	if installed {
-		logger.Debug("%s (%s) is already installed", name, info.Type)
-		if config.CheckUpdates {
-			logger.Info("Checking updates for %s (%s)", name, info.Type)
+		logger.Debug("%s is already installed", name)
+
+		if *config.CheckUpdates {
+			logger.Info("Checking updates for %s", name)
 			needsUpdate, err := installer.CheckNeedsUpdate()
 			if err != nil {
 				return err
 			}
 			if needsUpdate {
-				logger.Info("Updating %s (%s)", name, info.Type)
+				logger.Info("Updating %s", name)
 				if info.PreUpdate != nil {
-					logger.Debug("Running pre-update command for %s (%s)", name, info.Type)
+					logger.Debug("Running pre-update command for %s", name)
 					err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetData().EnvShell), utils.GetOSShellArgs(*info.PreUpdate)...)
 					if err != nil {
 						return err
 					}
 				}
-				logger.Debug("Running update command for %s (%s)", name, info.Type)
+				logger.Debug("Running update command for %s", name)
 				installer.Update()
 				if info.PostUpdate != nil {
-					logger.Debug("Running post-update command for %s (%s)", name, info.Type)
+					logger.Debug("Running post-update command for %s", name)
 					err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetData().EnvShell), utils.GetOSShellArgs(*info.PostUpdate)...)
 					if err != nil {
 						return err
@@ -155,22 +156,23 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 		} else {
 			return nil
 		}
-	}
-	logger.Info("Installing %s (%s)", name, installer.GetData().Type)
-	if info.PreInstall != nil {
-		logger.Debug("Running pre-install command for %s (%s)", name, info.Type)
-		err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetData().EnvShell), utils.GetOSShellArgs(*info.PreInstall)...)
-		if err != nil {
-			return err
+	} else {
+		logger.Info("Installing %s: %s", installer.GetData().Type, name)
+		if info.PreInstall != nil {
+			logger.Debug("Running pre-install command for %s (%s)", name, info.Type)
+			err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetData().EnvShell), utils.GetOSShellArgs(*info.PreInstall)...)
+			if err != nil {
+				return err
+			}
 		}
-	}
-	logger.Debug("Running installer for %s (%s)", name, info.Type)
-	err = installer.Install()
-	if info.PostInstall != nil {
-		logger.Debug("Running post-install command for %s (%s)", name, info.Type)
-		err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetData().EnvShell), utils.GetOSShellArgs(*info.PostInstall)...)
-		if err != nil {
-			return err
+		logger.Debug("Running installer for %s (%s)", name, info.Type)
+		err = installer.Install()
+		if info.PostInstall != nil {
+			logger.Debug("Running post-install command for %s (%s)", name, info.Type)
+			err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetData().EnvShell), utils.GetOSShellArgs(*info.PostInstall)...)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	if err != nil {

@@ -23,7 +23,7 @@ type RsyncOpts struct {
 // Install implements IInstaller.
 func (i *RsyncInstaller) Install() error {
 	defaultFlags := "-tr"
-	if i.Config.Debug {
+	if *i.Config.Debug {
 		defaultFlags += "v"
 	}
 	flags := []string{defaultFlags}

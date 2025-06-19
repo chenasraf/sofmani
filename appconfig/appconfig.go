@@ -15,8 +15,8 @@ import (
 )
 
 type AppConfig struct {
-	Debug        bool                                     `json:"debug"          yaml:"debug"`
-	CheckUpdates bool                                     `json:"check_updates"  yaml:"check_updates"`
+	Debug        *bool                                    `json:"debug"          yaml:"debug"`
+	CheckUpdates *bool                                    `json:"check_updates"  yaml:"check_updates"`
 	Install      []InstallerData                          `json:"install"        yaml:"install"`
 	Defaults     *AppConfigDefaults                       `json:"defaults"       yaml:"defaults"`
 	Env          *map[string]string                       `json:"env"            yaml:"env"`
@@ -49,10 +49,10 @@ func ParseConfig(overrides *AppCliConfig) (*AppConfig, error) {
 			return nil, err
 		}
 		if overrides.Debug != nil {
-			appConfig.Debug = *overrides.Debug
+			appConfig.Debug = overrides.Debug
 		}
 		if overrides.CheckUpdates != nil {
-			appConfig.CheckUpdates = *overrides.CheckUpdates
+			appConfig.CheckUpdates = overrides.CheckUpdates
 		}
 		appConfig.Filter = overrides.Filter
 		return appConfig, nil
@@ -96,6 +96,39 @@ func tryConfigDir(dir string) string {
 	return ""
 }
 
+func (c *AppConfig) GetConfigDesc() []string {
+	desc := []string{}
+	desc = append(desc, fmt.Sprintf("Debug: %t", *c.Debug))
+	desc = append(desc, fmt.Sprintf("CheckUpdates: %t", *c.CheckUpdates))
+
+	if c.Env != nil {
+		desc = append(desc, "Environment Variables:")
+		for k, v := range *c.Env {
+			desc = append(desc, fmt.Sprintf("  %s=%s", k, v))
+		}
+	}
+
+	if c.PlatformEnv != nil {
+		desc = append(desc, "Platform Environment Variables:\n")
+		desc = append(desc, fmt.Sprintf("  %s", platform.GetPlatform()))
+		for k, v := range *c.PlatformEnv.Resolve() {
+			desc = append(desc, fmt.Sprintf("  %s=%s", k, v))
+		}
+	}
+
+	filter := "Filter: "
+	if len(c.Filter) > 0 {
+		for _, f := range c.Filter {
+			filter += fmt.Sprintf("\n  %s", f)
+		}
+	} else {
+		filter += "None"
+	}
+	desc = append(desc, filter)
+
+	return desc
+}
+
 var AppVersion string
 
 func SetVersion(v string) {
@@ -110,8 +143,8 @@ func ParseCliConfig() *AppCliConfig {
 	args := os.Args[1:]
 	config := &AppCliConfig{
 		ConfigFile:   "",
-		Debug:        boolPtr(false),
-		CheckUpdates: boolPtr(false),
+		Debug:        nil,
+		CheckUpdates: nil,
 		Filter:       []string{},
 	}
 	file := FindConfigFile()

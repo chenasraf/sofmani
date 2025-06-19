@@ -164,10 +164,10 @@ func (i *ManifestInstaller) getLocalManifestConfig(path string) (*appconfig.AppC
 
 func (i *ManifestInstaller) inheritManifest(config *appconfig.AppConfig) *appconfig.AppConfig {
 	self := i.Config
-	if self.Debug {
+	if *self.Debug {
 		config.Debug = self.Debug
 	}
-	if self.CheckUpdates {
+	if *self.CheckUpdates {
 		config.CheckUpdates = self.CheckUpdates
 	}
 	if self.Env != nil {

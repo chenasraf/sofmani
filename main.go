@@ -21,7 +21,13 @@ func main() {
 		fmt.Println(fmt.Errorf("Error loading config: %v", err))
 		return
 	}
-	logger.InitLogger(cfg.Debug)
+	logger.InitLogger(*cfg.Debug)
+
+	logger.Debug("Sofmani version %s", appconfig.AppVersion)
+	logger.Debug("Config:")
+	for _, line := range cfg.GetConfigDesc() {
+		logger.Debug("%s", line)
+	}
 
 	if cfg.Env != nil {
 		for k, v := range *cfg.Env {
