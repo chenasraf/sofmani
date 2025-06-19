@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.2](https://github.com/chenasraf/sofmani/compare/v1.9.1...v1.9.2) (2025-06-19)
+
+
+### Bug Fixes
+
+* append installers after validation ([3352ae6](https://github.com/chenasraf/sofmani/commit/3352ae6cfb52fedd61534dba76757409e65d7109))
+
 ## [1.9.1](https://github.com/chenasraf/sofmani/compare/v1.9.0...v1.9.1) (2025-06-19)
 
 
