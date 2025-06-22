@@ -1,6 +1,7 @@
 package installer
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/chenasraf/sofmani/appconfig"
@@ -35,12 +36,16 @@ func (i *BrewInstaller) Install() error {
 	if i.GetOpts().Tap != nil {
 		name = *i.GetOpts().Tap + "/" + name
 	}
-	return i.RunCmdPassThrough("brew", "install", name)
+	return i.RunCmdAsFile(fmt.Sprintf("brew install %s", name))
 }
 
 // Update implements IInstaller.
 func (i *BrewInstaller) Update() error {
-	return i.RunCmdPassThrough("brew", "upgrade", *i.Info.Name)
+	name := *i.Info.Name
+	if i.GetOpts().Tap != nil {
+		name = *i.GetOpts().Tap + "/" + name
+	}
+	return i.RunCmdAsFile(fmt.Sprintf("brew upgrade %s", name))
 }
 
 // CheckNeedsUpdate implements IInstaller.
