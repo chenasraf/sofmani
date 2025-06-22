@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.3](https://github.com/chenasraf/sofmani/compare/v1.9.2...v1.9.3) (2025-06-22)
+
+
+### Bug Fixes
+
+* use tap name on brew update ([e2d37d1](https://github.com/chenasraf/sofmani/commit/e2d37d1045d8df5d76154dd54e5d29067771ec73))
+
 ## [1.9.2](https://github.com/chenasraf/sofmani/compare/v1.9.1...v1.9.2) (2025-06-19)
 
 
