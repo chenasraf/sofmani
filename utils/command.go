@@ -2,7 +2,6 @@ package utils
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -19,16 +18,9 @@ func RunCmdPassThrough(env []string, bin string, args ...string) error {
 	cmd := exec.Command(bin, args...)
 	cmd.Env = ResolveEnvPaths(os.Environ(), cmd.Env, env)
 	cmd.Stdin = os.Stdin
-	stdout, _ := cmd.StdoutPipe()
-	stderr, _ := cmd.StderrPipe()
-	cmd.Start()
-	go io.Copy(os.Stdout, stdout)
-	go io.Copy(os.Stderr, stderr)
-	err := cmd.Wait()
-	if err != nil {
-		return err
-	}
-	return nil
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 
 func RunCmdPassThroughChained(env []string, commands [][]string) error {
@@ -45,6 +37,20 @@ func RunCmdGetSuccess(env []string, bin string, args ...string) (bool, error) {
 	logger.Debug("Running command: %s %v", bin, args)
 	cmd := exec.Command(bin, args...)
 	cmd.Env = ResolveEnvPaths(os.Environ(), cmd.Env, env)
+	err := cmd.Run()
+	if err != nil {
+		return false, nil
+	}
+	return true, nil
+}
+
+func RunCmdGetSuccessPassThrough(env []string, bin string, args ...string) (bool, error) {
+	logger.Debug("Running command: %s %v", bin, args)
+	cmd := exec.Command(bin, args...)
+	cmd.Env = ResolveEnvPaths(os.Environ(), cmd.Env, env)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	if err != nil {
 		return false, nil

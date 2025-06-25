@@ -96,6 +96,12 @@ func (i *InstallerBase) RunCmdGetSuccess(command string, args ...string) (bool, 
 	data := i.GetData()
 	return utils.RunCmdGetSuccess(data.Environ(), command, args...)
 }
+
+func (i *InstallerBase) RunCmdGetSuccessPassThrough(command string, args ...string) (bool, error) {
+	data := i.GetData()
+	return utils.RunCmdGetSuccessPassThrough(data.Environ(), command, args...)
+}
+
 func (i *InstallerBase) RunCmdGetOutput(command string, args ...string) ([]byte, error) {
 	data := i.GetData()
 	return utils.RunCmdGetOutput(data.Environ(), command, args...)
