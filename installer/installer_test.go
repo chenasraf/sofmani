@@ -1,6 +1,9 @@
 package installer
 
 import (
+	"fmt"
+	"os/exec"
+	"strings"
 	"testing"
 
 	"github.com/chenasraf/sofmani/appconfig"
@@ -98,6 +101,14 @@ func newTestBrewInstaller(data *appconfig.InstallerData) *BrewInstaller {
 	}
 }
 
+func simulateBrewNeedsUpdateFilter(input string) (string, error) {
+	cmd := exec.Command("bash", "-c",
+		fmt.Sprintf("echo '%s' %s", input, PipedInputNeedsUpdateCommand),
+	)
+	out, err := cmd.CombinedOutput()
+	return string(out), err
+}
+
 func TestBrewValidation(t *testing.T) {
 	logger.InitLogger(false)
 
@@ -123,6 +134,57 @@ func TestBrewValidation(t *testing.T) {
 		Opts: &map[string]any{"tap": "invalid-tap"},
 	}
 	assert.NotEmpty(t, newTestBrewInstaller(invalidData).Validate())
+}
+
+func TestBrewNeedsUpdateFilter(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name: "filters empty JSON",
+			input: `{
+  "formulae": [],
+  "casks": []
+}`,
+			expected: "",
+		},
+		{
+			name: "keeps non-empty JSON",
+			input: `{
+  "formulae": [{ "name": "foo", "current_version": "1.0" }],
+  "casks": []
+}`,
+			expected: `{
+  "formulae": [{ "name": "foo", "current_version": "1.0" }],
+  "casks": []
+}`,
+		},
+		{
+			name: "keeps extra output lines",
+			input: `Warning: You have unlinked kegs
+{
+  "formulae": [],
+  "casks": []
+}`,
+			expected: "Warning: You have unlinked kegs",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			output, err := simulateBrewNeedsUpdateFilter(tc.input)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			got := strings.TrimSpace(output)
+			want := strings.TrimSpace(tc.expected)
+			if got != want {
+				t.Errorf("unexpected output\nGot:\n%q\nWant:\n%q", got, want)
+			}
+		})
+	}
 }
 
 func newTestGitInstaller(data *appconfig.InstallerData) *GitInstaller {

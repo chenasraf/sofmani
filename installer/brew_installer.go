@@ -32,20 +32,22 @@ func (i *BrewInstaller) Validate() []ValidationError {
 
 // Install implements IInstaller.
 func (i *BrewInstaller) Install() error {
-	name := *i.Info.Name
-	if i.GetOpts().Tap != nil {
-		name = *i.GetOpts().Tap + "/" + name
-	}
+	name := i.GetFullName()
 	return i.RunCmdAsFile(fmt.Sprintf("brew install %s", name))
 }
 
 // Update implements IInstaller.
 func (i *BrewInstaller) Update() error {
+	name := i.GetFullName()
+	return i.RunCmdAsFile(fmt.Sprintf("brew upgrade %s", name))
+}
+
+func (i *BrewInstaller) GetFullName() string {
 	name := *i.Info.Name
 	if i.GetOpts().Tap != nil {
 		name = *i.GetOpts().Tap + "/" + name
 	}
-	return i.RunCmdAsFile(fmt.Sprintf("brew upgrade %s", name))
+	return name
 }
 
 // CheckNeedsUpdate implements IInstaller.
@@ -53,12 +55,37 @@ func (i *BrewInstaller) CheckNeedsUpdate() (bool, error) {
 	if i.HasCustomUpdateCheck() {
 		return i.RunCustomUpdateCheck()
 	}
-	success, err := i.RunCmdGetSuccess("brew", "outdated", "--json", *i.Info.Name)
+	name := i.GetFullName()
+	cmd := fmt.Sprintf(
+		`brew outdated --json %s %s`,
+		name,
+		PipedInputNeedsUpdateCommand,
+	)
+	success, err := i.RunCmdGetSuccessPassThrough("bash", "-c", cmd)
 	if err != nil {
 		return false, err
 	}
 	return !success, nil
 }
+
+const PipedInputNeedsUpdateCommand = `| awk '
+  BEGIN { in_json = 0; json = "" }
+  /^ *\{/ { in_json = 1 }
+  in_json {
+    json = json $0 ORS;
+    if ($0 ~ /^\}/) {
+      in_json = 0;
+      next;
+    }
+    next;
+  }
+  { print }
+  END {
+    cleaned = json;
+    gsub(/[[:space:]]/, "", cleaned);
+    if (cleaned != "{\"formulae\":[],\"casks\":[]}") printf "%s", json;
+  }
+'`
 
 // CheckIsInstalled implements IInstaller.
 func (i *BrewInstaller) CheckIsInstalled() (bool, error) {
