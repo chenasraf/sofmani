@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.4](https://github.com/chenasraf/sofmani/compare/v1.9.3...v1.9.4) (2025-06-25)
+
+
+### Bug Fixes
+
+* improve brew update output ([803823b](https://github.com/chenasraf/sofmani/commit/803823bba232785daf8d38b48e7a7a9e2e372e23))
+
 ## [1.9.3](https://github.com/chenasraf/sofmani/compare/v1.9.2...v1.9.3) (2025-06-22)
 
 
