@@ -94,7 +94,7 @@ jobs:
     steps:
       - name: Send dispatch to target repo
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.REPO_DISPATCH_PAT }}
         run: |
           repo="${{ github.repository }}"
           tag="${{ needs.release-please.outputs.tag_name }}"
