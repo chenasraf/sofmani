@@ -24,26 +24,36 @@ jobs:
         run: go test -v ./...
 
   generate:
-    name: Generate cross-platform builds
+    name: Build for ${{ matrix.platform }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - platform: linux/amd64
+            label: linux-amd64
+          - platform: darwin/amd64
+            label: darwin-amd64
+          - platform: darwin/arm64
+            label: darwin-arm64
+          - platform: windows/amd64
+            label: windows-amd64
     steps:
-      - name: Checkout the repository
+      - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Create dist/ dir
-        run: mkdir dist
-      - name: Generate build files
+
+      - name: Build for ${{ matrix.label }}
         uses: chenasraf/go-cross-build@v1
         with:
-          platforms: 'linux/amd64, darwin/amd64, windows/amd64, darwin/arm64'
+          platforms: ${{ matrix.platform }}
           package: ''
           name: 'sofmani'
           compress: 'true'
-          dest: 'dist'
-      - name: Upload builds
-        if: github.ref == 'refs/heads/master'
+          dest: dist
+
+      - name: Upload build
         uses: actions/upload-artifact@v4
         with:
-          name: dist
+          name: "dist-${{ matrix.label }}"
           path: dist
 
   release-please:
@@ -57,34 +67,38 @@ jobs:
       - test
       - generate
     steps:
-      - uses: actions/checkout@v4
-      - name: Download builds
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all builds
         uses: actions/download-artifact@v4
         with:
-          name: dist
           path: dist
+
       - name: Verify Release Artifacts
         run: |
           ls -la dist
           for i in "linux-amd64" "darwin-amd64" "windows-amd64" "darwin-arm64"; do
-            if [[ ! -f ./dist/sofmani-$i.tar.gz ]]; then
-              echo "File not found: ./dist/sofmani-$i.tar.gz"
+            if [[ ! -f ./dist/dist-$i/sofmani-$i.tar.gz ]]; then
+              echo "File not found: ./dist/dist-$i/sofmani-$i.tar.gz"
               exit 1
             fi
           done
-      - uses: googleapis/release-please-action@v4
+
+      - name: Run Release Please
+        uses: googleapis/release-please-action@v4
         id: release
         with:
           release-type: simple
+
       - name: Upload Release Artifacts
         if: ${{ steps.release.outputs.release_created }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ steps.release.outputs.tag_name }} ./dist/sofmani-linux-amd64.tar.gz
-          gh release upload ${{ steps.release.outputs.tag_name }} ./dist/sofmani-darwin-amd64.tar.gz
-          gh release upload ${{ steps.release.outputs.tag_name }} ./dist/sofmani-darwin-arm64.tar.gz
-          gh release upload ${{ steps.release.outputs.tag_name }} ./dist/sofmani-windows-amd64.tar.gz
+          for i in "linux-amd64" "darwin-amd64" "darwin-arm64" "windows-amd64"; do
+            gh release upload "${{ steps.release.outputs.tag_name }}" "./dist/dist-$i/sofmani-$i.tar.gz"
+          done
 
   release-homebrew:
     name: Homebrew Release
