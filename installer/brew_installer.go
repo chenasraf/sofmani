@@ -1,7 +1,13 @@
 package installer
 
 import (
+	"bufio"
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
+	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/chenasraf/sofmani/appconfig"
@@ -55,37 +61,68 @@ func (i *BrewInstaller) CheckNeedsUpdate() (bool, error) {
 	if i.HasCustomUpdateCheck() {
 		return i.RunCustomUpdateCheck()
 	}
+
 	name := i.GetFullName()
-	cmd := fmt.Sprintf(
-		`brew outdated --json %s %s`,
-		name,
-		PipedInputNeedsUpdateCommand,
-	)
-	success, err := i.RunCmdGetSuccessPassThrough("bash", "-c", cmd)
+	cmd := exec.Command("brew", "outdated", "--json", name)
+
+	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to get stdout: %w", err)
 	}
-	return !success, nil
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+
+	if err := cmd.Start(); err != nil {
+		return false, fmt.Errorf("failed to start brew: %w", err)
+	}
+
+	// Parse the brew output: stream logs to stdout, buffer JSON
+	updateNeeded, parseErr := parseBrewOutdatedOutput(stdoutPipe, os.Stdout)
+
+	waitErr := cmd.Wait()
+	if waitErr != nil {
+		return false, waitErr // real brew failure — likely a broken formula
+	}
+
+	if parseErr != nil {
+		return false, fmt.Errorf("failed to parse brew output: %w", parseErr)
+	}
+
+	return updateNeeded, nil
 }
 
-const PipedInputNeedsUpdateCommand = `| awk '
-  BEGIN { in_json = 0; json = "" }
-  /^ *\{/ { in_json = 1 }
-  in_json {
-    json = json $0 ORS;
-    if ($0 ~ /^\}/) {
-      in_json = 0;
-      next;
-    }
-    next;
-  }
-  { print }
-  END {
-    cleaned = json;
-    gsub(/[[:space:]]/, "", cleaned);
-    if (cleaned != "{\"formulae\":[],\"casks\":[]}") printf "%s", json;
-  }
-'`
+func parseBrewOutdatedOutput(input io.Reader, logSink io.Writer) (bool, error) {
+	var jsonBuf bytes.Buffer
+	scanner := bufio.NewScanner(input)
+	inJSON := false
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(strings.TrimSpace(line), "{") {
+			inJSON = true
+		}
+
+		if inJSON {
+			jsonBuf.WriteString(line + "\n")
+		} else {
+			fmt.Fprintln(logSink, line)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return false, err
+	}
+
+	// Parse JSON
+	type brewOutdatedJSON struct {
+		Formulae []any `json:"formulae"`
+		Casks    []any `json:"casks"`
+	}
+	var parsed brewOutdatedJSON
+	if err := json.Unmarshal(jsonBuf.Bytes(), &parsed); err != nil {
+		return false, err
+	}
+	return len(parsed.Formulae) > 0 || len(parsed.Casks) > 0, nil
+}
 
 // CheckIsInstalled implements IInstaller.
 func (i *BrewInstaller) CheckIsInstalled() (bool, error) {

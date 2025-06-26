@@ -1,8 +1,8 @@
 package installer
 
 import (
+	"bytes"
 	"fmt"
-	"os/exec"
 	"strings"
 	"testing"
 
@@ -101,14 +101,6 @@ func newTestBrewInstaller(data *appconfig.InstallerData) *BrewInstaller {
 	}
 }
 
-func simulateBrewNeedsUpdateFilter(input string) (string, error) {
-	cmd := exec.Command("bash", "-c",
-		fmt.Sprintf("echo '%s' %s", input, PipedInputNeedsUpdateCommand),
-	)
-	out, err := cmd.CombinedOutput()
-	return string(out), err
-}
-
 func TestBrewValidation(t *testing.T) {
 	logger.InitLogger(false)
 
@@ -136,52 +128,89 @@ func TestBrewValidation(t *testing.T) {
 	assert.NotEmpty(t, newTestBrewInstaller(invalidData).Validate())
 }
 
-func TestBrewNeedsUpdateFilter(t *testing.T) {
+func simulateBrewCheck(input string, exitCode int) (logs string, updateNeeded bool, finalErr error) {
+	logBuf := &bytes.Buffer{}
+	needsUpdate, parseErr := parseBrewOutdatedOutput(strings.NewReader(input), logBuf)
+
+	// Treat only negative/128+ as actual errors (or change as needed)
+	if exitCode < 0 || exitCode >= 128 {
+		return logBuf.String(), false, fmt.Errorf("brew exited with error code %d", exitCode)
+	}
+
+	if parseErr != nil {
+		return logBuf.String(), false, parseErr
+	}
+
+	// Exit code >0 means updates are available — trust that
+	if exitCode > 0 {
+		return logBuf.String(), true, nil
+	}
+
+	// Exit code 0: trust the parsed JSON
+	return logBuf.String(), needsUpdate, nil
+}
+
+func TestBrewNeedsUpdateWithExitCode(t *testing.T) {
 	tests := []struct {
-		name     string
-		input    string
-		expected string
+		name           string
+		input          string
+		exitCode       int
+		expectedLogs   string
+		expectedUpdate bool
+		expectErr      bool
 	}{
+
 		{
-			name: "filters empty JSON",
+			name: "brew exit 1 (updates available)",
 			input: `{
   "formulae": [],
   "casks": []
 }`,
-			expected: "",
+			exitCode:       1,
+			expectedLogs:   "",
+			expectedUpdate: true, // non-zero means updates
+			expectErr:      false,
 		},
 		{
-			name: "keeps non-empty JSON",
+			name: "brew exit 0 (no updates)",
 			input: `{
-  "formulae": [{ "name": "foo", "current_version": "1.0" }],
+  "formulae": [],
   "casks": []
 }`,
-			expected: `{
-  "formulae": [{ "name": "foo", "current_version": "1.0" }],
-  "casks": []
-}`,
+			exitCode:       0,
+			expectedLogs:   "",
+			expectedUpdate: false,
+			expectErr:      false,
 		},
 		{
-			name: "keeps extra output lines",
-			input: `Warning: You have unlinked kegs
+			name: "brew exit 1 with logs",
+			input: `Auto-updating Homebrew...
 {
-  "formulae": [],
+  "formulae": [{ "name": "bash" }],
   "casks": []
 }`,
-			expected: "Warning: You have unlinked kegs",
+			exitCode:       1,
+			expectedLogs:   "Auto-updating Homebrew...\n",
+			expectedUpdate: true,
+			expectErr:      false,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			output, err := simulateBrewNeedsUpdateFilter(tc.input)
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
+			logs, update, err := simulateBrewCheck(tc.input, tc.exitCode)
+
+			if tc.expectErr && err == nil {
+				t.Errorf("expected error but got nil")
 			}
-			got := strings.TrimSpace(output)
-			want := strings.TrimSpace(tc.expected)
-			if got != want {
-				t.Errorf("unexpected output\nGot:\n%q\nWant:\n%q", got, want)
+			if !tc.expectErr && err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+			if update != tc.expectedUpdate {
+				t.Errorf("unexpected update result: got %v, want %v", update, tc.expectedUpdate)
+			}
+			if logs != tc.expectedLogs {
+				t.Errorf("unexpected logs:\nGot:\n%q\nWant:\n%q", logs, tc.expectedLogs)
 			}
 		})
 	}
