@@ -10,6 +10,7 @@ import (
 	"github.com/chenasraf/sofmani/logger"
 	"github.com/chenasraf/sofmani/platform"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type MockInstaller struct {
@@ -647,6 +648,80 @@ func TestShellValidation(t *testing.T) {
 	errors = newTestShellInstaller(missingBoth).Validate()
 	assert.Len(t, errors, 1)
 	assert.Equal(t, "command", errors[0].FieldName)
+}
+
+func newTestDockerInstaller(data *appconfig.InstallerData) *DockerInstaller {
+	return &DockerInstaller{
+		InstallerBase: InstallerBase{
+			Data: data,
+		},
+		Config: nil,
+		Info:   data,
+	}
+}
+
+func TestDockerValidation(t *testing.T) {
+	logger.InitLogger(false)
+
+	// 🟢 Valid: just name and type
+	validData := &appconfig.InstallerData{
+		Name:    strPtr("ghcr.io/open-webui/open-webui:main"),
+		Type:    appconfig.InstallerTypeDocker,
+		BinName: strPtr("open-webui"),
+	}
+	assert.Empty(t, newTestDockerInstaller(validData).Validate())
+
+	// 🟢 Valid: with flags
+	withFlags := &appconfig.InstallerData{
+		Name:    strPtr("ghcr.io/open-webui/open-webui:main"),
+		Type:    appconfig.InstallerTypeDocker,
+		BinName: strPtr("open-webui"),
+		Opts: &map[string]any{
+			"flags": "-p 3300:8080 -v open-webui:/data",
+		},
+	}
+	assert.Empty(t, newTestDockerInstaller(withFlags).Validate())
+
+	// 🔴 Invalid: missing name (should be caught by BaseValidate)
+	invalid := &appconfig.InstallerData{
+		Type: appconfig.InstallerTypeDocker,
+	}
+	errors := newTestDockerInstaller(invalid).Validate()
+	assert.Len(t, errors, 1)
+	assert.Equal(t, "name", errors[0].FieldName)
+}
+
+func TestExtractDigestFromManifest(t *testing.T) {
+	data := []byte(`{
+		"schemaVersion": 2,
+		"mediaType": "application/vnd.docker.distribution.manifest.list.v2+json",
+		"manifests": [
+			{
+				"mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+				"digest": "sha256:abc",
+				"platform": {
+					"architecture": "arm64",
+					"os": "darwin"
+				}
+			},
+			{
+				"mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+				"digest": "sha256:def",
+				"platform": {
+					"architecture": "amd64",
+					"os": "linux"
+				}
+			}
+		]
+	}`)
+
+	digest, err := extractDigestFromManifest(data, "darwin", "arm64")
+	require.NoError(t, err)
+	require.Equal(t, "abc", digest)
+
+	digest, err = extractDigestFromManifest(data, "linux", "amd64")
+	require.NoError(t, err)
+	require.Equal(t, "def", digest)
 }
 
 func strPtr(s string) *string {

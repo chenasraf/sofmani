@@ -237,6 +237,12 @@ For a full list with all the supported options, see [the docs](./docs/installer-
 
   - Installs packages using pipx.
 
+- **`docker`**
+
+  - Pulls and runs a Docker container by name
+  - Supports optional `flags`
+  - Supports container name override (`bin_name`)
+
 ---
 
 ## 📂 Example Workflow

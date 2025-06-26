@@ -31,6 +31,8 @@ func GetInstaller(config *appconfig.AppConfig, data *appconfig.InstallerData) (I
 		return NewBrewInstaller(config, data), nil
 	case appconfig.InstallerTypeShell:
 		return NewShellInstaller(config, data), nil
+	case appconfig.InstallerTypeDocker:
+		return NewDockerInstaller(config, data), nil
 	case appconfig.InstallerTypeRsync:
 		return NewRsyncInstaller(config, data), nil
 	case appconfig.InstallerTypeNpm, appconfig.InstallerTypePnpm, appconfig.InstallerTypeYarn:

@@ -197,6 +197,7 @@ These fields are shared by all installer types. Some fields may vary in behavior
 - **`brew`**
 
   - **Description**: Installs packages using Homebrew.
+
   - **Options**:
     - `opts.tap`: Name of the tap to install the package from.
 
@@ -212,7 +213,54 @@ These fields are shared by all installer types. Some fields may vary in behavior
     - Use `type: apt` for `apt install`, and `type: apk` for `apk add`.
 
 - **`pipx`**
+
   - **Description**: Installs packages using pipx.
+
+- **`docker`**
+
+  - **Description**: Pulls and runs Docker containers using `docker run`. Also supports update
+    checks by comparing image digests.
+
+    - The image is pulled from the registry (e.g., Docker Hub or GHCR) and started with the provided
+      options.
+    - If the container already exists, it will be started instead of run again.
+    - Updates are detected by comparing the image digest before and after a pull.
+    - The container is always run with `--restart always -d`, unless overridden in a custom shell.
+
+  - **Required**:
+
+    - `name`: The full Docker image name, including tag (e.g.,
+      `ghcr.io/open-webui/open-webui:main`).
+    - `bin_name`: The container name to assign to the running instance (used in install and update
+      checks).
+
+  - **Options**:
+
+    - `opts.flags`: A string of flags to pass to `docker run` (e.g., ports, volumes, extra args).
+      These are appended after the default flags and before the image name.
+
+      - Example:
+
+        ```yaml
+        opts:
+          flags: >
+            -p 3300:8080 -v data-volume:/app/data --add-host=host.docker.internal:host-gateway
+        ```
+
+    - `opts.platform`: Override the platform used when checking the image manifest for updates.
+      Accepts a per-OS map with values in `os/arch` format (e.g., `linux/amd64`).
+
+      This is useful if you're running on a platform like `darwin/arm64`, but want to compare
+      digests for a different image target (e.g., `linux/amd64`).
+
+      - Example:
+
+        ```yaml
+        opts:
+          platform:
+            macos: linux/amd64
+            linux: linux/amd64
+        ```
 
 ## Installer Examples
 
@@ -327,4 +375,15 @@ install:
     tags: python
     platforms:
       only: ['linux']
+```
+
+### docker
+
+```yaml
+- name: ghcr.io/open-webui/open-webui:main
+  bin_name: open-webui
+  type: docker
+  opts:
+    flags: >
+      -p 3300:8080 --add-host=host.docker.internal:host-gateway -v open-webui:/app/backend/data
 ```

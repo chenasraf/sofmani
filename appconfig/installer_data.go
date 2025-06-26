@@ -33,6 +33,7 @@ type InstallerType string
 const (
 	InstallerTypeGroup         InstallerType = "group"
 	InstallerTypeShell         InstallerType = "shell"
+	InstallerTypeDocker        InstallerType = "docker"
 	InstallerTypeBrew          InstallerType = "brew"
 	InstallerTypeApt           InstallerType = "apt"
 	InstallerTypeApk           InstallerType = "apk"

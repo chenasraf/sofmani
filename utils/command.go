@@ -116,6 +116,7 @@ func RunCmdAsFile(env []string, contents string, envShell *platform.PlatformMap[
 
 	shell := GetOSShell(envShell)
 	args := GetOSShellArgs(tmpfile)
+	logger.Debug("Running command as file: %s", contents)
 	return RunCmdPassThrough(env, shell, args...)
 }
 

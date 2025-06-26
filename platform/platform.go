@@ -100,6 +100,22 @@ func (p *Platforms) GetShouldRunOnOS(curOS Platform) bool {
 	return true
 }
 
+func strPtr(s string) *string {
+	return &s
+}
+
+var DockerArchMap = PlatformMap[string]{
+	MacOS:   strPtr("amd64"),
+	Linux:   strPtr("amd64"),
+	Windows: strPtr("amd64"),
+}
+
+var DockerOSMap = PlatformMap[string]{
+	MacOS:   strPtr("darwin"),
+	Linux:   strPtr("linux"),
+	Windows: strPtr("windows"),
+}
+
 func NewPlatformMap[T any](values map[string]T) *PlatformMap[T] {
 	p := &PlatformMap[T]{}
 	for k, v := range values {
