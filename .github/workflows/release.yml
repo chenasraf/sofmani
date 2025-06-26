@@ -106,14 +106,17 @@ jobs:
     if: ${{ needs.release-please.outputs.release_created }}
     runs-on: ubuntu-latest
     steps:
-      - name: Send dispatch to target repo
+      - name: Send dispatch to homebrew-tap
         env:
           GH_TOKEN: ${{ secrets.REPO_DISPATCH_PAT }}
         run: |
           repo="${{ github.repository }}"
           tag="${{ needs.release-please.outputs.tag_name }}"
+          echo "Dispatching tag $tag from $repo"
           curl -X POST \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer $GH_TOKEN" \
             https://api.github.com/repos/chenasraf/homebrew-tap/dispatches \
             -d "{\"event_type\":\"trigger-from-release\",\"client_payload\":{\"tag\":\"$tag\",\"repo\":\"$repo\"}}"
+          echo "Dispatched tag $tag from $repo"
+          echo "Created job on https://github.com/chenasraf/homebrew-tap/actions"
