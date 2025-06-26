@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.6](https://github.com/chenasraf/sofmani/compare/v1.9.5...v1.9.6) (2025-06-26)
+
+
+### Bug Fixes
+
+* brew outdated status code parsing ([f5aa76b](https://github.com/chenasraf/sofmani/commit/f5aa76b94ec2c92888de6e39ac9fa5ec28552bda))
+
 ## [1.9.5](https://github.com/chenasraf/sofmani/compare/v1.9.4...v1.9.5) (2025-06-26)
 
 
