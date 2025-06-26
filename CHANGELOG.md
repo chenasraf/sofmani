@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.5](https://github.com/chenasraf/sofmani/compare/v1.9.4...v1.9.5) (2025-06-26)
+
+
+### Bug Fixes
+
+* brew update exit-code/logic ([ad7464c](https://github.com/chenasraf/sofmani/commit/ad7464c7bd7362d3cf21e9c8dbd59ed46194c2e6))
+
 ## [1.9.4](https://github.com/chenasraf/sofmani/compare/v1.9.3...v1.9.4) (2025-06-25)
 
 
