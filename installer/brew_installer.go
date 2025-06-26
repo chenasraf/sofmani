@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/chenasraf/sofmani/appconfig"
+	"github.com/chenasraf/sofmani/logger"
 	"github.com/chenasraf/sofmani/utils"
 )
 
@@ -67,24 +68,38 @@ func (i *BrewInstaller) CheckNeedsUpdate() (bool, error) {
 
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
+		logger.Error("Failed to get stdout pipe for brew command, error: %v", err)
 		return false, fmt.Errorf("failed to get stdout: %w", err)
 	}
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
 
 	if err := cmd.Start(); err != nil {
+		logger.Error("Failed to start brew command, error: %v", err)
 		return false, fmt.Errorf("failed to start brew: %w", err)
 	}
 
-	// Parse the brew output: stream logs to stdout, buffer JSON
 	updateNeeded, parseErr := parseBrewOutdatedOutput(stdoutPipe, os.Stdout)
 
 	waitErr := cmd.Wait()
 	if waitErr != nil {
-		return false, waitErr // real brew failure — likely a broken formula
+		exitErr, ok := waitErr.(*exec.ExitError)
+		if ok {
+			exitCode := exitErr.ExitCode()
+			// 0 = no update, 1 = update available → both acceptable
+			if exitCode != 0 && exitCode != 1 {
+				logger.Error("Brew command failed with unexpected code %d", exitCode)
+				return false, waitErr
+			}
+		} else {
+			// Non-exit error (e.g. I/O), return as-is
+			logger.Error("Brew command failed, non-exit error: %v", waitErr)
+			return false, waitErr
+		}
 	}
 
 	if parseErr != nil {
+		logger.Error("Failed to parse brew output, error: %v", parseErr)
 		return false, fmt.Errorf("failed to parse brew output: %w", parseErr)
 	}
 
@@ -96,6 +111,7 @@ func parseBrewOutdatedOutput(input io.Reader, logSink io.Writer) (bool, error) {
 	scanner := bufio.NewScanner(input)
 	inJSON := false
 
+	logger.Debug("Parsing brew outdated output")
 	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.HasPrefix(strings.TrimSpace(line), "{") {
@@ -118,7 +134,9 @@ func parseBrewOutdatedOutput(input io.Reader, logSink io.Writer) (bool, error) {
 		Casks    []any `json:"casks"`
 	}
 	var parsed brewOutdatedJSON
+	logger.Debug("Unmarshalling JSON from brew outdated output: %s", jsonBuf.String())
 	if err := json.Unmarshal(jsonBuf.Bytes(), &parsed); err != nil {
+		logger.Error("Failed to unmarshal JSON from brew outdated output, error: %v", err)
 		return false, err
 	}
 	return len(parsed.Formulae) > 0 || len(parsed.Casks) > 0, nil
