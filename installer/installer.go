@@ -65,13 +65,13 @@ func (i *InstallerBase) BaseValidate() []ValidationError {
 func (i *InstallerBase) RunCustomUpdateCheck() (bool, error) {
 	envShell := utils.GetOSShell(i.GetData().EnvShell)
 	args := utils.GetOSShellArgs(*i.GetData().CheckHasUpdate)
-	return utils.RunCmdGetSuccess(i.Data.Environ(), envShell, args...)
+	return utils.RunCmdGetSuccessPassThrough(i.Data.Environ(), envShell, args...)
 }
 
 func (i *InstallerBase) RunCustomInstallCheck() (bool, error) {
 	envShell := utils.GetOSShell(i.GetData().EnvShell)
 	args := utils.GetOSShellArgs(*i.GetData().CheckInstalled)
-	return utils.RunCmdGetSuccess(i.Data.Environ(), envShell, args...)
+	return utils.RunCmdGetSuccessPassThrough(i.Data.Environ(), envShell, args...)
 }
 
 func (i *InstallerBase) HasCustomUpdateCheck() bool {
