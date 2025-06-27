@@ -110,13 +110,15 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.REPO_DISPATCH_PAT }}
         run: |
-          repo="${{ github.repository }}"
+          repo="${{ github.repository.name }}"
           tag="${{ needs.release-please.outputs.tag_name }}"
+          data="{\"event_type\":\"trigger-from-release\",\"client_payload\":{\"tag\":\"$tag\",\"repo\":\"$repo\"}}"
           echo "Dispatching tag $tag from $repo"
+          echo "Data: $data"
           curl -X POST \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer $GH_TOKEN" \
             https://api.github.com/repos/chenasraf/homebrew-tap/dispatches \
-            -d "{\"event_type\":\"trigger-from-release\",\"client_payload\":{\"tag\":\"$tag\",\"repo\":\"$repo\"}}"
+            -d "$data"
           echo "Dispatched tag $tag from $repo"
           echo "Created job on https://github.com/chenasraf/homebrew-tap/actions"
