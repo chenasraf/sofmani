@@ -77,7 +77,7 @@ func (i *DockerInstaller) CheckNeedsUpdate() (bool, error) {
 
 	image := *i.Info.Name
 
-	localDigest, err := i.getRepoDigestFromBeforePull(image)
+	localDigest, err := i.getLocalRepoDigest(image)
 	if err != nil {
 		// If the image isn't present locally, we assume an update is needed
 		logger.Debug("No local image found, assuming update needed")
@@ -198,70 +198,16 @@ func extractDigestFromManifest(jsonData []byte, osTarget, archTarget string) (st
 
 // getRemoteRepoDigest fetches the remote repository digest for a Docker image.
 func (i *DockerInstaller) getRemoteRepoDigest(image string) (string, error) {
-	logger.Debug("Fetching remote image digest for: %s", image)
-	cmd := exec.Command("docker", "manifest", "inspect", image)
-	output, err := cmd.Output()
+	logger.Debug("Pulling remote digest with: docker pull %s", image)
+	cmd := exec.Command("docker", "pull", image)
+	out, err := cmd.CombinedOutput()
 	if err != nil {
-		logger.Debug("Docker manifest inspect failed: %v", err)
-		return "", fmt.Errorf("docker manifest inspect failed: %w", err)
+		logger.Debug("Failed to pull image to get digest: %s", string(out))
+		return "", fmt.Errorf("docker pull failed: %w", err)
 	}
 
-	var osTarget, archTarget *string
-
-	opts := i.GetOpts()
-	if opts.Platform != nil {
-		if resolved := opts.Platform.Resolve(); resolved != nil {
-			parts := strings.SplitN(*resolved, "/", 2)
-			if len(parts) == 2 {
-				osTarget, archTarget = &parts[0], &parts[1]
-			}
-		}
-	}
-
-	if osTarget == nil {
-		osTarget = platform.DockerOSMap.Resolve()
-	}
-	if archTarget == nil {
-		archTarget = platform.DockerArchMap.Resolve()
-	}
-	if osTarget == nil || archTarget == nil {
-		logger.Debug("Could not resolve platform for manifest digest: OS=%v, Arch=%v", osTarget, archTarget)
-		return "", fmt.Errorf("could not resolve platform for manifest digest")
-	}
-	logger.Debug("Resolved OS: %s, Architecture: %s", *osTarget, *archTarget)
-
-	digest, err := extractDigestFromManifest(output, *osTarget, *archTarget)
-	if err == nil {
-		return digest, nil
-	}
-
-	// fallback: architecture-only
-	logger.Debug("Attempting fallback: match architecture only")
-	digest, fallbackErr := extractDigestFromManifestAnyOS(output, *archTarget)
-	if fallbackErr == nil {
-		logger.Debug("Using fallback digest with architecture-only match: sha256:%s", digest)
-		return digest, nil
-	}
-
-	return "", fmt.Errorf("no digest found for %s/%s or fallback: %w", *osTarget, *archTarget, err)
-}
-
-// extractDigestFromManifestAnyOS extracts the digest for a specific architecture from a Docker manifest list, ignoring the OS.
-func extractDigestFromManifestAnyOS(jsonData []byte, archTarget string) (string, error) {
-	var manifest DockerManifestList
-	logger.Debug("Parsing manifest JSON data for architecture: %s", archTarget)
-	if err := json.Unmarshal(jsonData, &manifest); err != nil {
-		logger.Debug("Failed to parse manifest JSON: %v", err)
-		return "", fmt.Errorf("failed to parse manifest JSON: %w", err)
-	}
-	for _, m := range manifest.Manifests {
-		if m.Platform.Architecture == archTarget {
-			logger.Debug("Found fallback digest for architecture: %s, Digest: %s", archTarget, m.Digest)
-			return strings.TrimPrefix(m.Digest, "sha256:"), nil
-		}
-	}
-	logger.Debug("No fallback digest found for architecture: %s", archTarget)
-	return "", fmt.Errorf("no fallback digest found for arch: %s", archTarget)
+	// Now get the digest again — same as local
+	return i.getLocalRepoDigest(image)
 }
 
 // GetPlatformArchWithFallback attempts to determine the best architecture for a Docker image,
@@ -282,23 +228,21 @@ func GetPlatformArchWithFallback(preferred string, fallbacks ...string) string {
 	return preferred
 }
 
-// getRepoDigestFromBeforePull fetches the local repository digest for a Docker image before pulling.
-func (i *DockerInstaller) getRepoDigestFromBeforePull(image string) (string, error) {
-	logger.Debug("Checking local image digest before pull: %s", image)
+// getLocalRepoDigest fetches the local repository digest for a Docker image
+func (i *DockerInstaller) getLocalRepoDigest(image string) (string, error) {
+	logger.Debug("Checking local image digest: %s", image)
 	out, err := exec.Command("docker", "image", "inspect", "--format", "{{index .RepoDigests 0}}", image).Output()
 	if err != nil {
 		logger.Debug("Failed to get local image digest: %v", err)
 		return "", err
 	}
-	parts := strings.Split(strings.TrimSpace(string(out)), "@")
-	logger.Debug("Local image digest output: %s", out)
-	if len(parts) != 2 {
-		logger.Debug("Unexpected digest format before pull: %s", out)
-		return "", fmt.Errorf("unexpected digest format before pull: %s", out)
+	digest := strings.TrimSpace(string(out))
+	logger.Debug("Local image digest output: %s", digest)
+
+	// extract sha256 from e.g. ghcr.io/foo/bar@sha256:XYZ
+	if parts := strings.Split(digest, "@"); len(parts) == 2 {
+		return strings.TrimPrefix(parts[1], "sha256:"), nil
 	}
 
-	digest := parts[1]
-	digest, _ = strings.CutPrefix(digest, "sha256:")
-	logger.Debug("Extracted local digest: %s", digest)
-	return digest, nil
+	return "", fmt.Errorf("unexpected digest format: %s", digest)
 }

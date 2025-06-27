@@ -125,16 +125,9 @@ func strPtr(s string) *string {
 	return &s
 }
 
-// DockerArchMap is a PlatformMap that defines the Docker architecture for each platform.
-var DockerArchMap = PlatformMap[string]{
-	MacOS:   strPtr("amd64"),
-	Linux:   strPtr("amd64"),
-	Windows: strPtr("amd64"),
-}
-
 // DockerOSMap is a PlatformMap that defines the Docker OS for each platform.
 var DockerOSMap = PlatformMap[string]{
-	MacOS:   strPtr("darwin"),
+	MacOS:   strPtr("linux"),
 	Linux:   strPtr("linux"),
 	Windows: strPtr("windows"),
 }
