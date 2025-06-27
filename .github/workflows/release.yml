@@ -110,7 +110,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.REPO_DISPATCH_PAT }}
         run: |
-          repo="${{ github.repository.name }}"
+          repo="${{ github.event.repository.name }}"
           tag="${{ needs.release-please.outputs.tag_name }}"
           data="{\"event_type\":\"trigger-from-release\",\"client_payload\":{\"tag\":\"$tag\",\"repo\":\"$repo\"}}"
           echo "Dispatching tag $tag from $repo"
