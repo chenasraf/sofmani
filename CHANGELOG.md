@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.10.0](https://github.com/chenasraf/sofmani/compare/v1.9.6...v1.10.0) (2025-06-27)
+
+
+### Features
+
+* docker installer ([f316fa9](https://github.com/chenasraf/sofmani/commit/f316fa94ecc441113a83c72d9d530a8fd0f9f160))
+
+
+### Bug Fixes
+
+* show output for shell install/update checks ([fc7e2b9](https://github.com/chenasraf/sofmani/commit/fc7e2b9bf42f1855e9f1c662fadc913e281f83ea))
+
 ## [1.9.6](https://github.com/chenasraf/sofmani/compare/v1.9.5...v1.9.6) (2025-06-26)
 
 
