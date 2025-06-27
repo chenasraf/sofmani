@@ -11,17 +11,24 @@ import (
 	"github.com/chenasraf/sofmani/platform"
 )
 
+// DockerInstaller is an installer for Docker images.
 type DockerInstaller struct {
 	InstallerBase
+	// Config is the application configuration.
 	Config *appconfig.AppConfig
-	Info   *appconfig.InstallerData
+	// Info is the installer data.
+	Info *appconfig.InstallerData
 }
 
+// DockerOpts represents options for the DockerInstaller.
 type DockerOpts struct {
-	Flags    *string
+	// Flags is a string of flags to pass to the `docker run` command.
+	Flags *string
+	// Platform is a platform-specific map of Docker platform strings (e.g., "linux/amd64").
 	Platform *platform.PlatformMap[string]
 }
 
+// NewDockerInstaller creates a new DockerInstaller.
 func NewDockerInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *DockerInstaller {
 	return &DockerInstaller{
 		InstallerBase: InstallerBase{Data: installer},
@@ -30,15 +37,18 @@ func NewDockerInstaller(cfg *appconfig.AppConfig, installer *appconfig.Installer
 	}
 }
 
+// Validate validates the installer configuration.
 func (i *DockerInstaller) Validate() []ValidationError {
 	errors := i.BaseValidate()
 	return errors
 }
 
+// Install implements IInstaller.
 func (i *DockerInstaller) Install() error {
 	return i.runOrStartContainer(false)
 }
 
+// Update implements IInstaller.
 func (i *DockerInstaller) Update() error {
 	image := *i.Info.Name
 	containerName := i.GetContainerName()
@@ -59,6 +69,7 @@ func (i *DockerInstaller) Update() error {
 	return i.runOrStartContainer(true)
 }
 
+// CheckNeedsUpdate implements IInstaller.
 func (i *DockerInstaller) CheckNeedsUpdate() (bool, error) {
 	if i.HasCustomUpdateCheck() {
 		return i.RunCustomUpdateCheck()
@@ -84,6 +95,7 @@ func (i *DockerInstaller) CheckNeedsUpdate() (bool, error) {
 	return localDigest != remoteDigest, nil
 }
 
+// CheckIsInstalled implements IInstaller.
 func (i *DockerInstaller) CheckIsInstalled() (bool, error) {
 	if i.HasCustomInstallCheck() {
 		return i.RunCustomInstallCheck()
@@ -95,10 +107,12 @@ func (i *DockerInstaller) CheckIsInstalled() (bool, error) {
 	return err == nil, nil
 }
 
+// GetData implements IInstaller.
 func (i *DockerInstaller) GetData() *appconfig.InstallerData {
 	return i.Info
 }
 
+// GetOpts returns the parsed options for the DockerInstaller.
 func (i *DockerInstaller) GetOpts() *DockerOpts {
 	opts := &DockerOpts{}
 	if i.Info.Opts != nil {
@@ -116,6 +130,8 @@ func (i *DockerInstaller) GetOpts() *DockerOpts {
 	return opts
 }
 
+// GetContainerName returns the name of the Docker container.
+// It uses the BinName from the installer data if provided, otherwise it uses the installer name.
 func (i *DockerInstaller) GetContainerName() string {
 	if i.Info.BinName != nil && len(*i.Info.BinName) > 0 {
 		return *i.Info.BinName
@@ -125,6 +141,8 @@ func (i *DockerInstaller) GetContainerName() string {
 
 // Helpers
 
+// runOrStartContainer runs or starts a Docker container.
+// If forceRun is true, it will always run a new container. Otherwise, it will start an existing container if found.
 func (i *DockerInstaller) runOrStartContainer(forceRun bool) error {
 	containerName := i.GetContainerName()
 	image := *i.Info.Name
@@ -146,6 +164,7 @@ func (i *DockerInstaller) runOrStartContainer(forceRun bool) error {
 	return i.RunCmdAsFile(fmt.Sprintf(`docker run %s --name "%s" "%s"`, flags, containerName, image))
 }
 
+// DockerManifestList represents the structure of a Docker manifest list.
 type DockerManifestList struct {
 	SchemaVersion int    `json:"schemaVersion"`
 	MediaType     string `json:"mediaType"`
@@ -158,6 +177,7 @@ type DockerManifestList struct {
 	} `json:"manifests"`
 }
 
+// extractDigestFromManifest extracts the digest for a specific OS and architecture from a Docker manifest list.
 func extractDigestFromManifest(jsonData []byte, osTarget, archTarget string) (string, error) {
 	var manifest DockerManifestList
 	logger.Debug("Parsing manifest JSON data for OS: %s, Arch: %s", osTarget, archTarget)
@@ -176,6 +196,7 @@ func extractDigestFromManifest(jsonData []byte, osTarget, archTarget string) (st
 	return "", fmt.Errorf("no digest found for %s/%s", osTarget, archTarget)
 }
 
+// getRemoteRepoDigest fetches the remote repository digest for a Docker image.
 func (i *DockerInstaller) getRemoteRepoDigest(image string) (string, error) {
 	logger.Debug("Fetching remote image digest for: %s", image)
 	cmd := exec.Command("docker", "manifest", "inspect", image)
@@ -225,6 +246,7 @@ func (i *DockerInstaller) getRemoteRepoDigest(image string) (string, error) {
 	return "", fmt.Errorf("no digest found for %s/%s or fallback: %w", *osTarget, *archTarget, err)
 }
 
+// extractDigestFromManifestAnyOS extracts the digest for a specific architecture from a Docker manifest list, ignoring the OS.
 func extractDigestFromManifestAnyOS(jsonData []byte, archTarget string) (string, error) {
 	var manifest DockerManifestList
 	logger.Debug("Parsing manifest JSON data for architecture: %s", archTarget)
@@ -242,6 +264,9 @@ func extractDigestFromManifestAnyOS(jsonData []byte, archTarget string) (string,
 	return "", fmt.Errorf("no fallback digest found for arch: %s", archTarget)
 }
 
+// GetPlatformArchWithFallback attempts to determine the best architecture for a Docker image,
+// considering a preferred architecture and a list of fallbacks.
+// It inspects the manifest of a sample image ("ghcr.io/open-webui/open-webui:main") to check for available architectures.
 func GetPlatformArchWithFallback(preferred string, fallbacks ...string) string {
 	image := "ghcr.io/open-webui/open-webui:main"
 	cmd := exec.Command("docker", "manifest", "inspect", image)
@@ -257,6 +282,7 @@ func GetPlatformArchWithFallback(preferred string, fallbacks ...string) string {
 	return preferred
 }
 
+// getRepoDigestFromBeforePull fetches the local repository digest for a Docker image before pulling.
 func (i *DockerInstaller) getRepoDigestFromBeforePull(image string) (string, error) {
 	logger.Debug("Checking local image digest before pull: %s", image)
 	out, err := exec.Command("docker", "image", "inspect", "--format", "{{index .RepoDigests 0}}", image).Output()

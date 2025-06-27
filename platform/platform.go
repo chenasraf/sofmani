@@ -6,8 +6,9 @@ import (
 	"slices"
 )
 
-var osValue string = runtime.GOOS
+var osValue string = runtime.GOOS // osValue stores the current operating system.
 
+// getOS returns the current operating system. It caches the value after the first call.
 func getOS() string {
 	if osValue == "" {
 		osValue = runtime.GOOS
@@ -15,10 +16,12 @@ func getOS() string {
 	return osValue
 }
 
+// SetOS overrides the detected operating system. This is primarily used for testing.
 func SetOS(v string) {
 	osValue = v
 }
 
+// GetPlatform returns the current platform (macos, linux, or windows).
 func GetPlatform() Platform {
 	switch getOS() {
 	case "darwin":
@@ -31,25 +34,36 @@ func GetPlatform() Platform {
 	panic(fmt.Sprintf("Unsupported platform %s", getOS()))
 }
 
+// Platforms defines which platforms a configuration applies to.
 type Platforms struct {
-	Only   *[]Platform `json:"only"   yaml:"only"`
+	// Only specifies a list of platforms where the configuration should apply.
+	Only *[]Platform `json:"only"   yaml:"only"`
+	// Except specifies a list of platforms where the configuration should not apply.
 	Except *[]Platform `json:"except" yaml:"except"`
 }
 
+// Platform represents an operating system platform.
 type Platform string
 
+// Constants for supported platforms.
 const (
-	PlatformMacos   Platform = "macos"
-	PlatformLinux   Platform = "linux"
-	PlatformWindows Platform = "windows"
+	PlatformMacos   Platform = "macos"   // PlatformMacos represents macOS.
+	PlatformLinux   Platform = "linux"   // PlatformLinux represents Linux.
+	PlatformWindows Platform = "windows" // PlatformWindows represents Windows.
 )
 
+// PlatformMap is a generic type that holds platform-specific values.
 type PlatformMap[T any] struct {
-	MacOS   *T `json:"macos"   yaml:"macos"`
-	Linux   *T `json:"linux"   yaml:"linux"`
+	// MacOS is the value for macOS.
+	MacOS *T `json:"macos"   yaml:"macos"`
+	// Linux is the value for Linux.
+	Linux *T `json:"linux"   yaml:"linux"`
+	// Windows is the value for Windows.
 	Windows *T `json:"windows" yaml:"windows"`
 }
 
+// Resolve returns the value for the current platform from the PlatformMap.
+// It returns nil if no value is defined for the current platform.
 func (p *PlatformMap[T]) Resolve() *T {
 	if p == nil {
 		return nil
@@ -75,6 +89,8 @@ func (p *PlatformMap[T]) Resolve() *T {
 	}
 }
 
+// ResolveWithFallback returns the value for the current platform from the PlatformMap.
+// If no value is defined for the current platform, it falls back to the value from the provided fallback PlatformMap.
 func (o *PlatformMap[T]) ResolveWithFallback(fallback PlatformMap[T]) T {
 	val := o.Resolve()
 	if val == nil {
@@ -83,9 +99,13 @@ func (o *PlatformMap[T]) ResolveWithFallback(fallback PlatformMap[T]) T {
 	return *val
 }
 
+// ContainsPlatform checks if a slice of platforms contains a specific platform.
 func ContainsPlatform(platforms *[]Platform, platform Platform) bool {
 	return slices.Contains(*platforms, platform)
 }
+
+// GetShouldRunOnOS determines if a configuration should run on the current operating system
+// based on the Only and Except fields of the Platforms struct.
 func (p *Platforms) GetShouldRunOnOS(curOS Platform) bool {
 	if p == nil {
 		return true
@@ -100,22 +120,26 @@ func (p *Platforms) GetShouldRunOnOS(curOS Platform) bool {
 	return true
 }
 
+// strPtr returns a pointer to a string.
 func strPtr(s string) *string {
 	return &s
 }
 
+// DockerArchMap is a PlatformMap that defines the Docker architecture for each platform.
 var DockerArchMap = PlatformMap[string]{
 	MacOS:   strPtr("amd64"),
 	Linux:   strPtr("amd64"),
 	Windows: strPtr("amd64"),
 }
 
+// DockerOSMap is a PlatformMap that defines the Docker OS for each platform.
 var DockerOSMap = PlatformMap[string]{
 	MacOS:   strPtr("darwin"),
 	Linux:   strPtr("linux"),
 	Windows: strPtr("windows"),
 }
 
+// NewPlatformMap creates a new PlatformMap from a map of platform strings to values.
 func NewPlatformMap[T any](values map[string]T) *PlatformMap[T] {
 	p := &PlatformMap[T]{}
 	for k, v := range values {

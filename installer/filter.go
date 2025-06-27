@@ -7,6 +7,9 @@ import (
 	"github.com/samber/lo"
 )
 
+// FilterInstaller determines whether an installer should be included based on a list of filters.
+// Filters can be positive (e.g., "name") or negative (e.g., "!name").
+// Filters can also target specific fields like type (e.g., "type:brew") or tags (e.g., "tag:database").
 func FilterInstaller(installer IInstaller, filters []string) bool {
 	if len(filters) == 0 {
 		return true
@@ -40,6 +43,7 @@ func FilterInstaller(installer IInstaller, filters []string) bool {
 	return keep
 }
 
+// isFilteredIn checks if a single installer matches a given filter.
 func isFilteredIn(installer IInstaller, filter string) bool {
 	data := installer.GetData()
 	if strings.HasPrefix(filter, "type:") {
@@ -59,6 +63,9 @@ func isFilteredIn(installer IInstaller, filter string) bool {
 	return strings.Contains(*data.Name, filter)
 }
 
+// InstallerIsEnabled checks if an installer is enabled.
+// The "enabled" field in the installer data can be a boolean string ("true", "false") or a command.
+// If it's a command, the installer is enabled if the command runs successfully (exit code 0).
 func InstallerIsEnabled(i IInstaller) (bool, error) {
 	enabledCmd := i.GetData().Enabled
 

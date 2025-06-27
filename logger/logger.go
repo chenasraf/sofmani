@@ -11,15 +11,17 @@ import (
 	"github.com/fatih/color"
 )
 
+// Logger provides logging functionality with support for file and console output.
 type Logger struct {
-	fileLogger *log.Logger
-	consoleOut *log.Logger
-	logFile    *os.File
-	debug      bool
+	fileLogger *log.Logger // fileLogger is the logger for writing to the log file.
+	consoleOut *log.Logger // consoleOut is the logger for writing to the console.
+	logFile    *os.File    // logFile is the opened log file.
+	debug      bool        // debug indicates whether debug logging is enabled.
 }
 
-var logger *Logger
+var logger *Logger // logger is the global logger instance.
 
+// GetLogDir returns the appropriate log directory based on the operating system.
 func GetLogDir() string {
 	var logDir string
 	switch platform.GetPlatform() {
@@ -39,6 +41,8 @@ func GetLogDir() string {
 	return logDir
 }
 
+// InitLogger initializes the global logger with the specified debug mode.
+// It creates the log directory and file if they don't exist.
 func InitLogger(debug bool) *Logger {
 	logDir := GetLogDir()
 	filePath := filepath.Join(logDir, "sofmani.log")
@@ -70,6 +74,7 @@ func InitLogger(debug bool) *Logger {
 	return logger
 }
 
+// log is an internal helper function for logging messages with a specific level and color.
 func (l *Logger) log(level string, colorizer *color.Color, format string, args ...interface{}) {
 	// Create timestamped message
 	// timestamp := time.Now().Format("2006-01-02 15:04:05")
@@ -90,32 +95,39 @@ func (l *Logger) log(level string, colorizer *color.Color, format string, args .
 	}
 }
 
+// Info logs an informational message.
 func Info(format string, args ...interface{}) {
 	colorBlue := color.New(color.FgBlue).Add(color.Bold)
 	logger.log(" INFO", colorBlue, format, args...)
 }
 
+// Warn logs a warning message.
 func Warn(format string, args ...interface{}) {
 	colorYellow := color.New(color.FgYellow).Add(color.Bold)
 	logger.log(" WARN", colorYellow, format, args...)
 }
 
+// Error logs an error message.
 func Error(format string, args ...interface{}) {
 	colorRed := color.New(color.FgRed).Add(color.Bold)
 	logger.log("ERROR", colorRed, format, args...)
 }
 
+// Debug logs a debug message. Only printed if debug mode is enabled.
 func Debug(format string, args ...interface{}) {
 	colorGreen := color.New(color.FgGreen).Add(color.Bold)
 	logger.log("DEBUG", colorGreen, format, args...)
 }
 
+// Spew logs a detailed representation of a value using spew.Dump.
+// This is typically used for debugging complex data structures.
 func Spew(v interface{}) {
 	// Print/debug the passed value (works like spew.Dump)
 	spewDump := spew.Sdump(v)
 	Debug("%s", spewDump)
 }
 
+// CloseLogger closes the log file.
 func CloseLogger() {
 	if logger != nil && logger.logFile != nil {
 		logger.logFile.Close()

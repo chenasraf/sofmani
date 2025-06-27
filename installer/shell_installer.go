@@ -5,17 +5,24 @@ import (
 	"github.com/chenasraf/sofmani/utils"
 )
 
+// ShellInstaller is an installer that runs shell commands.
 type ShellInstaller struct {
 	InstallerBase
+	// Config is the application configuration.
 	Config *appconfig.AppConfig
-	Info   *appconfig.InstallerData
+	// Info is the installer data.
+	Info *appconfig.InstallerData
 }
 
+// ShellOpts represents options for the ShellInstaller.
 type ShellOpts struct {
-	Command       *string
+	// Command is the shell command to run for installation.
+	Command *string
+	// UpdateCommand is the shell command to run for updating. If not provided, the install command is used.
 	UpdateCommand *string
 }
 
+// Validate validates the installer configuration.
 func (i *ShellInstaller) Validate() []ValidationError {
 	errors := i.BaseValidate()
 	info := i.GetData()
@@ -63,6 +70,7 @@ func (i *ShellInstaller) GetData() *appconfig.InstallerData {
 	return i.Info
 }
 
+// GetOpts returns the parsed options for the ShellInstaller.
 func (i *ShellInstaller) GetOpts() *ShellOpts {
 	opts := &ShellOpts{}
 	info := i.Info
@@ -77,6 +85,8 @@ func (i *ShellInstaller) GetOpts() *ShellOpts {
 	return opts
 }
 
+// GetBinName returns the binary name for the installer.
+// It uses the BinName from the installer data if provided, otherwise it uses the installer name.
 func (i *ShellInstaller) GetBinName() string {
 	info := i.GetData()
 	if info.BinName != nil && len(*info.BinName) > 0 {
@@ -85,6 +95,7 @@ func (i *ShellInstaller) GetBinName() string {
 	return *info.Name
 }
 
+// NewShellInstaller creates a new ShellInstaller.
 func NewShellInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *ShellInstaller {
 	return &ShellInstaller{
 		InstallerBase: InstallerBase{Data: installer},

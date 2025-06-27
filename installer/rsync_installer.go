@@ -8,18 +8,26 @@ import (
 	"github.com/chenasraf/sofmani/utils"
 )
 
+// RsyncInstaller is an installer that uses rsync to copy files.
 type RsyncInstaller struct {
 	InstallerBase
+	// Config is the application configuration.
 	Config *appconfig.AppConfig
-	Info   *appconfig.InstallerData
+	// Info is the installer data.
+	Info *appconfig.InstallerData
 }
 
+// RsyncOpts represents options for the RsyncInstaller.
 type RsyncOpts struct {
-	Source      *string
+	// Source is the source directory or file.
+	Source *string
+	// Destination is the destination directory or file.
 	Destination *string
-	Flags       *string
+	// Flags is a string of flags to pass to the rsync command.
+	Flags *string
 }
 
+// Validate validates the installer configuration.
 func (i *RsyncInstaller) Validate() []ValidationError {
 	errors := i.BaseValidate()
 	info := i.GetData()
@@ -86,6 +94,7 @@ func (i *RsyncInstaller) GetData() *appconfig.InstallerData {
 	return i.Info
 }
 
+// GetOpts returns the parsed options for the RsyncInstaller.
 func (i *RsyncInstaller) GetOpts() *RsyncOpts {
 	opts := &RsyncOpts{}
 	info := i.Info
@@ -103,6 +112,9 @@ func (i *RsyncInstaller) GetOpts() *RsyncOpts {
 	return opts
 }
 
+// GetBinName returns the binary name for the installer.
+// For rsync, this is typically not applicable as it's a file transfer, not a binary installation.
+// It defaults to the installer name.
 func (i *RsyncInstaller) GetBinName() string {
 	info := i.GetData()
 	if info.BinName != nil && len(*info.BinName) > 0 {
@@ -111,6 +123,7 @@ func (i *RsyncInstaller) GetBinName() string {
 	return *info.Name
 }
 
+// NewRsyncInstaller creates a new RsyncInstaller.
 func NewRsyncInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *RsyncInstaller {
 	i := &RsyncInstaller{
 		InstallerBase: InstallerBase{Data: installer},

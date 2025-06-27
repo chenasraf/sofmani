@@ -15,16 +15,22 @@ import (
 	"github.com/chenasraf/sofmani/utils"
 )
 
+// BrewInstaller is an installer for Homebrew packages.
 type BrewInstaller struct {
 	InstallerBase
+	// Config is the application configuration.
 	Config *appconfig.AppConfig
-	Info   *appconfig.InstallerData
+	// Info is the installer data.
+	Info *appconfig.InstallerData
 }
 
+// BrewOpts represents options for the BrewInstaller.
 type BrewOpts struct {
+	// Tap is the Homebrew tap to use for the package.
 	Tap *string
 }
 
+// Validate validates the installer configuration.
 func (i *BrewInstaller) Validate() []ValidationError {
 	errors := i.BaseValidate()
 	info := i.GetData()
@@ -49,6 +55,7 @@ func (i *BrewInstaller) Update() error {
 	return i.RunCmdAsFile(fmt.Sprintf("brew upgrade %s", name))
 }
 
+// GetFullName returns the full name of the package, including the tap if specified.
 func (i *BrewInstaller) GetFullName() string {
 	name := *i.Info.Name
 	if i.GetOpts().Tap != nil {
@@ -106,6 +113,8 @@ func (i *BrewInstaller) CheckNeedsUpdate() (bool, error) {
 	return updateNeeded, nil
 }
 
+// parseBrewOutdatedOutput parses the JSON output of `brew outdated --json`.
+// It returns true if an update is needed, false otherwise.
 func parseBrewOutdatedOutput(input io.Reader, logSink io.Writer) (bool, error) {
 	var jsonBuf bytes.Buffer
 	scanner := bufio.NewScanner(input)
@@ -155,6 +164,7 @@ func (i *BrewInstaller) GetData() *appconfig.InstallerData {
 	return i.Info
 }
 
+// GetOpts returns the parsed options for the BrewInstaller.
 func (i *BrewInstaller) GetOpts() *BrewOpts {
 	opts := &BrewOpts{}
 	info := i.Info
@@ -166,6 +176,8 @@ func (i *BrewInstaller) GetOpts() *BrewOpts {
 	return opts
 }
 
+// GetBinName returns the binary name for the installer.
+// It uses the BinName from the installer data if provided, otherwise it uses the installer name.
 func (i *BrewInstaller) GetBinName() string {
 	info := i.GetData()
 	if info.BinName != nil && len(*info.BinName) > 0 {
@@ -174,6 +186,7 @@ func (i *BrewInstaller) GetBinName() string {
 	return *info.Name
 }
 
+// NewBrewInstaller creates a new BrewInstaller.
 func NewBrewInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *BrewInstaller {
 	i := &BrewInstaller{
 		InstallerBase: InstallerBase{Data: installer},

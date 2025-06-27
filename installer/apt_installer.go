@@ -5,22 +5,32 @@ import (
 	"github.com/chenasraf/sofmani/utils"
 )
 
+// AptInstaller is an installer for apt and apk packages.
 type AptInstaller struct {
 	InstallerBase
-	Config         *appconfig.AppConfig
-	Info           *appconfig.InstallerData
-	PackageManager PackageManager
+	// Config is the application configuration.
+	Config *appconfig.AppConfig
+	// Info is the installer data.
+	Info *appconfig.InstallerData
+	// PackageManager is the package manager to use (apt or apk).
+	PackageManager AptPackageManager
 }
 
+// AptOpts represents options for the AptInstaller.
 type AptOpts struct {
 	//
 }
 
+// AptPackageManager represents a package manager type.
+type AptPackageManager string
+
+// Constants for supported package managers.
 const (
-	PackageManagerApk PackageManager = "apk"
-	PackageManagerApt PackageManager = "apt"
+	PackageManagerApk AptPackageManager = "apk" // PackageManagerApk represents the apk package manager.
+	PackageManagerApt AptPackageManager = "apt" // PackageManagerApt represents the apt package manager.
 )
 
+// Validate validates the installer configuration.
 func (i *AptInstaller) Validate() []ValidationError {
 	errors := i.BaseValidate()
 	return errors
@@ -40,6 +50,8 @@ func (i *AptInstaller) Install() error {
 	return i.RunCmdPassThrough(string(i.PackageManager), install, i.getConfirmArg(), name)
 }
 
+// getConfirmArg returns the appropriate confirmation argument for the package manager.
+// For apt, it returns "-y". For apk, it returns an empty string.
 func (i *AptInstaller) getConfirmArg() string {
 	confirm := "-y"
 	if i.PackageManager == PackageManagerApk {
@@ -82,6 +94,7 @@ func (i *AptInstaller) GetData() *appconfig.InstallerData {
 	return i.Info
 }
 
+// GetOpts returns the parsed options for the AptInstaller.
 func (i *AptInstaller) GetOpts() *AptOpts {
 	opts := &AptOpts{}
 	info := i.Info
@@ -91,6 +104,8 @@ func (i *AptInstaller) GetOpts() *AptOpts {
 	return opts
 }
 
+// GetBinName returns the binary name for the installer.
+// It uses the BinName from the installer data if provided, otherwise it uses the installer name.
 func (i *AptInstaller) GetBinName() string {
 	info := i.GetData()
 	if info.BinName != nil && len(*info.BinName) > 0 {
@@ -99,8 +114,9 @@ func (i *AptInstaller) GetBinName() string {
 	return *info.Name
 }
 
+// NewAptInstaller creates a new AptInstaller.
 func NewAptInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *AptInstaller {
-	var packageManager PackageManager
+	var packageManager AptPackageManager
 	switch installer.Type {
 	case appconfig.InstallerTypeApt:
 		packageManager = PackageManagerApt

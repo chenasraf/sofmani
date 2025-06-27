@@ -9,19 +9,29 @@ import (
 	"github.com/chenasraf/sofmani/utils"
 )
 
+// IInstaller defines the interface for all installers.
 type IInstaller interface {
+	// GetData returns the installer data.
 	GetData() *appconfig.InstallerData
+	// CheckIsInstalled checks if the software is already installed.
 	CheckIsInstalled() (bool, error)
+	// CheckNeedsUpdate checks if an update is available for the software.
 	CheckNeedsUpdate() (bool, error)
+	// Install installs the software.
 	Install() error
+	// Update updates the software.
 	Update() error
+	// Validate validates the installer configuration.
 	Validate() []ValidationError
 }
 
+// InstallerBase provides a base implementation for common installer functionality.
 type InstallerBase struct {
+	// Data is the installer data.
 	Data *appconfig.InstallerData
 }
 
+// GetInstaller returns an IInstaller instance based on the installer type.
 func GetInstaller(config *appconfig.AppConfig, data *appconfig.InstallerData) (IInstaller, error) {
 	data = InstallerWithDefaults(data, data.Type, config.Defaults)
 	switch data.Type {
@@ -51,10 +61,12 @@ func GetInstaller(config *appconfig.AppConfig, data *appconfig.InstallerData) (I
 	return nil, nil
 }
 
+// GetData returns the installer data.
 func (i *InstallerBase) GetData() *appconfig.InstallerData {
 	return i.Data
 }
 
+// BaseValidate performs basic validation common to all installers.
 func (i *InstallerBase) BaseValidate() []ValidationError {
 	errors := []ValidationError{}
 	info := i.GetData()
@@ -64,51 +76,61 @@ func (i *InstallerBase) BaseValidate() []ValidationError {
 	return errors
 }
 
+// RunCustomUpdateCheck runs a custom command to check for updates.
 func (i *InstallerBase) RunCustomUpdateCheck() (bool, error) {
 	envShell := utils.GetOSShell(i.GetData().EnvShell)
 	args := utils.GetOSShellArgs(*i.GetData().CheckHasUpdate)
 	return utils.RunCmdGetSuccessPassThrough(i.Data.Environ(), envShell, args...)
 }
 
+// RunCustomInstallCheck runs a custom command to check if the software is installed.
 func (i *InstallerBase) RunCustomInstallCheck() (bool, error) {
 	envShell := utils.GetOSShell(i.GetData().EnvShell)
 	args := utils.GetOSShellArgs(*i.GetData().CheckInstalled)
 	return utils.RunCmdGetSuccessPassThrough(i.Data.Environ(), envShell, args...)
 }
 
+// HasCustomUpdateCheck checks if a custom update check command is defined.
 func (i *InstallerBase) HasCustomUpdateCheck() bool {
 	return i.GetData().CheckHasUpdate != nil
 }
 
+// HasCustomInstallCheck checks if a custom install check command is defined.
 func (i *InstallerBase) HasCustomInstallCheck() bool {
 	return i.GetData().CheckInstalled != nil
 }
 
+// RunCmdAsFile runs a command as a temporary file.
 func (i *InstallerBase) RunCmdAsFile(command string) error {
 	data := i.GetData()
 	return utils.RunCmdAsFile(data.Environ(), command, data.EnvShell)
 }
 
+// RunCmdPassThrough runs a command and passes through its output.
 func (i *InstallerBase) RunCmdPassThrough(command string, args ...string) error {
 	data := i.GetData()
 	return utils.RunCmdPassThrough(data.Environ(), command, args...)
 }
 
+// RunCmdGetSuccess runs a command and returns true if it succeeds (exit code 0).
 func (i *InstallerBase) RunCmdGetSuccess(command string, args ...string) (bool, error) {
 	data := i.GetData()
 	return utils.RunCmdGetSuccess(data.Environ(), command, args...)
 }
 
+// RunCmdGetSuccessPassThrough runs a command, passes through its output, and returns true if it succeeds.
 func (i *InstallerBase) RunCmdGetSuccessPassThrough(command string, args ...string) (bool, error) {
 	data := i.GetData()
 	return utils.RunCmdGetSuccessPassThrough(data.Environ(), command, args...)
 }
 
+// RunCmdGetOutput runs a command and returns its output.
 func (i *InstallerBase) RunCmdGetOutput(command string, args ...string) ([]byte, error) {
 	data := i.GetData()
 	return utils.RunCmdGetOutput(data.Environ(), command, args...)
 }
 
+// RunInstaller executes the installation or update process for a given installer.
 func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 	info := installer.GetData()
 	name := *info.Name

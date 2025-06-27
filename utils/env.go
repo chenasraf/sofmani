@@ -5,6 +5,8 @@ import (
 	"strings"
 )
 
+// ResolveEnvPaths takes one or more slices of environment variable strings (e.g., "KEY=VALUE"),
+// resolves any paths within the values using GetRealPath, and returns a single combined slice.
 func ResolveEnvPaths(envs ...[]string) []string {
 	out := []string{}
 	for _, e := range envs {
@@ -19,6 +21,8 @@ func ResolveEnvPaths(envs ...[]string) []string {
 	return out
 }
 
+// CombineEnv merges multiple slices of environment variable strings.
+// Later slices will override earlier ones if keys conflict.
 func CombineEnv(envs ...*[]string) []string {
 	out := []string{}
 	for _, env := range envs {
@@ -27,6 +31,8 @@ func CombineEnv(envs ...*[]string) []string {
 	return out
 }
 
+// CombineEnvMaps merges multiple maps of environment variables.
+// Later maps will override earlier ones if keys conflict.
 func CombineEnvMaps(envs ...*map[string]string) map[string]string {
 	out := map[string]string{}
 	for _, env := range envs {
@@ -40,6 +46,7 @@ func CombineEnvMaps(envs ...*map[string]string) map[string]string {
 	return out
 }
 
+// EnvSliceAsMap converts a slice of environment variable strings ("KEY=VALUE") to a map.
 func EnvSliceAsMap(env []string) map[string]string {
 	out := map[string]string{}
 	for _, line := range env {
@@ -54,6 +61,7 @@ func EnvSliceAsMap(env []string) map[string]string {
 	return out
 }
 
+// EnvMapAsSlice converts a map of environment variables to a slice of "KEY=VALUE" strings.
 func EnvMapAsSlice(env map[string]string) []string {
 	out := []string{}
 	for k, v := range env {
@@ -62,13 +70,15 @@ func EnvMapAsSlice(env map[string]string) []string {
 	return out
 }
 
+// mergeEnvs helper function to merge a source slice of env strings into a target map (represented as a slice).
+// This is an internal helper for CombineEnv.
 func mergeEnvs(source *[]string, target []string) []string {
 	tgt := EnvSliceAsMap(target)
 	if source == nil {
-		source = &[]string{}
+		source = &[]string{} // Treat nil source as empty
 	}
 	for k, v := range EnvSliceAsMap(*source) {
-		tgt[k] = v
+		tgt[k] = v // Override or add keys from source
 	}
 	return EnvMapAsSlice(tgt)
 }

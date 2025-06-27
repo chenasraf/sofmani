@@ -12,8 +12,9 @@ import (
 )
 
 //go:embed version.txt
-var appVersion []byte
+var appVersion []byte // appVersion is embedded from version.txt and contains the application version.
 
+// main is the entry point of the application.
 func main() {
 	appconfig.SetVersion(strings.TrimSpace(string(appVersion)))
 	cfg, err := LoadConfig()

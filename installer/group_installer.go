@@ -6,16 +6,21 @@ import (
 	"github.com/chenasraf/sofmani/utils"
 )
 
+// GroupInstaller is an installer that groups other installers.
 type GroupInstaller struct {
 	InstallerBase
+	// Config is the application configuration.
 	Config *appconfig.AppConfig
-	Data   *appconfig.InstallerData
+	// Data is the installer data.
+	Data *appconfig.InstallerData
 }
 
+// GroupOpts represents options for the GroupInstaller.
 type GroupOpts struct {
 	//
 }
 
+// Validate validates the installer configuration.
 func (i *GroupInstaller) Validate() []ValidationError {
 	errors := i.BaseValidate()
 	info := i.GetData()
@@ -70,6 +75,7 @@ func (i *GroupInstaller) GetData() *appconfig.InstallerData {
 	return i.Data
 }
 
+// GetOpts returns the parsed options for the GroupInstaller.
 func (i *GroupInstaller) GetOpts() *GroupOpts {
 	opts := &GroupOpts{}
 	info := i.GetData()
@@ -79,6 +85,8 @@ func (i *GroupInstaller) GetOpts() *GroupOpts {
 	return opts
 }
 
+// GetBinName returns the binary name for the installer.
+// It uses the BinName from the installer data if provided, otherwise it uses the installer name.
 func (i *GroupInstaller) GetBinName() string {
 	info := i.GetData()
 	if info.BinName != nil && len(*info.BinName) > 0 {
@@ -87,6 +95,7 @@ func (i *GroupInstaller) GetBinName() string {
 	return *info.Name
 }
 
+// NewGroupInstaller creates a new GroupInstaller.
 func NewGroupInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *GroupInstaller {
 	return &GroupInstaller{
 		InstallerBase: InstallerBase{Data: installer},

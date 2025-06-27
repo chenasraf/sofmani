@@ -10,17 +10,24 @@ import (
 	"github.com/chenasraf/sofmani/utils"
 )
 
+// GitInstaller is an installer for Git repositories.
 type GitInstaller struct {
 	InstallerBase
+	// Config is the application configuration.
 	Config *appconfig.AppConfig
-	Info   *appconfig.InstallerData
+	// Info is the installer data.
+	Info *appconfig.InstallerData
 }
 
+// GitOpts represents options for the GitInstaller.
 type GitOpts struct {
+	// Destination is the directory where the repository will be cloned.
 	Destination *string
-	Ref         *string
+	// Ref is the Git reference (branch, tag, or commit) to checkout.
+	Ref *string
 }
 
+// Validate validates the installer configuration.
 func (i *GitInstaller) Validate() []ValidationError {
 	errors := i.BaseValidate()
 	info := i.GetData()
@@ -84,6 +91,7 @@ func (i *GitInstaller) GetData() *appconfig.InstallerData {
 	return i.Info
 }
 
+// GetOpts returns the parsed options for the GitInstaller.
 func (i *GitInstaller) GetOpts() *GitOpts {
 	opts := &GitOpts{}
 	info := i.Info
@@ -99,6 +107,9 @@ func (i *GitInstaller) GetOpts() *GitOpts {
 	return opts
 }
 
+// GetRepositoryUrl returns the URL of the Git repository.
+// If the name in the installer data is a valid Git URL, it's returned directly.
+// Otherwise, it's assumed to be a GitHub repository name (e.g., "owner/repo").
 func (i *GitInstaller) GetRepositoryUrl() string {
 	info := i.Info
 	name := *info.Name
@@ -108,6 +119,8 @@ func (i *GitInstaller) GetRepositoryUrl() string {
 	return fmt.Sprintf("https://github.com/%s", name)
 }
 
+// GetDestination returns the destination directory for the Git repository.
+// It uses the Destination from the installer options if provided, otherwise it defaults to the current working directory.
 func (i *GitInstaller) GetDestination() string {
 	if i.GetOpts().Destination != nil {
 		return *i.GetOpts().Destination
@@ -119,10 +132,13 @@ func (i *GitInstaller) GetDestination() string {
 	return wd
 }
 
+// GetInstallDir returns the full path to the directory where the repository will be cloned.
+// This is a combination of the destination directory and the base name of the repository.
 func (i *GitInstaller) GetInstallDir() string {
 	return filepath.Join(i.GetDestination(), filepath.Base(*i.Info.Name))
 }
 
+// NewGitInstaller creates a new GitInstaller.
 func NewGitInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *GitInstaller {
 	i := &GitInstaller{
 		InstallerBase: InstallerBase{Data: installer},

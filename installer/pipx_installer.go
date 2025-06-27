@@ -5,16 +5,21 @@ import (
 	"github.com/chenasraf/sofmani/utils"
 )
 
+// PipxInstaller is an installer for pipx packages.
 type PipxInstaller struct {
 	InstallerBase
+	// Config is the application configuration.
 	Config *appconfig.AppConfig
-	Info   *appconfig.InstallerData
+	// Info is the installer data.
+	Info *appconfig.InstallerData
 }
 
+// PipxOpts represents options for the PipxInstaller.
 type PipxOpts struct {
 	//
 }
 
+// Validate validates the installer configuration.
 func (i *PipxInstaller) Validate() []ValidationError {
 	errors := i.BaseValidate()
 	return errors
@@ -56,6 +61,7 @@ func (i *PipxInstaller) GetData() *appconfig.InstallerData {
 	return i.Info
 }
 
+// GetOpts returns the parsed options for the PipxInstaller.
 func (i *PipxInstaller) GetOpts() *PipxOpts {
 	opts := &PipxOpts{}
 	info := i.Info
@@ -65,6 +71,8 @@ func (i *PipxInstaller) GetOpts() *PipxOpts {
 	return opts
 }
 
+// GetBinName returns the binary name for the installer.
+// It uses the BinName from the installer data if provided, otherwise it uses the installer name.
 func (i *PipxInstaller) GetBinName() string {
 	info := i.GetData()
 	if info.BinName != nil && len(*info.BinName) > 0 {
@@ -73,6 +81,7 @@ func (i *PipxInstaller) GetBinName() string {
 	return *info.Name
 }
 
+// NewPipxInstaller creates a new PipxInstaller.
 func NewPipxInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *PipxInstaller {
 	i := &PipxInstaller{
 		InstallerBase: InstallerBase{Data: installer},

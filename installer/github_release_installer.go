@@ -16,27 +16,39 @@ import (
 	"github.com/chenasraf/sofmani/utils"
 )
 
+// GitHubReleaseInstaller is an installer for GitHub releases.
 type GitHubReleaseInstaller struct {
 	InstallerBase
+	// Config is the application configuration.
 	Config *appconfig.AppConfig
-	Info   *appconfig.InstallerData
+	// Info is the installer data.
+	Info *appconfig.InstallerData
 }
 
+// GitHubReleaseOpts represents options for the GitHubReleaseInstaller.
 type GitHubReleaseOpts struct {
-	Repository       *string
-	Destination      *string
+	// Repository is the GitHub repository (e.g., "owner/repo").
+	Repository *string
+	// Destination is the directory where the release asset will be installed.
+	Destination *string
+	// DownloadFilename is a platform-specific map of the filename to download from the release.
+	// Placeholders {tag} and {version} can be used in the filename.
 	DownloadFilename *platform.PlatformMap[string]
-	Strategy         *GitHubReleaseInstallStrategy
+	// Strategy is the installation strategy to use (none, tar, zip).
+	Strategy *GitHubReleaseInstallStrategy
 }
 
+// GitHubReleaseInstallStrategy represents the installation strategy for a GitHub release.
 type GitHubReleaseInstallStrategy string
 
+// Constants for GitHub release installation strategies.
 const (
-	GitHubReleaseInstallStrategyNone GitHubReleaseInstallStrategy = "none"
-	GitHubReleaseInstallStrategyTar  GitHubReleaseInstallStrategy = "tar"
-	GitHubReleaseInstallStrategyZip  GitHubReleaseInstallStrategy = "zip"
+	GitHubReleaseInstallStrategyNone GitHubReleaseInstallStrategy = "none" // GitHubReleaseInstallStrategyNone means no special handling, just download the file.
+	GitHubReleaseInstallStrategyTar  GitHubReleaseInstallStrategy = "tar"  // GitHubReleaseInstallStrategyTar means extract a tar archive.
+	GitHubReleaseInstallStrategyZip  GitHubReleaseInstallStrategy = "zip"  // GitHubReleaseInstallStrategyZip means extract a zip archive.
 )
 
+// Validate validates the installer configuration.
 func (i *GitHubReleaseInstaller) Validate() []ValidationError {
 	errors := i.BaseValidate()
 	info := i.GetData()
@@ -200,6 +212,8 @@ func (i *GitHubReleaseInstaller) CheckNeedsUpdate() (bool, error) {
 	return false, nil
 }
 
+// GetBinName returns the binary name for the installer.
+// It uses the BinName from the installer data if provided, otherwise it uses the base name of the installer name.
 func (i *GitHubReleaseInstaller) GetBinName() string {
 	if i.Info.BinName != nil {
 		return *i.Info.BinName
@@ -207,6 +221,7 @@ func (i *GitHubReleaseInstaller) GetBinName() string {
 	return filepath.Base(*i.Info.Name)
 }
 
+// CopyExtractedFile copies the extracted file from a temporary directory to the final destination.
 func (i *GitHubReleaseInstaller) CopyExtractedFile(out *os.File, tmpDir string) (bool, error) {
 	binFile, err := os.Create(out.Name())
 	defer binFile.Close()
@@ -226,6 +241,7 @@ func (i *GitHubReleaseInstaller) CopyExtractedFile(out *os.File, tmpDir string) 
 	return true, nil
 }
 
+// GetCachedTag retrieves the cached tag for the release from the cache directory.
 func (i *GitHubReleaseInstaller) GetCachedTag() (string, error) {
 	logger.Debug("Getting cached tag for %s", *i.Info.Name)
 	cacheDir, err := utils.GetCacheDir()
@@ -249,6 +265,7 @@ func (i *GitHubReleaseInstaller) GetCachedTag() (string, error) {
 	return strings.TrimSpace(string(contents)), nil
 }
 
+// UpdateCache updates the cached tag for the release in the cache directory.
 func (i *GitHubReleaseInstaller) UpdateCache(tag string) error {
 	cacheDir, err := utils.GetCacheDir()
 	if err != nil {
@@ -268,6 +285,7 @@ func (i *GitHubReleaseInstaller) GetData() *appconfig.InstallerData {
 	return i.Info
 }
 
+// GetOpts returns the parsed options for the GitHubReleaseInstaller.
 func (i *GitHubReleaseInstaller) GetOpts() *GitHubReleaseOpts {
 	opts := &GitHubReleaseOpts{}
 	info := i.Info
@@ -323,6 +341,7 @@ func (i *GitHubReleaseInstaller) GetLatestTag() (string, error) {
 	return tag, nil
 }
 
+// GetFilename returns the filename to download from the release, resolved for the current platform.
 func (i *GitHubReleaseInstaller) GetFilename() string {
 	opts := i.GetOpts()
 	if opts.DownloadFilename != nil {
@@ -331,6 +350,8 @@ func (i *GitHubReleaseInstaller) GetFilename() string {
 	return ""
 }
 
+// GetDestination returns the destination directory for the release asset.
+// It uses the Destination from the installer options if provided, otherwise it defaults to the current working directory.
 func (i *GitHubReleaseInstaller) GetDestination() string {
 	if i.GetOpts().Destination != nil {
 		return *i.GetOpts().Destination
@@ -342,10 +363,13 @@ func (i *GitHubReleaseInstaller) GetDestination() string {
 	return wd
 }
 
+// GetInstallDir returns the installation directory for the release asset.
+// For GitHub releases, this is the same as the destination directory.
 func (i *GitHubReleaseInstaller) GetInstallDir() string {
 	return i.GetDestination()
 }
 
+// NewGitHubReleaseInstaller creates a new GitHubReleaseInstaller.
 func NewGitHubReleaseInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *GitHubReleaseInstaller {
 	i := &GitHubReleaseInstaller{
 		InstallerBase: InstallerBase{Data: installer},

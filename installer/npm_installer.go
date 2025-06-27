@@ -5,25 +5,34 @@ import (
 	"github.com/chenasraf/sofmani/utils"
 )
 
+// NpmInstaller is an installer for npm, pnpm, and yarn packages.
 type NpmInstaller struct {
 	InstallerBase
-	Config         *appconfig.AppConfig
-	PackageManager PackageManager
-	Info           *appconfig.InstallerData
+	// Config is the application configuration.
+	Config *appconfig.AppConfig
+	// PackageManager is the package manager to use (npm, pnpm, or yarn).
+	PackageManager NpmPackageManager
+	// Info is the installer data.
+	Info *appconfig.InstallerData
 }
 
+// NpmOpts represents options for the NpmInstaller.
 type NpmOpts struct {
 	//
 }
 
-type PackageManager string
+// NpmPackageManager represents a Node.js package manager type.
+// This type is also defined in apt_installer.go. Consider refactoring to a common location if appropriate.
+type NpmPackageManager string
 
+// Constants for supported Node.js package managers.
 const (
-	PackageManagerNpm  PackageManager = "npm"
-	PackageManagerYarn PackageManager = "yarn"
-	PackageManagerPnpm PackageManager = "pnpm"
+	PackageManagerNpm  NpmPackageManager = "npm"  // PackageManagerNpm represents the npm package manager.
+	PackageManagerYarn NpmPackageManager = "yarn" // PackageManagerYarn represents the yarn package manager.
+	PackageManagerPnpm NpmPackageManager = "pnpm" // PackageManagerPnpm represents the pnpm package manager.
 )
 
+// Validate validates the installer configuration.
 func (i *NpmInstaller) Validate() []ValidationError {
 	errors := i.BaseValidate()
 	return errors
@@ -64,12 +73,15 @@ func (i *NpmInstaller) GetData() *appconfig.InstallerData {
 	return i.Info
 }
 
+// GetOpts returns the parsed options for the NpmInstaller.
 func (i *NpmInstaller) GetOpts() *NpmOpts {
 	opts := &NpmOpts{}
 	// info := i.Info
 	return opts
 }
 
+// GetBinName returns the binary name for the installer.
+// It uses the BinName from the installer data if provided, otherwise it uses the installer name.
 func (i *NpmInstaller) GetBinName() string {
 	info := i.GetData()
 	if info.BinName != nil && len(*info.BinName) > 0 {
@@ -78,8 +90,9 @@ func (i *NpmInstaller) GetBinName() string {
 	return *info.Name
 }
 
+// NewNpmInstaller creates a new NpmInstaller.
 func NewNpmInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *NpmInstaller {
-	var packageManager PackageManager
+	var packageManager NpmPackageManager
 	switch installer.Type {
 	case appconfig.InstallerTypeNpm:
 		packageManager = PackageManagerNpm

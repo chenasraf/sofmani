@@ -6,6 +6,8 @@ import (
 	"github.com/chenasraf/sofmani/platform"
 )
 
+// InstallerWithDefaults applies default configurations to an installer data object.
+// It first applies base defaults using FillDefaults, and then applies type-specific defaults.
 func InstallerWithDefaults(
 	data *appconfig.InstallerData,
 	installerType appconfig.InstallerType,
@@ -15,7 +17,7 @@ func InstallerWithDefaults(
 	FillDefaults(data)
 
 	// per-type overrides from defaults
-	if defaults != nil && *defaults.Type != nil {
+	if defaults != nil && defaults.Type != nil {
 		if override, ok := (*defaults.Type)[installerType]; ok {
 			logger.Debug("Applying defaults for %s", installerType)
 			if override.Opts != nil {
@@ -35,30 +37,40 @@ func InstallerWithDefaults(
 			if override.PlatformEnv != nil {
 				source := *override.PlatformEnv
 				targetBase := *data.PlatformEnv
-				target := *targetBase.MacOS
-				for k, v := range *source.MacOS {
-					target[k] = v
+				if source.MacOS != nil && targetBase.MacOS != nil {
+					target := *targetBase.MacOS
+					for k, v := range *source.MacOS {
+						target[k] = v
+					}
 				}
-				target = *targetBase.Linux
-				for k, v := range *source.Linux {
-					target[k] = v
+				if source.Linux != nil && targetBase.Linux != nil {
+					target := *targetBase.Linux
+					for k, v := range *source.Linux {
+						target[k] = v
+					}
 				}
-				target = *targetBase.Windows
-				for k, v := range *source.Windows {
-					target[k] = v
+				if source.Windows != nil && targetBase.Windows != nil {
+					target := *targetBase.Windows
+					for k, v := range *source.Windows {
+						target[k] = v
+					}
 				}
 			}
 			if override.EnvShell != nil {
 				source := *override.EnvShell
-				target := *data.EnvShell
+				target := data.EnvShell // data.EnvShell should be initialized by FillDefaults
+				if target == nil {      // Should not happen if FillDefaults is called
+					data.EnvShell = &platform.PlatformMap[string]{}
+					target = data.EnvShell
+				}
 				if source.MacOS != nil {
-					*target.MacOS = *source.MacOS
+					target.MacOS = source.MacOS
 				}
 				if source.Linux != nil {
-					*target.Linux = *source.Linux
+					target.Linux = source.Linux
 				}
 				if source.Windows != nil {
-					*target.Windows = *source.Windows
+					target.Windows = source.Windows
 				}
 			}
 			if override.Platforms != nil {
@@ -87,6 +99,7 @@ func InstallerWithDefaults(
 	return data
 }
 
+// FillDefaults initializes nil fields in an InstallerData object with empty values.
 func FillDefaults(data *appconfig.InstallerData) {
 	if data.Env == nil {
 		data.Env = &map[string]string{}
@@ -101,6 +114,10 @@ func FillDefaults(data *appconfig.InstallerData) {
 			Windows: &map[string]string{},
 		}
 		data.PlatformEnv = &env
+	}
+	if data.EnvShell == nil { // Added default for EnvShell
+		shell := platform.PlatformMap[string]{}
+		data.EnvShell = &shell
 	}
 	if data.Platforms == nil {
 		platforms := platform.Platforms{}

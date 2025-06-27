@@ -11,19 +11,28 @@ import (
 	"github.com/chenasraf/sofmani/utils"
 )
 
+// ManifestInstaller is an installer that installs software based on another sofmani manifest file.
 type ManifestInstaller struct {
 	InstallerBase
-	Config         *appconfig.AppConfig
-	Info           *appconfig.InstallerData
+	// Config is the main application configuration.
+	Config *appconfig.AppConfig
+	// Info is the installer data for this manifest installer.
+	Info *appconfig.InstallerData
+	// ManifestConfig is the configuration loaded from the manifest file.
 	ManifestConfig *appconfig.AppConfig
 }
 
+// ManifestOpts represents options for the ManifestInstaller.
 type ManifestOpts struct {
+	// Source is the source of the manifest file. It can be a local path or a Git URL.
 	Source *string
-	Path   *string
-	Ref    *string
+	// Path is the path to the manifest file within the source (if applicable, e.g., in a Git repository).
+	Path *string
+	// Ref is the Git reference (branch, tag, or commit) to use if the source is a Git URL.
+	Ref *string
 }
 
+// Validate validates the installer configuration.
 func (i *ManifestInstaller) Validate() []ValidationError {
 	errors := i.BaseValidate()
 	info := i.GetData()
@@ -92,6 +101,7 @@ func (i *ManifestInstaller) GetData() *appconfig.InstallerData {
 	return i.Info
 }
 
+// GetOpts returns the parsed options for the ManifestInstaller.
 func (i *ManifestInstaller) GetOpts() *ManifestOpts {
 	opts := &ManifestOpts{}
 	info := i.GetData()
@@ -109,6 +119,8 @@ func (i *ManifestInstaller) GetOpts() *ManifestOpts {
 	return opts
 }
 
+// FetchManifest fetches and parses the manifest file.
+// It handles both local and Git sources.
 func (i *ManifestInstaller) FetchManifest() error {
 	opts := i.GetOpts()
 	source := *opts.Source

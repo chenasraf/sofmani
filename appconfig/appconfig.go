@@ -14,31 +14,48 @@ import (
 	"github.com/eschao/config"
 )
 
+// AppConfig represents the main application configuration.
 type AppConfig struct {
-	Debug        *bool                                    `json:"debug"          yaml:"debug"`
-	CheckUpdates *bool                                    `json:"check_updates"  yaml:"check_updates"`
-	Install      []InstallerData                          `json:"install"        yaml:"install"`
-	Defaults     *AppConfigDefaults                       `json:"defaults"       yaml:"defaults"`
-	Env          *map[string]string                       `json:"env"            yaml:"env"`
-	PlatformEnv  *platform.PlatformMap[map[string]string] `json:"platform_env"   yaml:"platform_env"`
-	Filter       []string
+	// Debug enables or disables debug mode.
+	Debug *bool `json:"debug"          yaml:"debug"`
+	// CheckUpdates enables or disables checking for updates.
+	CheckUpdates *bool `json:"check_updates"  yaml:"check_updates"`
+	// Install is a list of installers to run.
+	Install []InstallerData `json:"install"        yaml:"install"`
+	// Defaults provides default configurations for installer types.
+	Defaults *AppConfigDefaults `json:"defaults"       yaml:"defaults"`
+	// Env is a map of environment variables to set.
+	Env *map[string]string `json:"env"            yaml:"env"`
+	// PlatformEnv is a map of platform-specific environment variables to set.
+	PlatformEnv *platform.PlatformMap[map[string]string] `json:"platform_env"   yaml:"platform_env"`
+	// Filter is a list of installer names to filter by.
+	Filter []string
 }
 
+// AppCliConfig represents the command-line interface configuration.
 type AppCliConfig struct {
-	ConfigFile   string
-	Debug        *bool
+	// ConfigFile is the path to the configuration file.
+	ConfigFile string
+	// Debug enables or disables debug mode.
+	Debug *bool
+	// CheckUpdates enables or disables checking for updates.
 	CheckUpdates *bool
-	Filter       []string
+	// Filter is a list of installer names to filter by.
+	Filter []string
 }
 
+// AppConfigDefaults provides default configurations for installer types.
 type AppConfigDefaults struct {
+	// Type is a map of installer types to their default configurations.
 	Type *map[InstallerType]InstallerData `json:"type" yaml:"type"`
 }
 
+// Environ returns the combined environment variables as a slice of strings.
 func (c *AppConfig) Environ() []string {
 	return utils.EnvMapAsSlice(utils.CombineEnvMaps(c.Env, c.PlatformEnv.Resolve()))
 }
 
+// ParseConfig parses the configuration file and applies overrides.
 func ParseConfig(overrides *AppCliConfig) (*AppConfig, error) {
 	file := overrides.ConfigFile
 	ext := filepath.Ext(file)
@@ -60,6 +77,7 @@ func ParseConfig(overrides *AppCliConfig) (*AppConfig, error) {
 	return nil, fmt.Errorf("Unsupported config file extension %s (filename: %s)", ext, file)
 }
 
+// ParseConfigFrom parses the configuration from the given file.
 func ParseConfigFrom(file string) (*AppConfig, error) {
 	appConfig := NewAppConfig()
 	err := config.ParseConfigFile(&appConfig, file)
@@ -69,6 +87,9 @@ func ParseConfigFrom(file string) (*AppConfig, error) {
 	return &appConfig, nil
 }
 
+// FindConfigFile searches for the configuration file in standard locations.
+// It searches in the current working directory, then in ~/.config, and finally in the home directory.
+// It returns the path to the first file found, or an empty string if no file is found.
 func FindConfigFile() string {
 	wd, err := os.Getwd()
 	if err != nil {
@@ -86,6 +107,9 @@ func FindConfigFile() string {
 	return ""
 }
 
+// tryConfigDir attempts to find a configuration file with a valid extension in the given directory.
+// It checks for "sofmani.json", "sofmani.yaml", and "sofmani.yml".
+// It returns the path to the first file found, or an empty string if no file is found.
 func tryConfigDir(dir string) string {
 	for _, ext := range []string{"json", "yaml", "yml"} {
 		file := filepath.Join(dir, "sofmani."+ext)
@@ -96,6 +120,7 @@ func tryConfigDir(dir string) string {
 	return ""
 }
 
+// GetConfigDesc returns a string slice describing the current configuration.
 func (c *AppConfig) GetConfigDesc() []string {
 	desc := []string{}
 	isDebug := false
@@ -137,16 +162,20 @@ func (c *AppConfig) GetConfigDesc() []string {
 	return desc
 }
 
+// AppVersion is the current version of the application.
 var AppVersion string
 
+// SetVersion sets the application version.
 func SetVersion(v string) {
 	AppVersion = v
 }
 
+// boolPtr returns a pointer to a boolean value.
 func boolPtr(b bool) *bool {
 	return &b
 }
 
+// ParseCliConfig parses command-line arguments and returns an AppCliConfig.
 func ParseCliConfig() *AppCliConfig {
 	args := os.Args[1:]
 	config := &AppCliConfig{
@@ -197,6 +226,7 @@ func ParseCliConfig() *AppCliConfig {
 	return config
 }
 
+// printHelp prints the command-line help message.
 func printHelp() {
 	fmt.Println("Usage: sofmani [options] [config_file]")
 	fmt.Println("Options:")
@@ -211,10 +241,12 @@ func printHelp() {
 	fmt.Println("For online documentation, see https://github.com/chenasraf/sofmani/tree/master/docs")
 }
 
+// printVersion prints the application version.
 func printVersion() {
 	fmt.Println(AppVersion)
 }
 
+// NewAppConfig creates a new AppConfig with default values.
 func NewAppConfig() AppConfig {
 	return AppConfig{
 		Install: []InstallerData{},
