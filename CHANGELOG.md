@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.1](https://github.com/chenasraf/sofmani/compare/v1.10.0...v1.10.1) (2025-06-27)
+
+
+### Bug Fixes
+
+* docker pull to get correct digest ([5f7449c](https://github.com/chenasraf/sofmani/commit/5f7449c8e35a9880de07780444b992340bd0f594))
+
 ## [1.10.0](https://github.com/chenasraf/sofmani/compare/v1.9.6...v1.10.0) (2025-06-27)
 
 
