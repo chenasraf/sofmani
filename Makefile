@@ -3,7 +3,7 @@ build:
 	go build
 
 .PHONY: run
-run:
+run: build
 	./sofmani
 
 .PHONY: test
@@ -13,3 +13,7 @@ test:
 .PHONY: install
 install: build
 	cp sofmani ~/.local/bin
+
+.PHONY: uninstall
+uninstall:
+	rm -f ~/.local/bin/sofmani
