@@ -37,6 +37,17 @@ func TestBrewValidation(t *testing.T) {
 	}
 	assertNoValidationErrors(t, newTestBrewInstaller(validData).Validate())
 
+	// 🟢 Valid: Tap and cask used together
+	tapCaskData := &appconfig.InstallerData{
+		Name: strPtr("test-brew-tap-cask"),
+		Type: appconfig.InstallerTypeBrew,
+		Opts: &map[string]any{
+			"tap":  "homebrew/cask-versions",
+			"cask": true,
+		},
+	}
+	assertNoValidationErrors(t, newTestBrewInstaller(tapCaskData).Validate())
+
 	// 🔴 Invalid: Tap is present but malformed (missing slash or too short)
 	invalidData := &appconfig.InstallerData{
 		Name: strPtr("test-brew-invalid-tap"),

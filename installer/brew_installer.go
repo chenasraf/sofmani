@@ -28,6 +28,8 @@ type BrewInstaller struct {
 type BrewOpts struct {
 	// Tap is the Homebrew tap to use for the package.
 	Tap *string
+	// Cask installs the formula as a cask instead of a regular package.
+	Cask *bool
 }
 
 // Validate validates the installer configuration.
@@ -46,13 +48,21 @@ func (i *BrewInstaller) Validate() []ValidationError {
 // Install implements IInstaller.
 func (i *BrewInstaller) Install() error {
 	name := i.GetFullName()
-	return i.RunCmdAsFile(fmt.Sprintf("brew install %s", name))
+	cmd := "brew install"
+	if i.IsCask() {
+		cmd += " --cask"
+	}
+	return i.RunCmdAsFile(fmt.Sprintf("%s %s", cmd, name))
 }
 
 // Update implements IInstaller.
 func (i *BrewInstaller) Update() error {
 	name := i.GetFullName()
-	return i.RunCmdAsFile(fmt.Sprintf("brew upgrade %s", name))
+	cmd := "brew upgrade"
+	if i.IsCask() {
+		cmd += " --cask"
+	}
+	return i.RunCmdAsFile(fmt.Sprintf("%s %s", cmd, name))
 }
 
 // GetFullName returns the full name of the package, including the tap if specified.
@@ -172,8 +182,16 @@ func (i *BrewInstaller) GetOpts() *BrewOpts {
 		if tap, ok := (*info.Opts)["tap"].(string); ok {
 			opts.Tap = &tap
 		}
+		if caskVal, ok := (*info.Opts)["cask"].(bool); ok {
+			opts.Cask = &caskVal
+		}
 	}
 	return opts
+}
+
+func (i *BrewInstaller) IsCask() bool {
+	opts := i.GetOpts()
+	return opts.Cask != nil && *opts.Cask
 }
 
 // GetBinName returns the binary name for the installer.
