@@ -26,6 +26,8 @@ type DockerOpts struct {
 	Flags *string
 	// Platform is a platform-specific map of Docker platform strings (e.g., "linux/amd64").
 	Platform *platform.PlatformMap[string]
+	// SkipIfUnavailable indicates whether to skip installation if Docker is unavailable.
+	SkipIfUnavailable *bool
 }
 
 // NewDockerInstaller creates a new DockerInstaller.
@@ -45,11 +47,26 @@ func (i *DockerInstaller) Validate() []ValidationError {
 
 // Install implements IInstaller.
 func (i *DockerInstaller) Install() error {
+	if !isDockerAvailable() {
+		if i.GetOpts().SkipIfUnavailable != nil && *i.GetOpts().SkipIfUnavailable {
+			logger.Debug("Docker not available, skipping install")
+			return nil
+		}
+		return fmt.Errorf("docker is not available")
+	}
 	return i.runOrStartContainer(false)
 }
 
 // Update implements IInstaller.
 func (i *DockerInstaller) Update() error {
+	if !isDockerAvailable() {
+		if i.GetOpts().SkipIfUnavailable != nil && *i.GetOpts().SkipIfUnavailable {
+			logger.Debug("Docker not available, skipping update")
+			return nil
+		}
+		return fmt.Errorf("docker is not available")
+	}
+
 	image := *i.Info.Name
 	containerName := i.GetContainerName()
 
@@ -102,6 +119,9 @@ func (i *DockerInstaller) GetOpts() *DockerOpts {
 				Windows: platformMap["windows"],
 			}
 		}
+	}
+	if skip, ok := (*i.Info.Opts)["skip_if_unavailable"].(bool); ok {
+		opts.SkipIfUnavailable = &skip
 	}
 	return opts
 }
@@ -187,4 +207,10 @@ func GetPlatformArchWithFallback(preferred string, fallbacks ...string) string {
 		}
 	}
 	return preferred
+}
+
+// isDockerAvailable checks if Docker is available on the system.
+func isDockerAvailable() bool {
+	err := exec.Command("docker", "info").Run()
+	return err == nil
 }

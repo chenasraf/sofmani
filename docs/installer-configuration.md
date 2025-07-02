@@ -262,6 +262,9 @@ These fields are shared by all installer types. Some fields may vary in behavior
             linux: linux/amd64
         ```
 
+    - `opts.skip_if_unavailable`: Whether to skip the installation/update if the Docker daemon is
+      not running. Defaults to false (so it will fail the installer)
+
 ## Installer Examples
 
 All of these examples should be usable, but don't count on them being maintained. Why not look at
