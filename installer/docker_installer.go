@@ -54,16 +54,12 @@ func (i *DockerInstaller) Update() error {
 	containerName := i.GetContainerName()
 
 	logger.Debug("Pulling updated image: %s", image)
-	if err := i.RunCmdAsFile(fmt.Sprintf("docker pull %s", image)); err != nil {
+	if err := i.RunCmdPassThrough(fmt.Sprintf("docker pull %s", image)); err != nil {
 		return fmt.Errorf("failed to pull image: %w", err)
 	}
 
-	// Check if container exists before trying to remove
-	exists := exec.Command("docker", "inspect", containerName).Run() == nil
-	if exists {
-		logger.Debug("Removing existing container: %s", containerName)
-		_ = exec.Command("docker", "rm", "-f", containerName).Run()
-	}
+	logger.Debug("Removing existing container: %s", containerName)
+	i.RunCmdPassThrough("docker", "rm", "-f", containerName)
 
 	logger.Debug("Running updated container: %s", containerName)
 	return i.runOrStartContainer(true)
@@ -71,28 +67,8 @@ func (i *DockerInstaller) Update() error {
 
 // CheckNeedsUpdate implements IInstaller.
 func (i *DockerInstaller) CheckNeedsUpdate() (bool, error) {
-	if i.HasCustomUpdateCheck() {
-		return i.RunCustomUpdateCheck()
-	}
-
-	image := *i.Info.Name
-
-	localDigest, err := i.getLocalRepoDigest(image)
-	if err != nil {
-		// If the image isn't present locally, we assume an update is needed
-		logger.Debug("No local image found, assuming update needed")
-		return true, nil
-	}
-
-	remoteDigest, err := i.getRemoteRepoDigest(image)
-	if err != nil {
-		return false, fmt.Errorf("failed to get remote image digest: %w", err)
-	}
-
-	logger.Debug("Local digest: %s", localDigest)
-	logger.Debug("Remote digest: %s", remoteDigest)
-
-	return localDigest != remoteDigest, nil
+	// Always assume an update is available
+	return true, nil
 }
 
 // CheckIsInstalled implements IInstaller.
@@ -196,23 +172,8 @@ func extractDigestFromManifest(jsonData []byte, osTarget, archTarget string) (st
 	return "", fmt.Errorf("no digest found for %s/%s", osTarget, archTarget)
 }
 
-// getRemoteRepoDigest fetches the remote repository digest for a Docker image.
-func (i *DockerInstaller) getRemoteRepoDigest(image string) (string, error) {
-	logger.Debug("Pulling remote digest with: docker pull %s", image)
-	cmd := exec.Command("docker", "pull", image)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		logger.Debug("Failed to pull image to get digest: %s", string(out))
-		return "", fmt.Errorf("docker pull failed: %w", err)
-	}
-
-	// Now get the digest again — same as local
-	return i.getLocalRepoDigest(image)
-}
-
 // GetPlatformArchWithFallback attempts to determine the best architecture for a Docker image,
 // considering a preferred architecture and a list of fallbacks.
-// It inspects the manifest of a sample image ("ghcr.io/open-webui/open-webui:main") to check for available architectures.
 func GetPlatformArchWithFallback(preferred string, fallbacks ...string) string {
 	image := "ghcr.io/open-webui/open-webui:main"
 	cmd := exec.Command("docker", "manifest", "inspect", image)
@@ -226,23 +187,4 @@ func GetPlatformArchWithFallback(preferred string, fallbacks ...string) string {
 		}
 	}
 	return preferred
-}
-
-// getLocalRepoDigest fetches the local repository digest for a Docker image
-func (i *DockerInstaller) getLocalRepoDigest(image string) (string, error) {
-	logger.Debug("Checking local image digest: %s", image)
-	out, err := exec.Command("docker", "image", "inspect", "--format", "{{index .RepoDigests 0}}", image).Output()
-	if err != nil {
-		logger.Debug("Failed to get local image digest: %v", err)
-		return "", err
-	}
-	digest := strings.TrimSpace(string(out))
-	logger.Debug("Local image digest output: %s", digest)
-
-	// extract sha256 from e.g. ghcr.io/foo/bar@sha256:XYZ
-	if parts := strings.Split(digest, "@"); len(parts) == 2 {
-		return strings.TrimPrefix(parts[1], "sha256:"), nil
-	}
-
-	return "", fmt.Errorf("unexpected digest format: %s", digest)
 }
