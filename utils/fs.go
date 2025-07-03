@@ -19,7 +19,11 @@ func GetRealPath(env []string, path string) string {
 		if len(split) == 2 {
 			k, v := split[0], split[1]
 			originalEnv[k] = os.Getenv(k) // Store original value to restore later
-			os.Setenv(k, v)
+			err := os.Setenv(k, v)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error setting environment variable %s: %v\n", k, err)
+				continue
+			}
 		}
 	}
 
@@ -28,9 +32,17 @@ func GetRealPath(env []string, path string) string {
 	// Restore original environment variables
 	for k, v := range originalEnv {
 		if v == "" {
-			os.Unsetenv(k)
+			err := os.Unsetenv(k)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error unsetting environment variable %s: %v\n", k, err)
+				continue
+			}
 		} else {
-			os.Setenv(k, v)
+			err := os.Setenv(k, v)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error restoring environment variable %s: %v\n", k, err)
+				continue
+			}
 		}
 	}
 

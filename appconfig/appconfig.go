@@ -74,7 +74,7 @@ func ParseConfig(overrides *AppCliConfig) (*AppConfig, error) {
 		appConfig.Filter = overrides.Filter
 		return appConfig, nil
 	}
-	return nil, fmt.Errorf("Unsupported config file extension %s (filename: %s)", ext, file)
+	return nil, fmt.Errorf("unsupported config file extension %s (filename: %s)", ext, file)
 }
 
 // ParseConfigFrom parses the configuration from the given file.
@@ -96,6 +96,10 @@ func FindConfigFile() string {
 		return ""
 	}
 	home, err := os.UserHomeDir()
+	if err != nil {
+		logger.Error("Failed to get user home directory: %v", err)
+		return ""
+	}
 	file := ""
 	dirs := []string{wd, filepath.Join(home, ".config"), home}
 	for _, dir := range dirs {

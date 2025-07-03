@@ -1,6 +1,8 @@
 package installer
 
 import (
+	"fmt"
+
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
 	"github.com/chenasraf/sofmani/utils"
@@ -43,7 +45,11 @@ func (i *GroupInstaller) Install() error {
 		if installer == nil {
 			logger.Warn("Installer type %s is not supported, skipping", step.Type)
 		} else {
-			RunInstaller(i.Config, installer)
+			err := RunInstaller(i.Config, installer)
+			if err != nil {
+				logger.Error("Failed to run installer for step %s: %v", *step.Name, err)
+				return fmt.Errorf("failed to run installer for step %s: %w", *step.Name, err)
+			}
 		}
 	}
 	return nil
@@ -77,12 +83,7 @@ func (i *GroupInstaller) GetData() *appconfig.InstallerData {
 
 // GetOpts returns the parsed options for the GroupInstaller.
 func (i *GroupInstaller) GetOpts() *GroupOpts {
-	opts := &GroupOpts{}
-	info := i.GetData()
-	if info.Opts != nil {
-		//
-	}
-	return opts
+	return &GroupOpts{}
 }
 
 // GetBinName returns the binary name for the installer.

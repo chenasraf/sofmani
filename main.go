@@ -19,7 +19,7 @@ func main() {
 	appconfig.SetVersion(strings.TrimSpace(string(appVersion)))
 	cfg, err := LoadConfig()
 	if err != nil {
-		fmt.Println(fmt.Errorf("Error loading config: %v", err))
+		fmt.Println(fmt.Errorf("error loading config: %v", err))
 		return
 	}
 	isDebug := false
@@ -37,7 +37,11 @@ func main() {
 	if cfg.Env != nil {
 		for k, v := range *cfg.Env {
 			logger.Debug("Setting env %s=%s", k, v)
-			os.Setenv(k, v)
+			err := os.Setenv(k, v)
+			if err != nil {
+				logger.Error("failed to set environment variable %s: %v", k, err)
+				return
+			}
 		}
 	}
 

@@ -63,12 +63,7 @@ func (i *PipxInstaller) GetData() *appconfig.InstallerData {
 
 // GetOpts returns the parsed options for the PipxInstaller.
 func (i *PipxInstaller) GetOpts() *PipxOpts {
-	opts := &PipxOpts{}
-	info := i.Info
-	if info.Opts != nil {
-		//
-	}
-	return opts
+	return &PipxOpts{}
 }
 
 // GetBinName returns the binary name for the installer.

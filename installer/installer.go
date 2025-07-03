@@ -149,7 +149,7 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 	enabled, err := InstallerIsEnabled(installer)
 
 	if err != nil {
-		return fmt.Errorf("Failed to check if %s is enabled: %s", name, err)
+		return fmt.Errorf("failed to check if %s is enabled: %s", name, err)
 	}
 
 	if !enabled {
@@ -181,7 +181,11 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 					}
 				}
 				logger.Debug("Running update command for %s", name)
-				installer.Update()
+				err := installer.Update()
+				if err != nil {
+					logger.Error("Failed to update %s: %v", name, err)
+					return fmt.Errorf("failed to update %s: %w", name, err)
+				}
 				if info.PostUpdate != nil {
 					logger.Debug("Running post-update command for %s", name)
 					err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetData().EnvShell), utils.GetOSShellArgs(*info.PostUpdate)...)

@@ -76,7 +76,11 @@ func (i *DockerInstaller) Update() error {
 	}
 
 	logger.Debug("Removing existing container: %s", containerName)
-	i.RunCmdPassThrough("docker", "rm", "-f", containerName)
+	err := i.RunCmdPassThrough("docker", "rm", "-f", containerName)
+	if err != nil {
+		logger.Debug("Failed to remove existing container: %s, error: %v", containerName, err)
+		return fmt.Errorf("failed to remove existing container: %w", err)
+	}
 
 	logger.Debug("Running updated container: %s", containerName)
 	return i.runOrStartContainer(true)

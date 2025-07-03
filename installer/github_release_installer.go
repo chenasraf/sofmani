@@ -84,7 +84,14 @@ func (i *GitHubReleaseInstaller) Install() error {
 		return err
 	}
 	tmpOut, err := os.Create(fmt.Sprintf("%s/%s.download", tmpDir, name))
-	defer tmpOut.Close()
+	if err != nil {
+		return fmt.Errorf("failed to create temporary file: %w", err)
+	}
+	defer func() {
+		if cerr := tmpOut.Close(); cerr != nil {
+			logger.Warn("failed to close tmpOut file: %v", cerr)
+		}
+	}()
 
 	err = os.MkdirAll(*opts.Destination, 0755)
 	if err != nil {
@@ -102,7 +109,7 @@ func (i *GitHubReleaseInstaller) Install() error {
 	filename = strings.ReplaceAll(filename, "{tag}", tag)
 	filename = strings.ReplaceAll(filename, "{version}", version)
 	if filename == "" {
-		return fmt.Errorf("No download filename provided")
+		return fmt.Errorf("no download filename provided")
 	}
 	downloadUrl := fmt.Sprintf("https://github.com/%s/releases/download/%s/%s", *opts.Repository, tag, filename)
 	logger.Debug("Downloading from %s", downloadUrl)
@@ -110,14 +117,18 @@ func (i *GitHubReleaseInstaller) Install() error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if cerr := resp.Body.Close(); cerr != nil {
+			logger.Warn("failed to close response body: %v", cerr)
+		}
+	}()
 
 	n, err := io.Copy(tmpOut, resp.Body)
 	if err != nil {
 		return err
 	}
 	if n == 0 {
-		return fmt.Errorf("No data was written to the file")
+		return fmt.Errorf("no data was written to the file")
 	}
 
 	strategy := GitHubReleaseInstallStrategyNone
@@ -132,40 +143,62 @@ func (i *GitHubReleaseInstaller) Install() error {
 
 	logger.Debug("Creating file %s", fmt.Sprintf("%s/%s", *opts.Destination, i.GetBinName()))
 	out, err := os.Create(fmt.Sprintf("%s/%s", *opts.Destination, i.GetBinName()))
-	defer out.Close()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create output file: %w", err)
 	}
+	defer func() {
+		if cerr := out.Close(); cerr != nil {
+			logger.Warn("failed to close output file: %v", cerr)
+		}
+	}()
 
 	switch strategy {
 	case GitHubReleaseInstallStrategyTar:
 		logger.Debug("Extracting tar file %s", tmpOut.Name())
 		success, err = i.RunCmdGetSuccess("tar", "-xvf", tmpOut.Name(), "-C", tmpDir)
+		if !success {
+			return fmt.Errorf("failed to extract tar file: %w", err)
+		}
 		if err != nil {
 			return err
 		}
 		success, err = i.CopyExtractedFile(out, tmpDir)
+		if !success {
+			return fmt.Errorf("failed to copy extracted file: %w", err)
+		}
 		if err != nil {
 			return err
 		}
 	case GitHubReleaseInstallStrategyZip:
 		logger.Debug("Extracting zip file %s", tmpOut.Name())
 		success, err = i.RunCmdGetSuccess("unzip", tmpOut.Name(), "-d", tmpDir)
+		if !success {
+			return fmt.Errorf("failed to extract zip file: %w", err)
+		}
 		if err != nil {
 			return err
 		}
 		success, err = i.CopyExtractedFile(out, tmpDir)
+		if !success {
+			return fmt.Errorf("failed to copy extracted file: %w", err)
+		}
 		if err != nil {
 			return err
 		}
 	default:
-		io.Copy(out, tmpOut)
+		_, err = io.Copy(out, tmpOut)
+		if err != nil {
+			return fmt.Errorf("failed to copy downloaded file to output: %w", err)
+		}
 		success = true
 		err = nil
 	}
 
-	if !success || err != nil {
-		return errors.Join(fmt.Errorf("Failed to extract the downloaded file"), err)
+	if !success {
+		return fmt.Errorf("failed to copy the downloaded file to the output file")
+	}
+	if err != nil {
+		return errors.Join(fmt.Errorf("failed to extract the downloaded file"), err)
 	}
 
 	err = i.UpdateCache(tag)
@@ -224,11 +257,18 @@ func (i *GitHubReleaseInstaller) GetBinName() string {
 // CopyExtractedFile copies the extracted file from a temporary directory to the final destination.
 func (i *GitHubReleaseInstaller) CopyExtractedFile(out *os.File, tmpDir string) (bool, error) {
 	binFile, err := os.Create(out.Name())
-	defer binFile.Close()
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to create output file: %w", err)
 	}
+	defer func() {
+		if cerr := binFile.Close(); cerr != nil {
+			logger.Warn("failed to close binFile %s: %v", binFile.Name(), cerr)
+		}
+	}()
 	tmpBinFile, err := os.Open(filepath.Join(tmpDir, i.GetBinName()))
+	if err != nil {
+		return false, fmt.Errorf("failed to open temporary file: %w", err)
+	}
 	logger.Debug("Copying file %s to %s", tmpBinFile.Name(), binFile.Name())
 
 	n, err := io.Copy(binFile, tmpBinFile)
@@ -236,7 +276,7 @@ func (i *GitHubReleaseInstaller) CopyExtractedFile(out *os.File, tmpDir string) 
 		return false, err
 	}
 	if n == 0 {
-		return false, fmt.Errorf("No data was written to the file")
+		return false, fmt.Errorf("no data was written to the file")
 	}
 	return true, nil
 }
@@ -257,9 +297,12 @@ func (i *GitHubReleaseInstaller) GetCachedTag() (string, error) {
 		return "", nil
 	}
 	reader, err := os.Open(cacheFile)
+	if err != nil {
+		return "", fmt.Errorf("failed to open cache file %s: %w", cacheFile, err)
+	}
 	contents, err := io.ReadAll(reader)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to read cache file %s: %w", cacheFile, err)
 	}
 	logger.Debug("Got cached tag %s for %s", strings.TrimSpace(string(contents)), *i.Info.Name)
 	return strings.TrimSpace(string(contents)), nil
@@ -316,7 +359,12 @@ func (i *GitHubReleaseInstaller) GetLatestTag() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			logger.Warn("Failed to close response body: %v", err)
+		}
+	}()
 	contents, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err

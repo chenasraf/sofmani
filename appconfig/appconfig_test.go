@@ -64,11 +64,11 @@ func TestParseJsonConfig(t *testing.T) {
 	// Create a temporary config file
 	file, err := os.CreateTemp("", "config.*.json")
 	assert.NoError(t, err)
-	defer os.Remove(file.Name())
+	defer func() { assert.NoError(t, os.Remove(file.Name())) }()
 
 	_, err = file.WriteString(`{"debug": true, "check_updates": false}`)
 	assert.NoError(t, err)
-	file.Close()
+	assert.NoError(t, file.Close())
 
 	// Test parsing the config file
 	overrides := AppCliConfig{ConfigFile: file.Name()}
@@ -82,14 +82,14 @@ func TestParseYamlConfig(t *testing.T) {
 	// Create a temporary config file
 	file, err := os.CreateTemp("", "config.*.yaml")
 	assert.NoError(t, err)
-	defer os.Remove(file.Name())
+	defer func() { assert.NoError(t, os.Remove(file.Name())) }()
 
 	_, err = file.WriteString(`
 debug: true
 check_updates: false
 `)
 	assert.NoError(t, err)
-	file.Close()
+	assert.NoError(t, file.Close())
 
 	// Test parsing the config file
 	overrides := AppCliConfig{ConfigFile: file.Name()}
@@ -103,7 +103,7 @@ func TestParseYamlConfigEnabled(t *testing.T) {
 	// Create a temporary config file
 	file, err := os.CreateTemp("", "config.*.yaml")
 	assert.NoError(t, err)
-	defer os.Remove(file.Name())
+	defer func() { assert.NoError(t, os.Remove(file.Name())) }()
 
 	_, err = file.WriteString(`
 debug: true
@@ -114,7 +114,7 @@ install:
     enabled: true
 `)
 	assert.NoError(t, err)
-	file.Close()
+	assert.NoError(t, file.Close())
 
 	// Test parsing the config file
 	overrides := AppCliConfig{ConfigFile: file.Name()}
@@ -132,7 +132,7 @@ func TestFindConfigFile(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Test finding the config file
-	os.Chdir(dir)
+	assert.NoError(t, os.Chdir(dir))
 	assert.True(t, strings.HasSuffix(FindConfigFile(), file))
 }
 

@@ -36,8 +36,6 @@ precommit:
 		go fmt ./...; \
 		echo "go vet"; \
 		go vet ./...; \
-		echo "gofmt"; \
-		gofmt -w ./...; \
 		echo "golangci-lint"; \
 		golangci-lint run ./...; \
 		echo "go test"; \

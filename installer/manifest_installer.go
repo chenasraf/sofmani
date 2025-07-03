@@ -69,7 +69,11 @@ func (i *ManifestInstaller) Install() error {
 		if installer == nil {
 			logger.Warn("Installer type %s is not supported, skipping", step.Type)
 		} else {
-			RunInstaller(config, installer)
+			err := RunInstaller(config, installer)
+			if err != nil {
+				logger.Error("Failed to run installer for step %s: %v", *step.Name, err)
+				return fmt.Errorf("failed to run installer for step %s: %w", *step.Name, err)
+			}
 		}
 	}
 	return nil
@@ -157,12 +161,22 @@ func (i *ManifestInstaller) FetchManifest() error {
 func (i *ManifestInstaller) getGitManifestConfig(source string) (string, error) {
 	opts := i.GetOpts()
 	tmpDir, err := os.MkdirTemp("", "sofmani")
-	defer os.RemoveAll(tmpDir)
 	if err != nil {
 		return "", err
 	}
+
+	defer func() {
+		if rmErr := os.RemoveAll(tmpDir); rmErr != nil {
+			logger.Warn("Failed to clean up tmp dir %s: %v", tmpDir, rmErr)
+		}
+	}()
+
 	logger.Debug("Cloning %s to %s", source, tmpDir)
 	success, err := i.RunCmdGetSuccess("git", "clone", "--depth=1", source, tmpDir)
+	if err != nil {
+		return "", err
+	}
+
 	if opts.Ref != nil {
 		logger.Debug("Checking out ref %s", *opts.Ref)
 		err = i.RunCmdPassThrough("git", "-C", tmpDir, "checkout", *opts.Ref)
@@ -170,13 +184,18 @@ func (i *ManifestInstaller) getGitManifestConfig(source string) (string, error) 
 			return "", err
 		}
 	}
+
+	if !success {
+		return "", fmt.Errorf("failed to clone %s", source)
+	}
+
+	contentPath := filepath.Join(tmpDir, "manifest.yaml")
+	content, err := os.ReadFile(contentPath)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to read manifest file: %w", err)
 	}
-	if success {
-		return tmpDir, nil
-	}
-	return "", fmt.Errorf("Failed to clone %s", source)
+
+	return string(content), nil
 }
 
 func (i *ManifestInstaller) getLocalManifestConfig(path string) (*appconfig.AppConfig, error) {

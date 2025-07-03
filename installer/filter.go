@@ -22,10 +22,7 @@ func FilterInstaller(installer IInstaller, filters []string) bool {
 		return filter[1:], filter[0] == '!'
 	})
 
-	keep := false
-	if len(positives) == 0 {
-		keep = true
-	}
+	keep := len(positives) == 0
 
 	for _, f := range positives {
 		if isFilteredIn(installer, f) {
@@ -48,7 +45,7 @@ func isFilteredIn(installer IInstaller, filter string) bool {
 	data := installer.GetData()
 	if strings.HasPrefix(filter, "type:") {
 		typeName := filter[len("type:"):]
-		if strings.ToLower(string(data.Type)) == strings.ToLower(typeName) {
+		if strings.EqualFold(string(data.Type), typeName) {
 			return true
 		}
 	}

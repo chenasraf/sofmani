@@ -96,12 +96,7 @@ func (i *AptInstaller) GetData() *appconfig.InstallerData {
 
 // GetOpts returns the parsed options for the AptInstaller.
 func (i *AptInstaller) GetOpts() *AptOpts {
-	opts := &AptOpts{}
-	info := i.Info
-	if info.Opts != nil {
-		//
-	}
-	return opts
+	return &AptOpts{}
 }
 
 // GetBinName returns the binary name for the installer.

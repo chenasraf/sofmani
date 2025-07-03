@@ -52,9 +52,7 @@ func (i *RsyncInstaller) Install() error {
 	}
 	flags := []string{defaultFlags}
 	if i.GetOpts().Flags != nil {
-		for _, flag := range strings.Split(*i.GetOpts().Flags, " ") {
-			flags = append(flags, flag)
-		}
+		flags = append(flags, strings.Split(*i.GetOpts().Flags, " ")...)
 	}
 	data := i.GetData()
 	env := data.Environ()

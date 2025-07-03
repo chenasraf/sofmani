@@ -75,7 +75,7 @@ func InitLogger(debug bool) *Logger {
 }
 
 // log is an internal helper function for logging messages with a specific level and color.
-func (l *Logger) log(level string, colorizer *color.Color, format string, args ...interface{}) {
+func (l *Logger) log(level string, colorizer *color.Color, format string, args ...any) {
 	// Create timestamped message
 	// timestamp := time.Now().Format("2006-01-02 15:04:05")
 	message := fmt.Sprintf("[%s] %s", level, fmt.Sprintf(format, args...))
@@ -96,32 +96,32 @@ func (l *Logger) log(level string, colorizer *color.Color, format string, args .
 }
 
 // Info logs an informational message.
-func Info(format string, args ...interface{}) {
+func Info(format string, args ...any) {
 	colorBlue := color.New(color.FgBlue).Add(color.Bold)
 	logger.log(" INFO", colorBlue, format, args...)
 }
 
 // Warn logs a warning message.
-func Warn(format string, args ...interface{}) {
+func Warn(format string, args ...any) {
 	colorYellow := color.New(color.FgYellow).Add(color.Bold)
 	logger.log(" WARN", colorYellow, format, args...)
 }
 
 // Error logs an error message.
-func Error(format string, args ...interface{}) {
+func Error(format string, args ...any) {
 	colorRed := color.New(color.FgRed).Add(color.Bold)
 	logger.log("ERROR", colorRed, format, args...)
 }
 
 // Debug logs a debug message. Only printed if debug mode is enabled.
-func Debug(format string, args ...interface{}) {
+func Debug(format string, args ...any) {
 	colorGreen := color.New(color.FgGreen).Add(color.Bold)
 	logger.log("DEBUG", colorGreen, format, args...)
 }
 
 // Spew logs a detailed representation of a value using spew.Dump.
 // This is typically used for debugging complex data structures.
-func Spew(v interface{}) {
+func Spew(v any) {
 	// Print/debug the passed value (works like spew.Dump)
 	spewDump := spew.Sdump(v)
 	Debug("%s", spewDump)
@@ -130,6 +130,9 @@ func Spew(v interface{}) {
 // CloseLogger closes the log file.
 func CloseLogger() {
 	if logger != nil && logger.logFile != nil {
-		logger.logFile.Close()
+		err := logger.logFile.Close()
+		if err != nil {
+			fmt.Printf("Could not close log file: %v\n", err)
+		}
 	}
 }

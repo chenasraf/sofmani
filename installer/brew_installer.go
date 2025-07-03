@@ -140,7 +140,11 @@ func parseBrewOutdatedOutput(input io.Reader, logSink io.Writer) (bool, error) {
 		if inJSON {
 			jsonBuf.WriteString(line + "\n")
 		} else {
-			fmt.Fprintln(logSink, line)
+			_, err := fmt.Fprintln(logSink, line)
+			if err != nil {
+				logger.Error("Failed to write line to log sink, error: %v", err)
+				return false, fmt.Errorf("failed to write line to log sink: %w", err)
+			}
 		}
 	}
 	if err := scanner.Err(); err != nil {

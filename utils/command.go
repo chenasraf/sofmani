@@ -112,23 +112,30 @@ func getScriptContents(script string, envShell *platform.PlatformMap[string]) (s
 // RunCmdAsFile writes the given contents to a temporary shell script and executes it.
 // This is useful for running multi-line commands or scripts.
 func RunCmdAsFile(env []string, contents string, envShell *platform.PlatformMap[string]) error {
-	tmpdir, err := os.MkdirTemp("", "sofmani-*") // Create a temporary directory
+	tmpdir, err := os.MkdirTemp("", "sofmani-*")
 	if err != nil {
 		return err
 	}
-	tmpfile := getShellScript(tmpdir) // Get OS-specific script name
+
+	defer func() {
+		if rmErr := os.RemoveAll(tmpdir); rmErr != nil {
+			logger.Warn("failed to clean up temp dir %s: %v", tmpdir, rmErr)
+		}
+	}()
+
+	tmpfile := getShellScript(tmpdir)
 	commandStr, err := getScriptContents(contents, envShell)
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(tmpfile, []byte(commandStr), 0755) // Make executable
-	defer os.RemoveAll(tmpdir)                            // Clean up the temporary directory
+
+	err = os.WriteFile(tmpfile, []byte(commandStr), 0755)
 	if err != nil {
 		return err
 	}
 
 	shell := GetOSShell(envShell)
-	args := GetOSShellArgs(tmpfile) // Get OS-specific arguments to run the script
+	args := GetOSShellArgs(tmpfile)
 	logger.Debug("Running command as file: %s", contents)
 	return RunCmdPassThrough(env, shell, args...)
 }
