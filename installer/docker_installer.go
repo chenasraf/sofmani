@@ -112,12 +112,8 @@ func (i *DockerInstaller) GetOpts() *DockerOpts {
 		if flags, ok := (*i.Info.Opts)["flags"].(string); ok {
 			opts.Flags = &flags
 		}
-		if platformMap, ok := (*i.Info.Opts)["platform"].(map[string]*string); ok {
-			opts.Platform = &platform.PlatformMap[string]{
-				MacOS:   platformMap["macos"],
-				Linux:   platformMap["linux"],
-				Windows: platformMap["windows"],
-			}
+		if raw, ok := (*i.Info.Opts)["platform"]; ok && raw != nil {
+			opts.Platform = platform.NewPlatformMap[string](raw)
 		}
 	}
 	if skip, ok := (*i.Info.Opts)["skip_if_unavailable"].(bool); ok {

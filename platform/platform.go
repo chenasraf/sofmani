@@ -132,8 +132,17 @@ var DockerOSMap = PlatformMap[string]{
 	Windows: strPtr("windows"),
 }
 
-// NewPlatformMap creates a new PlatformMap from a map of platform strings to values.
-func NewPlatformMap[T any](values map[string]T) *PlatformMap[T] {
+// ParsePlatformSingleValue creates a new PlatformMap with the value for all platforms
+func ParsePlatformSingleValue[T any](value T) *PlatformMap[T] {
+	p := &PlatformMap[T]{}
+	p.MacOS = &value
+	p.Linux = &value
+	p.Windows = &value
+	return p
+}
+
+// ParselatformMap creates a PlatformMap from a map of platform strings to values.
+func ParselatformMap[T any](values map[string]T) *PlatformMap[T] {
 	p := &PlatformMap[T]{}
 	for k, v := range values {
 		val := v // capture value for pointer
@@ -149,4 +158,31 @@ func NewPlatformMap[T any](values map[string]T) *PlatformMap[T] {
 		}
 	}
 	return p
+}
+
+// NewPlatformMap creates a new PlatformMap from either a single value or a map.
+func NewPlatformMap[T any](input any) *PlatformMap[T] {
+	switch v := input.(type) {
+	case T:
+		return ParsePlatformSingleValue(v)
+	case *T:
+		if v != nil {
+			return ParsePlatformSingleValue(*v)
+		}
+		return nil
+	case map[string]T:
+		return ParselatformMap(v)
+	case map[string]*T:
+		flat := make(map[string]T)
+		for k, ptr := range v {
+			if ptr != nil {
+				flat[k] = *ptr
+			}
+		}
+		return ParselatformMap(flat)
+	case nil:
+		return nil
+	default:
+		panic(fmt.Sprintf("NewPlatformMap: unsupported input type %T", input))
+	}
 }

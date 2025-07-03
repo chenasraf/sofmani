@@ -298,18 +298,8 @@ func (i *GitHubReleaseInstaller) GetOpts() *GitHubReleaseOpts {
 			destination = utils.GetRealPath(i.GetData().Environ(), destination)
 			opts.Destination = &destination
 		}
-		if filename, ok := (*info.Opts)["download_filename"].(string); ok {
-			opts.DownloadFilename = &platform.PlatformMap[string]{
-				MacOS:   &filename,
-				Linux:   &filename,
-				Windows: &filename,
-			}
-		} else if filenameMap, ok := (*info.Opts)["download_filename"].(map[string]*string); ok {
-			opts.DownloadFilename = &platform.PlatformMap[string]{
-				MacOS:   filenameMap["macos"],
-				Linux:   filenameMap["linux"],
-				Windows: filenameMap["windows"],
-			}
+		if filename, ok := (*info.Opts)["download_filename"]; ok {
+			opts.DownloadFilename = platform.NewPlatformMap[string](filename)
 		}
 		if strategy, ok := (*info.Opts)["strategy"].(string); ok {
 			strat := GitHubReleaseInstallStrategy(strings.ToLower(strategy))

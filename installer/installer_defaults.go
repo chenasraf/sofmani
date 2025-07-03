@@ -4,6 +4,7 @@ import (
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
 	"github.com/chenasraf/sofmani/platform"
+	"maps"
 )
 
 // InstallerWithDefaults applies default configurations to an installer data object.
@@ -23,37 +24,27 @@ func InstallerWithDefaults(
 			if override.Opts != nil {
 				source := *override.Opts
 				target := *data.Opts
-				for k, v := range source {
-					target[k] = v
-				}
+				maps.Copy(target, source)
 			}
 			if override.Env != nil {
 				source := *override.Env
 				target := *data.Env
-				for k, v := range source {
-					target[k] = v
-				}
+				maps.Copy(target, source)
 			}
 			if override.PlatformEnv != nil {
 				source := *override.PlatformEnv
 				targetBase := *data.PlatformEnv
 				if source.MacOS != nil && targetBase.MacOS != nil {
 					target := *targetBase.MacOS
-					for k, v := range *source.MacOS {
-						target[k] = v
-					}
+					maps.Copy(target, *source.MacOS)
 				}
 				if source.Linux != nil && targetBase.Linux != nil {
 					target := *targetBase.Linux
-					for k, v := range *source.Linux {
-						target[k] = v
-					}
+					maps.Copy(target, *source.Linux)
 				}
 				if source.Windows != nil && targetBase.Windows != nil {
 					target := *targetBase.Windows
-					for k, v := range *source.Windows {
-						target[k] = v
-					}
+					maps.Copy(target, *source.Windows)
 				}
 			}
 			if override.EnvShell != nil {
