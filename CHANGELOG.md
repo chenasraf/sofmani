@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.11.0](https://github.com/chenasraf/sofmani/compare/v1.10.1...v1.11.0) (2025-07-03)
+
+
+### Features
+
+* **brew:** add cask option ([2d4df23](https://github.com/chenasraf/sofmani/commit/2d4df23be6537c799d85395c7b253e2ddd0d0a04))
+* **docker:** add flag to skip if docker is not running ([b56e934](https://github.com/chenasraf/sofmani/commit/b56e934ffcbbd59ac46db20ae6c8aac68dfdf68e))
+
+
+### Bug Fixes
+
+* **docker:** pull during update and not during check ([861e257](https://github.com/chenasraf/sofmani/commit/861e257c04a653349fc0e11e9ec72ee92053194a))
+
 ## [1.10.1](https://github.com/chenasraf/sofmani/compare/v1.10.0...v1.10.1) (2025-06-27)
 
 
