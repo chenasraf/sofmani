@@ -71,7 +71,7 @@ func (i *DockerInstaller) Update() error {
 	containerName := i.GetContainerName()
 
 	logger.Debug("Pulling updated image: %s", image)
-	if err := i.RunCmdPassThrough(fmt.Sprintf("docker pull %s", image)); err != nil {
+	if err := i.RunCmdPassThrough("docker", "pull", image); err != nil {
 		return fmt.Errorf("failed to pull image: %w", err)
 	}
 
