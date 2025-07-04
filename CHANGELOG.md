@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.1](https://github.com/chenasraf/sofmani/compare/v1.11.0...v1.11.1) (2025-07-04)
+
+
+### Bug Fixes
+
+* **docker:** fix pull command ([d605e1a](https://github.com/chenasraf/sofmani/commit/d605e1a95dedcd1ed253c317f440f88200f7160e))
+
 ## [1.11.0](https://github.com/chenasraf/sofmani/compare/v1.10.1...v1.11.0) (2025-07-03)
 
 
