@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.2](https://github.com/chenasraf/sofmani/compare/v1.11.1...v1.11.2) (2025-09-16)
+
+
+### Bug Fixes
+
+* **apt:** fix apt/apk installer command ([777300e](https://github.com/chenasraf/sofmani/commit/777300ed76e8a23219e2525883469d0ecfba6aca))
+
 ## [1.11.1](https://github.com/chenasraf/sofmani/compare/v1.11.0...v1.11.1) (2025-07-04)
 
 
