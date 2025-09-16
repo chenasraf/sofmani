@@ -1,32 +1,82 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
+# Portable installer for sofmani (no Bashisms)
+# Env vars you can override: INSTALL_DIR, REPO
 
-REPO="chenasraf/sofmani"
-if [[ -z "$INSTALL_DIR" ]]; then
-  INSTALL_DIR="$HOME/.local/bin"
-fi
-LATEST_RELEASE=$(curl -s https://api.github.com/repos/$REPO/releases/latest | grep "tag_name" | cut -d '"' -f 4)
-DOWNLOAD_URL="https://github.com/$REPO/releases/download/$LATEST_RELEASE/sofmani-linux-amd64.tar.gz"
-TEMP_DIR=$(mktemp -d)
+set -eu
 
-echo "Installing sofmani $LATEST_RELEASE"
+REPO="${REPO:-chenasraf/sofmani}"
+INSTALL_DIR="${INSTALL_DIR:-"$HOME/.local/bin"}"
+
+need() {
+  command -v "$1" >/dev/null 2>&1 || {
+    echo "Error: required command '$1' not found in PATH" >&2
+    exit 1
+  }
+}
+
+need curl
+need tar
+need uname
+need mktemp
+
+os="$(uname -s 2>/dev/null | tr '[:upper:]' '[:lower:]')"
+arch="$(uname -m 2>/dev/null)"
+case "$os" in
+linux) os="linux" ;;
+darwin) os="darwin" ;; # adjust if your asset names use "darwin" instead
+*)
+  echo "Unsupported OS: $os" >&2
+  exit 1
+  ;;
+esac
+
+case "$arch" in
+x86_64 | amd64) arch="amd64" ;;
+aarch64 | arm64) arch="arm64" ;;
+*)
+  echo "Unsupported architecture: $arch" >&2
+  exit 1
+  ;;
+esac
+
+asset="sofmani-${os}-${arch}.tar.gz"
+
+download_url="https://github.com/${REPO}/releases/latest/download/${asset}"
+
+# temp dir + cleanup
+tmpdir="$(mktemp -d)"
+cleanup() { [ -n "${tmpdir:-}" ] && rm -rf "$tmpdir"; }
+trap cleanup EXIT INT HUP TERM
+
+echo "Installing sofmani (latest) for ${os}/${arch}"
 mkdir -p "$INSTALL_DIR"
 
-echo "Downloading $DOWNLOAD_URL..."
-echo
+echo "Downloading ${download_url} ..."
 
-if ! curl -L "$DOWNLOAD_URL" | tar -xz -C "$TEMP_DIR"; then
-  echo "Failed to download $DOWNLOAD_URL"
+if ! curl -fsSL "$download_url" | tar -xzf - -C "$tmpdir"; then
+  echo "Failed to download or extract ${download_url}" >&2
   exit 1
 fi
 
-echo
-echo "Installing binary to $INSTALL_DIR..."
-
-if ! mv "$TEMP_DIR/sofmani" "$INSTALL_DIR/sofmani"; then
-  echo "Failed to move sofmani binary to $INSTALL_DIR"
+if [ ! -f "$tmpdir/sofmani" ]; then
+  echo "Extracted archive did not contain 'sofmani' binary" >&2
   exit 1
 fi
 
-chmod +x "$INSTALL_DIR/sofmani"
+echo "Installing to ${INSTALL_DIR} ..."
 
-echo "sofmani installed successfully!"
+if ! install -m 0755 "$tmpdir/sofmani" "$INSTALL_DIR/sofmani"; then
+  echo "Failed to install sofmani to ${INSTALL_DIR}" >&2
+  exit 1
+fi
+
+echo "sofmani installed successfully at ${INSTALL_DIR}/sofmani"
+
+case ":$PATH:" in
+*":$INSTALL_DIR:"*) : ;; # already in PATH
+*)
+  echo
+  printf "\033[33mNote: %s is not in PATH. Add this to your shell config:\n" "$INSTALL_DIR"
+  printf "  export PATH=\"\$PATH:%s\"\033[0m\n" "${INSTALL_DIR}"
+  ;;
+esac

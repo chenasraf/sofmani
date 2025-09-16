@@ -51,15 +51,11 @@ location.
 - The example script can be used for actual install, use this command to download and execute the
   file (use at your own discretion):
 
-  ```sh
-  curl https://raw.githubusercontent.com/chenasraf/sofmani/master/install.sh | sh
-  ```
+  To change the install location, change the provided env variable `$INSTALL_DIR` to the script:
 
-  To change the install location, provide an env variable `$INSTALL_DIR` to the script:
-
-  ```sh
-  # below is the default value, change as needed:
-  curl https://raw.githubusercontent.com/chenasraf/sofmani/master/install.sh | INSTALL_DIR=~/.local/bin sh
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/chenasraf/sofmani/master/install.sh \
+    | env INSTALL_DIR="$HOME/.local/bin" bash -s --
   ```
 
 ## ✨ Getting Started
