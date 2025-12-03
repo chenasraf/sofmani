@@ -79,6 +79,105 @@ func simulateBrewCheck(input string, exitCode int) (logs string, updateNeeded bo
 	return logBuf.String(), needsUpdate, nil
 }
 
+func TestBrewGetOpts(t *testing.T) {
+	logger.InitLogger(false)
+
+	// Test default opts (no options set)
+	defaultData := &appconfig.InstallerData{
+		Name: strPtr("vim"),
+		Type: appconfig.InstallerTypeBrew,
+	}
+	installer := newTestBrewInstaller(defaultData)
+	opts := installer.GetOpts()
+	if opts.Tap != nil {
+		t.Errorf("expected Tap to be nil")
+	}
+	if opts.Cask != nil {
+		t.Errorf("expected Cask to be nil")
+	}
+	if opts.Flags != nil {
+		t.Errorf("expected Flags to be nil")
+	}
+	if opts.InstallFlags != nil {
+		t.Errorf("expected InstallFlags to be nil")
+	}
+	if opts.UpdateFlags != nil {
+		t.Errorf("expected UpdateFlags to be nil")
+	}
+
+	// Test with flags option
+	flagsData := &appconfig.InstallerData{
+		Name: strPtr("vim"),
+		Type: appconfig.InstallerTypeBrew,
+		Opts: &map[string]any{
+			"flags": "--verbose --debug",
+		},
+	}
+	installerWithFlags := newTestBrewInstaller(flagsData)
+	optsWithFlags := installerWithFlags.GetOpts()
+	if optsWithFlags.Flags == nil || *optsWithFlags.Flags != "--verbose --debug" {
+		t.Errorf("expected Flags to be '--verbose --debug'")
+	}
+
+	// Test with install_flags option
+	installFlagsData := &appconfig.InstallerData{
+		Name: strPtr("vim"),
+		Type: appconfig.InstallerTypeBrew,
+		Opts: &map[string]any{
+			"install_flags": "--force",
+		},
+	}
+	installerWithInstallFlags := newTestBrewInstaller(installFlagsData)
+	optsWithInstallFlags := installerWithInstallFlags.GetOpts()
+	if optsWithInstallFlags.InstallFlags == nil || *optsWithInstallFlags.InstallFlags != "--force" {
+		t.Errorf("expected InstallFlags to be '--force'")
+	}
+
+	// Test with update_flags option
+	updateFlagsData := &appconfig.InstallerData{
+		Name: strPtr("vim"),
+		Type: appconfig.InstallerTypeBrew,
+		Opts: &map[string]any{
+			"update_flags": "--dry-run",
+		},
+	}
+	installerWithUpdateFlags := newTestBrewInstaller(updateFlagsData)
+	optsWithUpdateFlags := installerWithUpdateFlags.GetOpts()
+	if optsWithUpdateFlags.UpdateFlags == nil || *optsWithUpdateFlags.UpdateFlags != "--dry-run" {
+		t.Errorf("expected UpdateFlags to be '--dry-run'")
+	}
+
+	// Test with all flags options combined
+	allFlagsData := &appconfig.InstallerData{
+		Name: strPtr("vim"),
+		Type: appconfig.InstallerTypeBrew,
+		Opts: &map[string]any{
+			"tap":           "homebrew/core",
+			"cask":          true,
+			"flags":         "--common",
+			"install_flags": "--install-specific",
+			"update_flags":  "--update-specific",
+		},
+	}
+	installerWithAllFlags := newTestBrewInstaller(allFlagsData)
+	optsWithAllFlags := installerWithAllFlags.GetOpts()
+	if optsWithAllFlags.Tap == nil || *optsWithAllFlags.Tap != "homebrew/core" {
+		t.Errorf("expected Tap to be 'homebrew/core'")
+	}
+	if optsWithAllFlags.Cask == nil || !*optsWithAllFlags.Cask {
+		t.Errorf("expected Cask to be true")
+	}
+	if optsWithAllFlags.Flags == nil || *optsWithAllFlags.Flags != "--common" {
+		t.Errorf("expected Flags to be '--common'")
+	}
+	if optsWithAllFlags.InstallFlags == nil || *optsWithAllFlags.InstallFlags != "--install-specific" {
+		t.Errorf("expected InstallFlags to be '--install-specific'")
+	}
+	if optsWithAllFlags.UpdateFlags == nil || *optsWithAllFlags.UpdateFlags != "--update-specific" {
+		t.Errorf("expected UpdateFlags to be '--update-specific'")
+	}
+}
+
 func TestBrewNeedsUpdateWithExitCode(t *testing.T) {
 	tests := []struct {
 		name           string

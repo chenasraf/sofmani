@@ -1,6 +1,8 @@
 package installer
 
 import (
+	"strings"
+
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/utils"
 )
@@ -18,7 +20,12 @@ type NpmInstaller struct {
 
 // NpmOpts represents options for the NpmInstaller.
 type NpmOpts struct {
-	//
+	// Flags is a string of additional flags to pass to the npm/pnpm/yarn command.
+	Flags *string
+	// InstallFlags is a string of additional flags to pass only during install.
+	InstallFlags *string
+	// UpdateFlags is a string of additional flags to pass only during update.
+	UpdateFlags *string
 }
 
 // NpmPackageManager represents a Node.js package manager type.
@@ -40,12 +47,28 @@ func (i *NpmInstaller) Validate() []ValidationError {
 
 // Install implements IInstaller.
 func (i *NpmInstaller) Install() error {
-	return i.RunCmdPassThrough(string(i.PackageManager), "install", "--global", *i.Info.Name)
+	opts := i.GetOpts()
+	args := []string{"install", "--global"}
+	if opts.InstallFlags != nil {
+		args = append(args, strings.Fields(*opts.InstallFlags)...)
+	} else if opts.Flags != nil {
+		args = append(args, strings.Fields(*opts.Flags)...)
+	}
+	args = append(args, *i.Info.Name)
+	return i.RunCmdPassThrough(string(i.PackageManager), args...)
 }
 
 // Update implements IInstaller.
 func (i *NpmInstaller) Update() error {
-	return i.RunCmdPassThrough(string(i.PackageManager), "install", "--global", *i.Info.Name+"@latest")
+	opts := i.GetOpts()
+	args := []string{"install", "--global"}
+	if opts.UpdateFlags != nil {
+		args = append(args, strings.Fields(*opts.UpdateFlags)...)
+	} else if opts.Flags != nil {
+		args = append(args, strings.Fields(*opts.Flags)...)
+	}
+	args = append(args, *i.Info.Name+"@latest")
+	return i.RunCmdPassThrough(string(i.PackageManager), args...)
 }
 
 // CheckNeedsUpdate implements IInstaller.
@@ -76,7 +99,18 @@ func (i *NpmInstaller) GetData() *appconfig.InstallerData {
 // GetOpts returns the parsed options for the NpmInstaller.
 func (i *NpmInstaller) GetOpts() *NpmOpts {
 	opts := &NpmOpts{}
-	// info := i.Info
+	info := i.Info
+	if info.Opts != nil {
+		if flags, ok := (*info.Opts)["flags"].(string); ok {
+			opts.Flags = &flags
+		}
+		if installFlags, ok := (*info.Opts)["install_flags"].(string); ok {
+			opts.InstallFlags = &installFlags
+		}
+		if updateFlags, ok := (*info.Opts)["update_flags"].(string); ok {
+			opts.UpdateFlags = &updateFlags
+		}
+	}
 	return opts
 }
 

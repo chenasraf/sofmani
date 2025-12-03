@@ -1,6 +1,8 @@
 package installer
 
 import (
+	"strings"
+
 	"github.com/chenasraf/sofmani/appconfig"
 )
 
@@ -19,6 +21,12 @@ type PacmanInstaller struct {
 type PacmanOpts struct {
 	// Needed skips reinstalling up-to-date packages (--needed flag).
 	Needed *bool
+	// Flags is a string of additional flags to pass to the pacman/yay command.
+	Flags *string
+	// InstallFlags is a string of additional flags to pass only during install.
+	InstallFlags *string
+	// UpdateFlags is a string of additional flags to pass only during update.
+	UpdateFlags *string
 }
 
 // PacmanPackageManager represents an Arch Linux package manager type.
@@ -39,9 +47,15 @@ func (i *PacmanInstaller) Validate() []ValidationError {
 // Install implements IInstaller.
 func (i *PacmanInstaller) Install() error {
 	name := *i.Info.Name
+	opts := i.GetOpts()
 	args := []string{"-S", "--noconfirm"}
-	if i.GetOpts().Needed != nil && *i.GetOpts().Needed {
+	if opts.Needed != nil && *opts.Needed {
 		args = append(args, "--needed")
+	}
+	if opts.InstallFlags != nil {
+		args = append(args, strings.Fields(*opts.InstallFlags)...)
+	} else if opts.Flags != nil {
+		args = append(args, strings.Fields(*opts.Flags)...)
 	}
 	args = append(args, name)
 	return i.RunCmdPassThrough(string(i.PackageManager), args...)
@@ -50,9 +64,15 @@ func (i *PacmanInstaller) Install() error {
 // Update implements IInstaller.
 func (i *PacmanInstaller) Update() error {
 	name := *i.Info.Name
+	opts := i.GetOpts()
 	args := []string{"-S", "--noconfirm"}
-	if i.GetOpts().Needed != nil && *i.GetOpts().Needed {
+	if opts.Needed != nil && *opts.Needed {
 		args = append(args, "--needed")
+	}
+	if opts.UpdateFlags != nil {
+		args = append(args, strings.Fields(*opts.UpdateFlags)...)
+	} else if opts.Flags != nil {
+		args = append(args, strings.Fields(*opts.Flags)...)
 	}
 	args = append(args, name)
 	return i.RunCmdPassThrough(string(i.PackageManager), args...)
@@ -95,6 +115,15 @@ func (i *PacmanInstaller) GetOpts() *PacmanOpts {
 	if info.Opts != nil {
 		if needed, ok := (*info.Opts)["needed"].(bool); ok {
 			opts.Needed = &needed
+		}
+		if flags, ok := (*info.Opts)["flags"].(string); ok {
+			opts.Flags = &flags
+		}
+		if installFlags, ok := (*info.Opts)["install_flags"].(string); ok {
+			opts.InstallFlags = &installFlags
+		}
+		if updateFlags, ok := (*info.Opts)["update_flags"].(string); ok {
+			opts.UpdateFlags = &updateFlags
 		}
 	}
 	return opts

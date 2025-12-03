@@ -139,6 +139,9 @@ These fields are shared by all installer types. Some fields may vary in behavior
   - **Options**:
     - `opts.destination`: The local directory to clone the repository to.
     - `opts.ref`: The branch, tag, or commit to checkout after cloning.
+    - `opts.flags`: Additional flags to pass to git commands (fallback for install/update).
+    - `opts.install_flags`: Additional flags to pass only to `git clone`.
+    - `opts.update_flags`: Additional flags to pass only to `git pull`.
 
 - **`github-release`**
 
@@ -200,17 +203,29 @@ These fields are shared by all installer types. Some fields may vary in behavior
 
   - **Options**:
     - `opts.tap`: Name of the tap to install the package from.
+    - `opts.cask`: Install as a cask instead of a formula.
+    - `opts.flags`: Additional flags to pass to brew commands (fallback for install/update).
+    - `opts.install_flags`: Additional flags to pass only to `brew install`.
+    - `opts.update_flags`: Additional flags to pass only to `brew upgrade`.
 
 - **`npm`/`pnpm`/`yarn`**
 
   - **Description**: Installs packages using npm/pnpm/yarn.
     - Use `type: npm` for `npm install`, `type: pnpm` for `pnpm install`, and `type: yarn` for
       `yarn install`.
+  - **Options**:
+    - `opts.flags`: Additional flags to pass to commands (fallback for install/update).
+    - `opts.install_flags`: Additional flags to pass only during install.
+    - `opts.update_flags`: Additional flags to pass only during update.
 
 - **`apt`/`apk`**
 
   - **Description**: Installs packages using apt install or apt add.
     - Use `type: apt` for `apt install`, and `type: apk` for `apk add`.
+  - **Options**:
+    - `opts.flags`: Additional flags to pass to commands (fallback for install/update).
+    - `opts.install_flags`: Additional flags to pass only during install.
+    - `opts.update_flags`: Additional flags to pass only during update.
 
 - **`pacman`/`yay`**
 
@@ -220,10 +235,17 @@ These fields are shared by all installer types. Some fields may vary in behavior
     - Both use `--noconfirm` for non-interactive installation.
   - **Options**:
     - `opts.needed`: Skip reinstalling up-to-date packages (`--needed` flag).
+    - `opts.flags`: Additional flags to pass to commands (fallback for install/update).
+    - `opts.install_flags`: Additional flags to pass only during install.
+    - `opts.update_flags`: Additional flags to pass only during update.
 
 - **`pipx`**
 
   - **Description**: Installs packages using pipx.
+  - **Options**:
+    - `opts.flags`: Additional flags to pass to commands (fallback for install/update).
+    - `opts.install_flags`: Additional flags to pass only to `pipx install`.
+    - `opts.update_flags`: Additional flags to pass only to `pipx upgrade`.
 
 - **`docker`**
 

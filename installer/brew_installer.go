@@ -30,6 +30,12 @@ type BrewOpts struct {
 	Tap *string
 	// Cask installs the formula as a cask instead of a regular package.
 	Cask *bool
+	// Flags is a string of additional flags to pass to the brew command.
+	Flags *string
+	// InstallFlags is a string of additional flags to pass only during install.
+	InstallFlags *string
+	// UpdateFlags is a string of additional flags to pass only during update.
+	UpdateFlags *string
 }
 
 // Validate validates the installer configuration.
@@ -48,9 +54,15 @@ func (i *BrewInstaller) Validate() []ValidationError {
 // Install implements IInstaller.
 func (i *BrewInstaller) Install() error {
 	name := i.GetFullName()
+	opts := i.GetOpts()
 	cmd := "brew install"
 	if i.IsCask() {
 		cmd += " --cask"
+	}
+	if opts.InstallFlags != nil {
+		cmd += " " + *opts.InstallFlags
+	} else if opts.Flags != nil {
+		cmd += " " + *opts.Flags
 	}
 	return i.RunCmdAsFile(fmt.Sprintf("%s %s", cmd, name))
 }
@@ -58,9 +70,15 @@ func (i *BrewInstaller) Install() error {
 // Update implements IInstaller.
 func (i *BrewInstaller) Update() error {
 	name := i.GetFullName()
+	opts := i.GetOpts()
 	cmd := "brew upgrade"
 	if i.IsCask() {
 		cmd += " --cask"
+	}
+	if opts.UpdateFlags != nil {
+		cmd += " " + *opts.UpdateFlags
+	} else if opts.Flags != nil {
+		cmd += " " + *opts.Flags
 	}
 	return i.RunCmdAsFile(fmt.Sprintf("%s %s", cmd, name))
 }
@@ -188,6 +206,15 @@ func (i *BrewInstaller) GetOpts() *BrewOpts {
 		}
 		if caskVal, ok := (*info.Opts)["cask"].(bool); ok {
 			opts.Cask = &caskVal
+		}
+		if flags, ok := (*info.Opts)["flags"].(string); ok {
+			opts.Flags = &flags
+		}
+		if installFlags, ok := (*info.Opts)["install_flags"].(string); ok {
+			opts.InstallFlags = &installFlags
+		}
+		if updateFlags, ok := (*info.Opts)["update_flags"].(string); ok {
+			opts.UpdateFlags = &updateFlags
 		}
 	}
 	return opts

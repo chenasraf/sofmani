@@ -25,6 +25,12 @@ type GitOpts struct {
 	Destination *string
 	// Ref is the Git reference (branch, tag, or commit) to checkout.
 	Ref *string
+	// Flags is a string of additional flags to pass to git commands.
+	Flags *string
+	// InstallFlags is a string of additional flags to pass only to git clone.
+	InstallFlags *string
+	// UpdateFlags is a string of additional flags to pass only to git pull.
+	UpdateFlags *string
 }
 
 // Validate validates the installer configuration.
@@ -43,20 +49,34 @@ func (i *GitInstaller) Validate() []ValidationError {
 
 // Install implements IInstaller.
 func (i *GitInstaller) Install() error {
-	args := []string{"clone", i.GetRepositoryUrl(), i.GetInstallDir()}
+	opts := i.GetOpts()
+	args := []string{"clone"}
+	if opts.InstallFlags != nil {
+		args = append(args, strings.Fields(*opts.InstallFlags)...)
+	} else if opts.Flags != nil {
+		args = append(args, strings.Fields(*opts.Flags)...)
+	}
+	args = append(args, i.GetRepositoryUrl(), i.GetInstallDir())
 	err := i.RunCmdPassThrough("git", args...)
 	if err != nil {
 		return err
 	}
-	if i.GetOpts().Ref != nil {
-		return i.RunCmdPassThrough("git", "-C", i.GetInstallDir(), "checkout", *i.GetOpts().Ref)
+	if opts.Ref != nil {
+		return i.RunCmdPassThrough("git", "-C", i.GetInstallDir(), "checkout", *opts.Ref)
 	}
 	return nil
 }
 
 // Update implements IInstaller.
 func (i *GitInstaller) Update() error {
-	return i.RunCmdPassThrough("git", "-C", i.GetInstallDir(), "pull")
+	opts := i.GetOpts()
+	args := []string{"-C", i.GetInstallDir(), "pull"}
+	if opts.UpdateFlags != nil {
+		args = append(args, strings.Fields(*opts.UpdateFlags)...)
+	} else if opts.Flags != nil {
+		args = append(args, strings.Fields(*opts.Flags)...)
+	}
+	return i.RunCmdPassThrough("git", args...)
 }
 
 // CheckNeedsUpdate implements IInstaller.
@@ -102,6 +122,15 @@ func (i *GitInstaller) GetOpts() *GitOpts {
 		}
 		if ref, ok := (*info.Opts)["ref"].(string); ok {
 			opts.Ref = &ref
+		}
+		if flags, ok := (*info.Opts)["flags"].(string); ok {
+			opts.Flags = &flags
+		}
+		if installFlags, ok := (*info.Opts)["install_flags"].(string); ok {
+			opts.InstallFlags = &installFlags
+		}
+		if updateFlags, ok := (*info.Opts)["update_flags"].(string); ok {
+			opts.UpdateFlags = &updateFlags
 		}
 	}
 	return opts

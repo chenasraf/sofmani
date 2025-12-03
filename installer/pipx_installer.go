@@ -1,6 +1,8 @@
 package installer
 
 import (
+	"strings"
+
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/utils"
 )
@@ -16,7 +18,12 @@ type PipxInstaller struct {
 
 // PipxOpts represents options for the PipxInstaller.
 type PipxOpts struct {
-	//
+	// Flags is a string of additional flags to pass to the pipx command.
+	Flags *string
+	// InstallFlags is a string of additional flags to pass only during install.
+	InstallFlags *string
+	// UpdateFlags is a string of additional flags to pass only during update.
+	UpdateFlags *string
 }
 
 // Validate validates the installer configuration.
@@ -28,12 +35,28 @@ func (i *PipxInstaller) Validate() []ValidationError {
 // Install implements IInstaller.
 func (i *PipxInstaller) Install() error {
 	name := *i.Info.Name
-	return i.RunCmdPassThrough("pipx", "install", name)
+	opts := i.GetOpts()
+	args := []string{"install"}
+	if opts.InstallFlags != nil {
+		args = append(args, strings.Fields(*opts.InstallFlags)...)
+	} else if opts.Flags != nil {
+		args = append(args, strings.Fields(*opts.Flags)...)
+	}
+	args = append(args, name)
+	return i.RunCmdPassThrough("pipx", args...)
 }
 
 // Update implements IInstaller.
 func (i *PipxInstaller) Update() error {
-	return i.RunCmdPassThrough("pipx", "upgrade", *i.Info.Name)
+	opts := i.GetOpts()
+	args := []string{"upgrade"}
+	if opts.UpdateFlags != nil {
+		args = append(args, strings.Fields(*opts.UpdateFlags)...)
+	} else if opts.Flags != nil {
+		args = append(args, strings.Fields(*opts.Flags)...)
+	}
+	args = append(args, *i.Info.Name)
+	return i.RunCmdPassThrough("pipx", args...)
 }
 
 // CheckNeedsUpdate implements IInstaller.
@@ -63,7 +86,20 @@ func (i *PipxInstaller) GetData() *appconfig.InstallerData {
 
 // GetOpts returns the parsed options for the PipxInstaller.
 func (i *PipxInstaller) GetOpts() *PipxOpts {
-	return &PipxOpts{}
+	opts := &PipxOpts{}
+	info := i.Info
+	if info.Opts != nil {
+		if flags, ok := (*info.Opts)["flags"].(string); ok {
+			opts.Flags = &flags
+		}
+		if installFlags, ok := (*info.Opts)["install_flags"].(string); ok {
+			opts.InstallFlags = &installFlags
+		}
+		if updateFlags, ok := (*info.Opts)["update_flags"].(string); ok {
+			opts.UpdateFlags = &updateFlags
+		}
+	}
+	return opts
 }
 
 // GetBinName returns the binary name for the installer.

@@ -1,6 +1,8 @@
 package installer
 
 import (
+	"strings"
+
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/utils"
 )
@@ -18,7 +20,12 @@ type AptInstaller struct {
 
 // AptOpts represents options for the AptInstaller.
 type AptOpts struct {
-	//
+	// Flags is a string of additional flags to pass to the apt/apk command.
+	Flags *string
+	// InstallFlags is a string of additional flags to pass only during install.
+	InstallFlags *string
+	// UpdateFlags is a string of additional flags to pass only during update.
+	UpdateFlags *string
 }
 
 // AptPackageManager represents a package manager type.
@@ -39,6 +46,7 @@ func (i *AptInstaller) Validate() []ValidationError {
 // Install implements IInstaller.
 func (i *AptInstaller) Install() error {
 	name := *i.Info.Name
+	opts := i.GetOpts()
 	err := i.RunCmdPassThrough(string(i.PackageManager), "update")
 	if err != nil {
 		return err
@@ -47,7 +55,17 @@ func (i *AptInstaller) Install() error {
 	if i.PackageManager == PackageManagerApk {
 		install = "add"
 	}
-	return i.RunCmdPassThrough(string(i.PackageManager), install, i.getConfirmArg(), name)
+	args := []string{install}
+	if confirm := i.getConfirmArg(); confirm != "" {
+		args = append(args, confirm)
+	}
+	if opts.InstallFlags != nil {
+		args = append(args, strings.Fields(*opts.InstallFlags)...)
+	} else if opts.Flags != nil {
+		args = append(args, strings.Fields(*opts.Flags)...)
+	}
+	args = append(args, name)
+	return i.RunCmdPassThrough(string(i.PackageManager), args...)
 }
 
 // getConfirmArg returns the appropriate confirmation argument for the package manager.
@@ -62,7 +80,18 @@ func (i *AptInstaller) getConfirmArg() string {
 
 // Update implements IInstaller.
 func (i *AptInstaller) Update() error {
-	return i.RunCmdPassThrough(string(i.PackageManager), "upgrade", i.getConfirmArg(), *i.Info.Name)
+	opts := i.GetOpts()
+	args := []string{"upgrade"}
+	if confirm := i.getConfirmArg(); confirm != "" {
+		args = append(args, confirm)
+	}
+	if opts.UpdateFlags != nil {
+		args = append(args, strings.Fields(*opts.UpdateFlags)...)
+	} else if opts.Flags != nil {
+		args = append(args, strings.Fields(*opts.Flags)...)
+	}
+	args = append(args, *i.Info.Name)
+	return i.RunCmdPassThrough(string(i.PackageManager), args...)
 }
 
 // CheckNeedsUpdate implements IInstaller.
@@ -96,7 +125,20 @@ func (i *AptInstaller) GetData() *appconfig.InstallerData {
 
 // GetOpts returns the parsed options for the AptInstaller.
 func (i *AptInstaller) GetOpts() *AptOpts {
-	return &AptOpts{}
+	opts := &AptOpts{}
+	info := i.Info
+	if info.Opts != nil {
+		if flags, ok := (*info.Opts)["flags"].(string); ok {
+			opts.Flags = &flags
+		}
+		if installFlags, ok := (*info.Opts)["install_flags"].(string); ok {
+			opts.InstallFlags = &installFlags
+		}
+		if updateFlags, ok := (*info.Opts)["update_flags"].(string); ok {
+			opts.UpdateFlags = &updateFlags
+		}
+	}
+	return opts
 }
 
 // GetBinName returns the binary name for the installer.
