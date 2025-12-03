@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.12.0](https://github.com/chenasraf/sofmani/compare/v1.11.2...v1.12.0) (2025-12-03)
+
+
+### Features
+
+* add install_flags and update_flags to various installers ([0401be0](https://github.com/chenasraf/sofmani/commit/0401be046fe257e1e118735cf518e3f04a02f337))
+* pacman/yay installers ([7de60d4](https://github.com/chenasraf/sofmani/commit/7de60d48fdb16cead1bc333a5cdd8959252f5552))
+
 ## [1.11.2](https://github.com/chenasraf/sofmani/compare/v1.11.1...v1.11.2) (2025-09-16)
 
 
