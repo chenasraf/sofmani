@@ -65,6 +65,8 @@ const (
 	InstallerTypeYarn          InstallerType = "yarn"           // InstallerTypeYarn represents a yarn package installer.
 	InstallerTypePipx          InstallerType = "pipx"           // InstallerTypePipx represents a pipx package installer.
 	InstallerTypeManifest      InstallerType = "manifest"       // InstallerTypeManifest represents a manifest file installer.
+	InstallerTypePacman        InstallerType = "pacman"         // InstallerTypePacman represents a pacman package installer.
+	InstallerTypeYay           InstallerType = "yay"            // InstallerTypeYay represents a yay (AUR helper) package installer.
 )
 
 // Environ returns the combined environment variables for the installer as a slice of strings.

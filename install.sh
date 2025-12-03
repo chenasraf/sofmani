@@ -1,6 +1,4 @@
 #!/usr/bin/env sh
-# Portable installer for sofmani (no Bashisms)
-# Env vars you can override: INSTALL_DIR, REPO
 
 set -eu
 

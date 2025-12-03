@@ -212,6 +212,15 @@ These fields are shared by all installer types. Some fields may vary in behavior
   - **Description**: Installs packages using apt install or apt add.
     - Use `type: apt` for `apt install`, and `type: apk` for `apk add`.
 
+- **`pacman`/`yay`**
+
+  - **Description**: Installs packages using pacman or yay (Arch Linux).
+    - Use `type: pacman` for official Arch repository packages.
+    - Use `type: yay` for AUR (Arch User Repository) packages.
+    - Both use `--noconfirm` for non-interactive installation.
+  - **Options**:
+    - `opts.needed`: Skip reinstalling up-to-date packages (`--needed` flag).
+
 - **`pipx`**
 
   - **Description**: Installs packages using pipx.
@@ -378,6 +387,23 @@ install:
     tags: python
     platforms:
       only: ['linux']
+```
+
+### pacman/yay
+
+```yaml
+install:
+  # Install from official Arch repositories
+  - name: neovim
+    type: pacman
+    bin_name: nvim
+    opts:
+      needed: true  # Skip if already up-to-date
+
+  # Install from AUR using yay
+  - name: visual-studio-code-bin
+    type: yay
+    bin_name: code
 ```
 
 ### docker

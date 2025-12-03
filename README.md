@@ -229,6 +229,11 @@ For a full list with all the supported options, see [the docs](./docs/installer-
   - Installs packages using apt/apk install.
   - Use `type: apt` for `apt install`, and `type: apk` for `apk add`.
 
+- **`pacman`/`yay`**
+
+  - Installs packages using pacman or yay (Arch Linux).
+  - Use `type: pacman` for official repository packages, and `type: yay` for AUR packages.
+
 - **`pipx`**
 
   - Installs packages using pipx.

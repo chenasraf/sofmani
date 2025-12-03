@@ -127,5 +127,9 @@ func FillDefaults(data *appconfig.InstallerData) {
 		data.Platforms = &platform.Platforms{
 			Only: &[]platform.Platform{platform.PlatformLinux},
 		}
+	case appconfig.InstallerTypePacman, appconfig.InstallerTypeYay:
+		data.Platforms = &platform.Platforms{
+			Only: &[]platform.Platform{platform.PlatformLinux},
+		}
 	}
 }
