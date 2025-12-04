@@ -6,7 +6,8 @@ import (
 	"slices"
 )
 
-var osValue string = runtime.GOOS // osValue stores the current operating system.
+var osValue string = runtime.GOOS     // osValue stores the current operating system.
+var archValue string = runtime.GOARCH // archValue stores the current architecture.
 
 // getOS returns the current operating system. It caches the value after the first call.
 func getOS() string {
@@ -19,6 +20,52 @@ func getOS() string {
 // SetOS overrides the detected operating system. This is primarily used for testing.
 func SetOS(v string) {
 	osValue = v
+}
+
+// getArch returns the current architecture. It caches the value after the first call.
+func getArch() string {
+	if archValue == "" {
+		archValue = runtime.GOARCH
+	}
+	return archValue
+}
+
+// SetArch overrides the detected architecture. This is primarily used for testing.
+func SetArch(v string) {
+	archValue = v
+}
+
+// Architecture represents a CPU architecture.
+type Architecture string
+
+// Constants for supported architectures.
+const (
+	ArchAmd64 Architecture = "amd64" // ArchAmd64 represents x86_64 architecture.
+	ArchArm64 Architecture = "arm64" // ArchArm64 represents ARM64 architecture.
+)
+
+// GetArch returns the current architecture (amd64 or arm64).
+func GetArch() Architecture {
+	switch getArch() {
+	case "amd64", "x86_64":
+		return ArchAmd64
+	case "arm64", "aarch64":
+		return ArchArm64
+	default:
+		return Architecture(getArch())
+	}
+}
+
+// GetArchAlias returns the architecture in common alias format (x86_64 or arm64).
+func GetArchAlias() string {
+	switch GetArch() {
+	case ArchAmd64:
+		return "x86_64"
+	case ArchArm64:
+		return "arm64"
+	default:
+		return string(GetArch())
+	}
 }
 
 // GetPlatform returns the current platform (macos, linux, or windows).

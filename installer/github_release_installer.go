@@ -32,7 +32,8 @@ type GitHubReleaseOpts struct {
 	// Destination is the directory where the release asset will be installed.
 	Destination *string
 	// DownloadFilename is a platform-specific map of the filename to download from the release.
-	// Placeholders {tag} and {version} can be used in the filename.
+	// Supports Go template syntax with variables: {{ .Tag }}, {{ .Version }}, {{ .Arch }}, {{ .ArchAlias }}, {{ .OS }}.
+	// Legacy placeholders {tag}, {version}, {arch}, {arch_alias}, {os} are deprecated but still supported.
 	DownloadFilename *platform.PlatformMap[string]
 	// Strategy is the installation strategy to use (none, tar, zip).
 	Strategy *GitHubReleaseInstallStrategy
@@ -102,12 +103,14 @@ func (i *GitHubReleaseInstaller) Install() error {
 		return err
 	}
 
-	version, _ := strings.CutPrefix(tag, "v")
 	filename := i.GetFilename()
-	filename = strings.ReplaceAll(filename, "{tag}", tag)
-	filename = strings.ReplaceAll(filename, "{version}", version)
 	if filename == "" {
 		return fmt.Errorf("no download filename provided")
+	}
+	templateVars := NewTemplateVars(tag)
+	filename, err = ApplyTemplate(filename, templateVars, name)
+	if err != nil {
+		return fmt.Errorf("failed to apply template to filename: %w", err)
 	}
 	downloadUrl := fmt.Sprintf("https://github.com/%s/releases/download/%s/%s", *opts.Repository, tag, filename)
 	logger.Debug("Downloading from %s", downloadUrl)

@@ -159,20 +159,31 @@ These fields are shared by all installer types. Some fields may vary in behavior
 
       This should either be a string, or a map of platforms to filenames.
 
-      You can use `{tag}` and `{version}` to replace the relevant tokens in the filename:
+      You can use Go template syntax to insert dynamic values into the filename:
 
-      - `{tag}` - will be replaced by the full tag name, e.g. `v1.0.0`
-      - `{version}` - will be replaced by the version, e.g. `1.0.0`
+      - `{{ .Tag }}` - the full tag name, e.g. `v1.0.0`
+      - `{{ .Version }}` - the version without the leading "v", e.g. `1.0.0`
+      - `{{ .Arch }}` - the system architecture in Go format, e.g. `amd64`, `arm64`
+      - `{{ .ArchAlias }}` - the architecture in common alias format, e.g. `x86_64`, `arm64`
+      - `{{ .OS }}` - the current operating system, e.g. `macos`, `linux`, `windows`
+
+      **Legacy syntax (deprecated):** The old `{tag}`, `{version}`, `{arch}`, `{arch_alias}`, and `{os}` tokens are still supported but deprecated. A deprecation warning will be logged at DEBUG level when they are used.
 
       Examples:
 
       ```yaml
-      download_filename: myapp_{tag}_linux.tar.gz # will output: myapp_v1.0.0_linux.tar.gz
-      download_filename: myapp_{version}_linux.tar.gz # will output: myapp_1.0.0_linux.tar.gz
+      # Using Go template syntax (recommended)
+      download_filename: myapp_{{ .Tag }}_linux_{{ .ArchAlias }}.tar.gz # outputs: myapp_v1.0.0_linux_x86_64.tar.gz
+      download_filename: myapp_{{ .Version }}_{{ .OS }}.tar.gz # outputs: myapp_1.0.0_linux.tar.gz
+
+      # Platform-specific filenames
       download_filename:
-        macos: myapp_{tag}_macos.tar.gz
-        linux: myapp_{tag}_linux.tar.gz
-        windows: myapp_{tag}_windows.zip
+        macos: myapp_{{ .Tag }}_darwin_{{ .ArchAlias }}.tar.gz
+        linux: myapp_{{ .Tag }}_linux_{{ .ArchAlias }}.tar.gz
+        windows: myapp_{{ .Tag }}_windows_{{ .ArchAlias }}.zip
+
+      # Legacy syntax (deprecated, still works)
+      download_filename: myapp_{tag}_linux.tar.gz # outputs: myapp_v1.0.0_linux.tar.gz
       ```
 
 - **`manifest`**
@@ -352,7 +363,7 @@ install:
       repository: jesseduffield/lazygit
       strategy: tar
       destination: /usr/local/bin
-      download_filename: lazygit_{tag}_Linux_x86_64.tar.gz
+      download_filename: lazygit_{{ .Version }}_Linux_{{ .ArchAlias }}.tar.gz
 ```
 
 ### shell
