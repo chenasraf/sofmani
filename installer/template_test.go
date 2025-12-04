@@ -16,6 +16,7 @@ func TestNewTemplateVars(t *testing.T) {
 	assert.Equal(t, "1.2.3", vars.Version)
 	assert.NotEmpty(t, vars.Arch)
 	assert.NotEmpty(t, vars.ArchAlias)
+	assert.NotEmpty(t, vars.ArchGnu)
 	assert.NotEmpty(t, vars.OS)
 }
 
@@ -69,6 +70,11 @@ func TestApplyTemplateGoSyntax(t *testing.T) {
 			name:     "OS variable",
 			input:    "app_{{ .OS }}.tar.gz",
 			expected: "app_macos.tar.gz",
+		},
+		{
+			name:     "ArchGnu variable",
+			input:    "app_{{ .ArchGnu }}.tar.gz",
+			expected: "app_aarch64.tar.gz",
 		},
 		{
 			name:     "Multiple variables",
@@ -135,6 +141,11 @@ func TestApplyTemplateLegacySyntax(t *testing.T) {
 			expected: "app_linux.tar.gz",
 		},
 		{
+			name:     "Legacy arch_gnu token",
+			input:    "app_{arch_gnu}.tar.gz",
+			expected: "app_x86_64.tar.gz",
+		},
+		{
 			name:     "Multiple legacy tokens",
 			input:    "app_{version}_{os}_{arch_alias}.tar.gz",
 			expected: "app_3.1.4_linux_x86_64.tar.gz",
@@ -186,11 +197,12 @@ func TestArchDetection(t *testing.T) {
 		goarch        string
 		expectedArch  platform.Architecture
 		expectedAlias string
+		expectedGnu   string
 	}{
-		{"amd64", platform.ArchAmd64, "x86_64"},
-		{"x86_64", platform.ArchAmd64, "x86_64"},
-		{"arm64", platform.ArchArm64, "arm64"},
-		{"aarch64", platform.ArchArm64, "arm64"},
+		{"amd64", platform.ArchAmd64, "x86_64", "x86_64"},
+		{"x86_64", platform.ArchAmd64, "x86_64", "x86_64"},
+		{"arm64", platform.ArchArm64, "arm64", "aarch64"},
+		{"aarch64", platform.ArchArm64, "arm64", "aarch64"},
 	}
 
 	for _, tc := range tests {
@@ -198,6 +210,7 @@ func TestArchDetection(t *testing.T) {
 			platform.SetArch(tc.goarch)
 			assert.Equal(t, tc.expectedArch, platform.GetArch())
 			assert.Equal(t, tc.expectedAlias, platform.GetArchAlias())
+			assert.Equal(t, tc.expectedGnu, platform.GetArchGnu())
 		})
 	}
 

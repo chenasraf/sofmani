@@ -165,9 +165,10 @@ These fields are shared by all installer types. Some fields may vary in behavior
       - `{{ .Version }}` - the version without the leading "v", e.g. `1.0.0`
       - `{{ .Arch }}` - the system architecture in Go format, e.g. `amd64`, `arm64`
       - `{{ .ArchAlias }}` - the architecture in common alias format, e.g. `x86_64`, `arm64`
+      - `{{ .ArchGnu }}` - the architecture in GNU/Linux format, e.g. `x86_64`, `aarch64`
       - `{{ .OS }}` - the current operating system, e.g. `macos`, `linux`, `windows`
 
-      **Legacy syntax (deprecated):** The old `{tag}`, `{version}`, `{arch}`, `{arch_alias}`, and `{os}` tokens are still supported but deprecated. A deprecation warning will be logged at DEBUG level when they are used.
+      **Legacy syntax (deprecated):** The old `{tag}`, `{version}`, `{arch}`, `{arch_alias}`, `{arch_gnu}`, and `{os}` tokens are still supported but deprecated. A deprecation warning will be logged at DEBUG level when they are used.
 
       Examples:
 

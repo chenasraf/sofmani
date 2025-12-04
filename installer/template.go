@@ -19,6 +19,8 @@ type TemplateVars struct {
 	Arch string
 	// ArchAlias is the system architecture in common alias format (e.g., "x86_64", "arm64").
 	ArchAlias string
+	// ArchGnu is the system architecture in GNU/Linux format (e.g., "x86_64", "aarch64").
+	ArchGnu string
 	// OS is the current operating system (e.g., "macos", "linux", "windows").
 	OS string
 }
@@ -29,6 +31,7 @@ var legacyTokens = map[string]string{
 	"{version}":    "Version",
 	"{arch}":       "Arch",
 	"{arch_alias}": "ArchAlias",
+	"{arch_gnu}":   "ArchGnu",
 	"{os}":         "OS",
 }
 
@@ -40,6 +43,7 @@ func NewTemplateVars(tag string) *TemplateVars {
 		Version:   version,
 		Arch:      string(platform.GetArch()),
 		ArchAlias: platform.GetArchAlias(),
+		ArchGnu:   platform.GetArchGnu(),
 		OS:        string(platform.GetPlatform()),
 	}
 }
@@ -90,6 +94,8 @@ func applyLegacyTokens(input string, vars *TemplateVars, installerName string) s
 				value = vars.Arch
 			case "ArchAlias":
 				value = vars.ArchAlias
+			case "ArchGnu":
+				value = vars.ArchGnu
 			case "OS":
 				value = vars.OS
 			}

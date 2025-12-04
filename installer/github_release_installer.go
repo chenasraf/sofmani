@@ -32,8 +32,8 @@ type GitHubReleaseOpts struct {
 	// Destination is the directory where the release asset will be installed.
 	Destination *string
 	// DownloadFilename is a platform-specific map of the filename to download from the release.
-	// Supports Go template syntax with variables: {{ .Tag }}, {{ .Version }}, {{ .Arch }}, {{ .ArchAlias }}, {{ .OS }}.
-	// Legacy placeholders {tag}, {version}, {arch}, {arch_alias}, {os} are deprecated but still supported.
+	// Supports Go template syntax with variables: {{ .Tag }}, {{ .Version }}, {{ .Arch }}, {{ .ArchAlias }}, {{ .ArchGnu }}, {{ .OS }}.
+	// Legacy placeholders {tag}, {version}, {arch}, {arch_alias}, {arch_gnu}, {os} are deprecated but still supported.
 	DownloadFilename *platform.PlatformMap[string]
 	// Strategy is the installation strategy to use (none, tar, zip).
 	Strategy *GitHubReleaseInstallStrategy

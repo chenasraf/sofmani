@@ -68,6 +68,18 @@ func GetArchAlias() string {
 	}
 }
 
+// GetArchGnu returns the architecture in GNU/Linux format (x86_64 or aarch64).
+func GetArchGnu() string {
+	switch GetArch() {
+	case ArchAmd64:
+		return "x86_64"
+	case ArchArm64:
+		return "aarch64"
+	default:
+		return string(GetArch())
+	}
+}
+
 // GetPlatform returns the current platform (macos, linux, or windows).
 func GetPlatform() Platform {
 	switch getOS() {
