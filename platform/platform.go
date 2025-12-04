@@ -163,8 +163,8 @@ func ParselatformMap[T any](values map[string]T) *PlatformMap[T] {
 // NewPlatformMap creates a new PlatformMap from either a single value or a map.
 func NewPlatformMap[T any](input any) *PlatformMap[T] {
 	switch v := input.(type) {
-	case T:
-		return ParsePlatformSingleValue(v)
+	case nil:
+		return nil
 	case *T:
 		if v != nil {
 			return ParsePlatformSingleValue(*v)
@@ -180,8 +180,8 @@ func NewPlatformMap[T any](input any) *PlatformMap[T] {
 			}
 		}
 		return ParselatformMap(flat)
-	case nil:
-		return nil
+	case T:
+		return ParsePlatformSingleValue(v)
 	default:
 		panic(fmt.Sprintf("NewPlatformMap: unsupported input type %T", input))
 	}

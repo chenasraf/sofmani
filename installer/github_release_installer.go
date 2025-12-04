@@ -61,10 +61,8 @@ func (i *GitHubReleaseInstaller) Validate() []ValidationError {
 	}
 	if opts.DownloadFilename == nil || len(*opts.DownloadFilename.Resolve()) == 0 {
 		errors = append(errors, ValidationError{FieldName: "download_filename", Message: validationIsRequired(), InstallerName: *info.Name})
-	} else {
-		if (*opts.DownloadFilename).Resolve() == nil || len(*(*opts.DownloadFilename).Resolve()) == 0 {
-			errors = append(errors, ValidationError{FieldName: fmt.Sprintf("download_filename.%s", platform.GetPlatform()), Message: validationIsRequired(), InstallerName: *info.Name})
-		}
+	} else if (*opts.DownloadFilename).Resolve() == nil || len(*(*opts.DownloadFilename).Resolve()) == 0 {
+		errors = append(errors, ValidationError{FieldName: fmt.Sprintf("download_filename.%s", platform.GetPlatform()), Message: validationIsRequired(), InstallerName: *info.Name})
 	}
 	if opts.Strategy != nil {
 		if *opts.Strategy != GitHubReleaseInstallStrategyNone && *opts.Strategy != GitHubReleaseInstallStrategyTar && *opts.Strategy != GitHubReleaseInstallStrategyZip {

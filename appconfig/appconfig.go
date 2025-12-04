@@ -153,15 +153,16 @@ func (c *AppConfig) GetConfigDesc() []string {
 		}
 	}
 
-	filter := "Filter: "
+	var filterBuilder strings.Builder
+	filterBuilder.WriteString("Filter: ")
 	if len(c.Filter) > 0 {
 		for _, f := range c.Filter {
-			filter += fmt.Sprintf("\n  %s", f)
+			filterBuilder.WriteString(fmt.Sprintf("\n  %s", f))
 		}
 	} else {
-		filter += "None"
+		filterBuilder.WriteString("None")
 	}
-	desc = append(desc, filter)
+	desc = append(desc, filterBuilder.String())
 
 	return desc
 }

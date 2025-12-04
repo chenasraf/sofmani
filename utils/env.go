@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"maps"
 	"strings"
 )
 
@@ -39,9 +40,7 @@ func CombineEnvMaps(envs ...*map[string]string) map[string]string {
 		if env == nil {
 			continue
 		}
-		for k, v := range *env {
-			out[k] = v
-		}
+		maps.Copy(out, *env)
 	}
 	return out
 }
@@ -77,8 +76,6 @@ func mergeEnvs(source *[]string, target []string) []string {
 	if source == nil {
 		source = &[]string{} // Treat nil source as empty
 	}
-	for k, v := range EnvSliceAsMap(*source) {
-		tgt[k] = v // Override or add keys from source
-	}
+	maps.Copy(tgt, EnvSliceAsMap(*source))
 	return EnvMapAsSlice(tgt)
 }
