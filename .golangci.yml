@@ -1,0 +1,12 @@
+version: "2"
+
+linters:
+  enable:
+    - staticcheck
+    - govet
+    - errcheck
+    - ineffassign
+    - unused
+    - gocritic
+    - intrange
+    - modernize
