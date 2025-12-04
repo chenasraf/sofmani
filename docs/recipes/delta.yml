@@ -1,22 +1,22 @@
 # To use on your manifest:
-#   - name: lazygit
+#   - name: delta
 #     type: manifest
 #     opts:
 #       source: git@github.com/chenasraf/sofmani.git
-#       path: docs/recipes/lazygit.yml
+#       path: docs/recipes/delta.yml
 install:
-  - name: lazygit
+  - name: git-delta
+    bin_name: delta
     type: group
     steps:
-      - name: lazygit
+      - name: git-delta
         type: brew
-      - name: lazygit
+      - name: delta
         type: github-release
         platforms:
           only: ['linux']
         opts:
-          repository: jesseduffield/lazygit
+          repository: dandavison/delta
           strategy: tar
           destination: ~/.local/bin
-          # destination: /usr/local/bin
-          download_filename: lazygit_{{ .Version }}_Linux_{{ .ArchAlias }}.tar.gz
+          download_filename: delta-{{ .Version }}-{{ .ArchGnu }}-unknown-linux-musl.tar.gz

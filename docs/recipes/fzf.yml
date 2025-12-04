@@ -1,0 +1,19 @@
+# To use on your manifest:
+#   - name: fzf
+#     type: manifest
+#     opts:
+#       source: git@github.com/chenasraf/sofmani.git
+#       path: docs/recipes/fzf.yml
+install:
+  - name: fzf
+    type: group
+    steps:
+      - name: fzf
+        type: brew
+      - name: fzf
+        type: git
+        platforms:
+          only: ['linux']
+        post_install: ~/.fzf/install --all
+        opts:
+          destination: ~/.fzf

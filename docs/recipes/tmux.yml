@@ -1,9 +1,9 @@
 # To use on your manifest:
-#   - name: yq
+#   - name: tmux
 #     type: manifest
 #     opts:
 #       source: git@github.com/chenasraf/sofmani.git
-#       path: docs/recipes/yq.yml
+#       path: docs/recipes/tmux.yml
 install:
-  - name: yq
+  - name: tmux
     type: brew

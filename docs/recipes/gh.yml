@@ -1,9 +1,9 @@
 # To use on your manifest:
-#   - name: yq
+#   - name: gh
 #     type: manifest
 #     opts:
 #       source: git@github.com/chenasraf/sofmani.git
-#       path: docs/recipes/yq.yml
+#       path: docs/recipes/gh.yml
 install:
-  - name: yq
+  - name: gh
     type: brew

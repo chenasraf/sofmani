@@ -1,22 +1,21 @@
 # To use on your manifest:
-#   - name: lazygit
+#   - name: zoxide
 #     type: manifest
 #     opts:
 #       source: git@github.com/chenasraf/sofmani.git
-#       path: docs/recipes/lazygit.yml
+#       path: docs/recipes/zoxide.yml
 install:
-  - name: lazygit
+  - name: zoxide
     type: group
     steps:
-      - name: lazygit
+      - name: zoxide
         type: brew
-      - name: lazygit
+      - name: zoxide
         type: github-release
         platforms:
           only: ['linux']
         opts:
-          repository: jesseduffield/lazygit
+          repository: ajeetdsouza/zoxide
           strategy: tar
           destination: ~/.local/bin
-          # destination: /usr/local/bin
-          download_filename: lazygit_{{ .Version }}_Linux_{{ .ArchAlias }}.tar.gz
+          download_filename: zoxide-{{ .Version }}-{{ .ArchGnu }}-unknown-linux-musl.tar.gz

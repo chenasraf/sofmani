@@ -1,0 +1,21 @@
+# To use on your manifest:
+#   - name: fnm
+#     type: manifest
+#     opts:
+#       source: git@github.com/chenasraf/sofmani.git
+#       path: docs/recipes/fnm.yml
+install:
+  - name: fnm
+    type: group
+    post_install: |
+      fnm install --lts
+      fnm use lts-latest
+    steps:
+      - name: fnm
+        type: brew
+      - name: fnm
+        type: shell
+        platforms:
+          only: ['linux']
+        opts:
+          command: curl -fsSL https://fnm.vercel.app/install | bash

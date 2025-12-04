@@ -1,9 +1,9 @@
 # To use on your manifest:
-#   - name: yq
+#   - name: eslint
 #     type: manifest
 #     opts:
 #       source: git@github.com/chenasraf/sofmani.git
-#       path: docs/recipes/yq.yml
+#       path: docs/recipes/eslint.yml
 install:
-  - name: yq
-    type: brew
+  - name: eslint
+    type: npm

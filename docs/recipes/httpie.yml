@@ -1,9 +1,10 @@
 # To use on your manifest:
-#   - name: yq
+#   - name: httpie
 #     type: manifest
 #     opts:
 #       source: git@github.com/chenasraf/sofmani.git
-#       path: docs/recipes/yq.yml
+#       path: docs/recipes/httpie.yml
 install:
-  - name: yq
+  - name: httpie
+    bin_name: http
     type: brew

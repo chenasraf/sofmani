@@ -1,0 +1,18 @@
+# To use on your manifest:
+#   - name: starship
+#     type: manifest
+#     opts:
+#       source: git@github.com/chenasraf/sofmani.git
+#       path: docs/recipes/starship.yml
+install:
+  - name: starship
+    type: group
+    steps:
+      - name: starship
+        type: brew
+      - name: starship
+        type: shell
+        platforms:
+          only: ['linux']
+        opts:
+          command: curl -sS https://starship.rs/install.sh | sh -s -- -y

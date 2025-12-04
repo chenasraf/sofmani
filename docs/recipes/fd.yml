@@ -1,22 +1,21 @@
 # To use on your manifest:
-#   - name: lazygit
+#   - name: fd
 #     type: manifest
 #     opts:
 #       source: git@github.com/chenasraf/sofmani.git
-#       path: docs/recipes/lazygit.yml
+#       path: docs/recipes/fd.yml
 install:
-  - name: lazygit
+  - name: fd
     type: group
     steps:
-      - name: lazygit
+      - name: fd
         type: brew
-      - name: lazygit
+      - name: fd
         type: github-release
         platforms:
           only: ['linux']
         opts:
-          repository: jesseduffield/lazygit
+          repository: sharkdp/fd
           strategy: tar
           destination: ~/.local/bin
-          # destination: /usr/local/bin
-          download_filename: lazygit_{{ .Version }}_Linux_{{ .ArchAlias }}.tar.gz
+          download_filename: fd-{{ .Tag }}-{{ .ArchGnu }}-unknown-linux-musl.tar.gz

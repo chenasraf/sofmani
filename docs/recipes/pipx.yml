@@ -6,14 +6,5 @@
 #       path: docs/recipes/pipx.yml
 install:
   - name: pipx
-    type: group
+    type: brew
     post_install: sudo pipx ensurepath --global
-    steps:
-      - name: pipx
-        type: brew
-        platforms:
-          only: ['macos']
-      - name: pipx
-        type: apt
-        platforms:
-          only: ['linux']

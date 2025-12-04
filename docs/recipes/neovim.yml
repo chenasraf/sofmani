@@ -1,9 +1,10 @@
 # To use on your manifest:
-#   - name: yq
+#   - name: neovim
 #     type: manifest
 #     opts:
 #       source: git@github.com/chenasraf/sofmani.git
-#       path: docs/recipes/yq.yml
+#       path: docs/recipes/neovim.yml
 install:
-  - name: yq
+  - name: neovim
+    bin_name: nvim
     type: brew
