@@ -2,9 +2,11 @@ package installer
 
 import (
 	"fmt"
+	"io"
 	"maps"
-	"os"
+	"net/http"
 	"path/filepath"
+	"strings"
 
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
@@ -124,75 +126,121 @@ func (i *ManifestInstaller) GetOpts() *ManifestOpts {
 }
 
 // FetchManifest fetches and parses the manifest file.
-// It handles both local and Git sources.
+// It handles local files, Git repository URLs, and raw HTTP URLs.
 func (i *ManifestInstaller) FetchManifest() error {
 	opts := i.GetOpts()
 	source := *opts.Source
-	isGit := utils.IsGitURL(source)
 	env := i.GetData().Environ()
-	var path string
-	if opts.Path == nil {
-		path = ""
-	} else {
-		path = *opts.Path
-	}
-	path = utils.GetRealPath(env, path)
 
-	if isGit {
-		src, err := i.getGitManifestConfig(source)
+	var config *appconfig.AppConfig
+	var err error
+
+	switch {
+	case utils.IsGitURL(source):
+		// Git repository URL - convert to raw URL and fetch
+		content, fetchErr := i.getGitManifestConfig(source)
+		if fetchErr != nil {
+			return fetchErr
+		}
+		config, err = appconfig.ParseConfigFromContent([]byte(content))
+		if err != nil {
+			return fmt.Errorf("failed to parse manifest content: %w", err)
+		}
+	case strings.HasPrefix(source, "http://") || strings.HasPrefix(source, "https://"):
+		// Direct HTTP URL - fetch directly
+		content, fetchErr := i.fetchRawURL(source)
+		if fetchErr != nil {
+			return fetchErr
+		}
+		config, err = appconfig.ParseConfigFromContent([]byte(content))
+		if err != nil {
+			return fmt.Errorf("failed to parse manifest content: %w", err)
+		}
+	default:
+		// Local file path
+		source = utils.GetRealPath(env, source)
+		var path string
+		if opts.Path == nil {
+			path = ""
+		} else {
+			path = *opts.Path
+		}
+		path = utils.GetRealPath(env, path)
+		fullPath := filepath.Join(source, path)
+		logger.Debug("Parsing manifest from %s", fullPath)
+		config, err = i.getLocalManifestConfig(fullPath)
 		if err != nil {
 			return err
 		}
-		source = src
-	} else {
-		source = utils.GetRealPath(env, source)
 	}
 
-	logger.Debug("Parsing manifest from %s", filepath.Join(source, path))
-	config, err := i.getLocalManifestConfig(filepath.Join(source, path))
-	if err != nil {
-		return err
-	}
 	logger.Debug("Installers: %d", len(config.Install))
+	config = i.inheritManifest(config)
 	i.ManifestConfig = config
 	return nil
 }
 
-func (i *ManifestInstaller) getGitManifestConfig(source string) (string, error) {
-	opts := i.GetOpts()
-	tmpDir, err := os.MkdirTemp("", "sofmani")
+// fetchRawURL fetches content directly from a raw HTTP URL.
+func (i *ManifestInstaller) fetchRawURL(url string) (string, error) {
+	logger.Debug("Fetching manifest from raw URL: %s", url)
+	resp, err := http.Get(url)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to fetch manifest: %w", err)
 	}
-
 	defer func() {
-		if rmErr := os.RemoveAll(tmpDir); rmErr != nil {
-			logger.Warn("Failed to clean up tmp dir %s: %v", tmpDir, rmErr)
+		if cerr := resp.Body.Close(); cerr != nil {
+			logger.Warn("failed to close response body: %v", cerr)
 		}
 	}()
 
-	logger.Debug("Cloning %s to %s", source, tmpDir)
-	success, err := i.RunCmdGetSuccess("git", "clone", "--depth=1", source, tmpDir)
-	if err != nil {
-		return "", err
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("failed to fetch manifest: HTTP %d", resp.StatusCode)
 	}
 
-	if opts.Ref != nil {
-		logger.Debug("Checking out ref %s", *opts.Ref)
-		err = i.RunCmdPassThrough("git", "-C", tmpDir, "checkout", *opts.Ref)
-		if err != nil {
-			return "", err
+	content, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read manifest content: %w", err)
+	}
+
+	return string(content), nil
+}
+
+func (i *ManifestInstaller) getGitManifestConfig(source string) (string, error) {
+	opts := i.GetOpts()
+
+	ref := "main"
+	if opts.Ref != nil && *opts.Ref != "" {
+		ref = *opts.Ref
+	}
+
+	path := ""
+	if opts.Path != nil {
+		path = *opts.Path
+	}
+
+	rawURL, err := utils.GetRawFileURL(source, ref, path)
+	if err != nil {
+		return "", fmt.Errorf("failed to construct raw file URL: %w", err)
+	}
+
+	logger.Debug("Fetching manifest from %s", rawURL)
+	resp, err := http.Get(rawURL)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch manifest: %w", err)
+	}
+	defer func() {
+		if cerr := resp.Body.Close(); cerr != nil {
+			logger.Warn("failed to close response body: %v", cerr)
 		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("failed to fetch manifest: HTTP %d", resp.StatusCode)
 	}
 
-	if !success {
-		return "", fmt.Errorf("failed to clone %s", source)
-	}
-
-	contentPath := filepath.Join(tmpDir, "manifest.yaml")
-	content, err := os.ReadFile(contentPath)
+	content, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("failed to read manifest file: %w", err)
+		return "", fmt.Errorf("failed to read manifest content: %w", err)
 	}
 
 	return string(content), nil

@@ -12,6 +12,7 @@ import (
 	"github.com/chenasraf/sofmani/platform"
 	"github.com/chenasraf/sofmani/utils"
 	"github.com/eschao/config"
+	"gopkg.in/yaml.v3"
 )
 
 // AppConfig represents the main application configuration.
@@ -81,6 +82,16 @@ func ParseConfig(overrides *AppCliConfig) (*AppConfig, error) {
 func ParseConfigFrom(file string) (*AppConfig, error) {
 	appConfig := NewAppConfig()
 	err := config.ParseConfigFile(&appConfig, file)
+	if err != nil {
+		return nil, err
+	}
+	return &appConfig, nil
+}
+
+// ParseConfigFromContent parses the configuration from YAML content.
+func ParseConfigFromContent(content []byte) (*AppConfig, error) {
+	appConfig := NewAppConfig()
+	err := yaml.Unmarshal(content, &appConfig)
 	if err != nil {
 		return nil, err
 	}

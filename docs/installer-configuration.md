@@ -194,12 +194,16 @@ These fields are shared by all installer types. Some fields may vary in behavior
       installers.
     - `debug` and `check_updates` will be inherited by the loaded config.
     - `env` and `defaults` will be merged into the loaded config, overriding any existing values.
+    - Remote manifests are fetched directly via HTTP (no git clone required).
   - **Options**:
-    - `opts.source`: The local file, or remote git URL (https or SSH) containing the manifest.
-    - `opts.path`: The path to the manifest file within the repository. If `opts.source` is a local
-      file, `opts.path` will be appended to it.
-    - `opts.ref`: The branch, tag, or commit to checkout after cloning if `opts.source` is a git
-      URL. For local manifests, this value will be ignored.
+    - `opts.source`: The source of the manifest file. Supports:
+      - Local file paths (e.g., `~/.dotfiles/manifest.yml`)
+      - Git repository URLs (SSH or HTTPS) - GitHub, GitLab, Bitbucket, and self-hosted instances
+      - Raw HTTP URLs (e.g., `https://raw.githubusercontent.com/user/repo/master/manifest.yml`)
+    - `opts.path`: The path to the manifest file within the repository. Required for git URLs,
+      optional for local files (will be appended to source). Ignored for raw HTTP URLs.
+    - `opts.ref`: The branch, tag, or commit to use if `opts.source` is a git URL. Defaults to
+      `master`. Ignored for local files and raw HTTP URLs.
 
 - **`rsync`**
 
