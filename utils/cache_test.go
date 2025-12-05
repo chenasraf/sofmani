@@ -16,10 +16,10 @@ func TestGetCacheDir(t *testing.T) {
 		assert.NotEmpty(t, cacheDir)
 	})
 
-	t.Run("path ends with .cache", func(t *testing.T) {
+	t.Run("path ends with sofmani", func(t *testing.T) {
 		cacheDir, err := GetCacheDir()
 		assert.NoError(t, err)
-		assert.True(t, strings.HasSuffix(cacheDir, ".cache"))
+		assert.True(t, strings.HasSuffix(cacheDir, "sofmani"))
 	})
 
 	t.Run("creates the directory if it does not exist", func(t *testing.T) {
@@ -32,14 +32,14 @@ func TestGetCacheDir(t *testing.T) {
 		assert.True(t, info.IsDir())
 	})
 
-	t.Run("directory is in user config directory", func(t *testing.T) {
+	t.Run("directory is in user cache directory", func(t *testing.T) {
 		cacheDir, err := GetCacheDir()
 		assert.NoError(t, err)
 
-		confDir, err := os.UserConfigDir()
+		userCacheDir, err := os.UserCacheDir()
 		assert.NoError(t, err)
 
-		expectedPath := filepath.Join(confDir, ".cache")
+		expectedPath := filepath.Join(userCacheDir, "sofmani")
 		assert.Equal(t, expectedPath, cacheDir)
 	})
 
