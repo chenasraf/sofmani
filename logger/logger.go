@@ -70,8 +70,11 @@ func SetLogFile(path string) {
 	customLogFile = &path
 }
 
+const maxLogSize = 10 * 1024 * 1024 // 10MB
+
 // InitLogger initializes the global logger with the specified debug mode.
 // It creates the log directory and file if they don't exist.
+// If the log file exceeds maxLogSize, it will be truncated.
 func InitLogger(debug bool) *Logger {
 	filePath := GetLogFile()
 	logDir := filepath.Dir(filePath)
@@ -82,6 +85,14 @@ func InitLogger(debug bool) *Logger {
 			os.Exit(1)
 		}
 	}
+
+	// Truncate log file if it exceeds maxLogSize
+	if info, err := os.Stat(filePath); err == nil && info.Size() > maxLogSize {
+		if err := os.Truncate(filePath, 0); err != nil {
+			fmt.Printf("Could not truncate log file: %v\n", err)
+		}
+	}
+
 	logFile, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		fmt.Printf("Could not create log file: %v\n", err)
