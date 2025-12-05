@@ -7,7 +7,7 @@ import (
 
 // GetCacheDir returns the path to the user's cache directory for the application.
 // It creates the directory if it doesn't exist.
-// The cache directory is typically located at `$XDG_CACHE` on Linux/macOS
+// The cache directory is typically located at `$XDG_CACHE_HOME` on Linux/macOS
 // and `%LocalAppData%` on Windows.
 func GetCacheDir() (string, error) {
 	confDir, err := os.UserCacheDir()

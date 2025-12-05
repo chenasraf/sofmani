@@ -195,6 +195,10 @@ func (i *GitHubReleaseInstaller) Install() error {
 			return err
 		}
 	default:
+		// Seek back to beginning of temp file before copying
+		if _, err = tmpOut.Seek(0, 0); err != nil {
+			return fmt.Errorf("failed to seek temp file: %w", err)
+		}
 		_, err = io.Copy(out, tmpOut)
 		if err != nil {
 			return fmt.Errorf("failed to copy downloaded file to output: %w", err)
@@ -208,6 +212,11 @@ func (i *GitHubReleaseInstaller) Install() error {
 	}
 	if err != nil {
 		return errors.Join(fmt.Errorf("failed to extract the downloaded file"), err)
+	}
+
+	// Make the file executable
+	if err = os.Chmod(outPath, 0755); err != nil {
+		return fmt.Errorf("failed to make file executable: %w", err)
 	}
 
 	err = i.UpdateCache(tag)
@@ -383,7 +392,14 @@ func (i *GitHubReleaseInstaller) GetLatestTag() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	tag := jsonMap["tag_name"].(string)
+	tag, ok := jsonMap["tag_name"].(string)
+	if !ok || tag == "" {
+		logger.Warn("Invalid GitHub API response: %s", string(contents))
+		if msg, ok := jsonMap["message"].(string); ok {
+			return "", fmt.Errorf("GitHub API error: %s", msg)
+		}
+		return "", fmt.Errorf("no releases found for repository")
+	}
 	logger.Debug("Latest release is %s", tag)
 	return tag, nil
 }

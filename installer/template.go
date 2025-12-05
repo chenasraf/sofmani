@@ -80,7 +80,7 @@ func applyLegacyTokens(input string, vars *TemplateVars, installerName string) s
 
 	for token, fieldName := range legacyTokens {
 		if strings.Contains(result, token) {
-			logger.Debug(
+			logger.Warn(
 				"Deprecated: installer %q uses legacy token %q. Please migrate to Go template syntax: {{ .%s }}",
 				installerName, token, fieldName,
 			)

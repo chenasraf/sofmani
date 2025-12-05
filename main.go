@@ -9,6 +9,7 @@ import (
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/installer"
 	"github.com/chenasraf/sofmani/logger"
+	"github.com/chenasraf/sofmani/utils"
 )
 
 //go:embed version.txt
@@ -44,6 +45,11 @@ func main() {
 	logger.InitLogger(isDebug)
 
 	logger.Debug("Sofmani version %s", appconfig.AppVersion)
+	logger.Debug("Log directory: %s", logger.GetLogDir())
+	logger.Debug("Log file: %s", logger.GetLogFile())
+	if cacheDir, err := utils.GetCacheDir(); err == nil {
+		logger.Debug("Cache directory: %s", cacheDir)
+	}
 	logger.Debug("Config:")
 	for _, line := range cfg.GetConfigDesc() {
 		logger.Debug("%s", line)
