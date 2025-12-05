@@ -28,7 +28,16 @@ func GetLogDir() string {
 	var logDir string
 	switch platform.GetPlatform() {
 	case platform.PlatformLinux:
-		logDir = filepath.Join("var", "log", "sofmani")
+		stateDir := os.Getenv("XDG_STATE_HOME")
+		if stateDir == "" {
+			home, err := os.UserHomeDir()
+			if err != nil {
+				fmt.Printf("Could not get user home directory: %v\n", err)
+				panic(err)
+			}
+			stateDir = filepath.Join(home, ".local", "state")
+		}
+		logDir = filepath.Join(stateDir, "sofmani")
 	case platform.PlatformMacos:
 		home, err := os.UserHomeDir()
 		if err != nil {
