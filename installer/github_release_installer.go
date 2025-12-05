@@ -142,8 +142,16 @@ func (i *GitHubReleaseInstaller) Install() error {
 
 	success := false
 
-	logger.Debug("Creating file %s", fmt.Sprintf("%s/%s", *opts.Destination, i.GetBinName()))
-	out, err := os.Create(fmt.Sprintf("%s/%s", *opts.Destination, i.GetBinName()))
+	outPath := filepath.Join(*opts.Destination, i.GetBinName())
+	logger.Debug("Creating file %s", outPath)
+
+	// Remove existing file first to avoid "text file busy" error on Linux
+	// when updating a running executable
+	if err := os.Remove(outPath); err != nil && !os.IsNotExist(err) {
+		logger.Debug("Could not remove existing file: %v", err)
+	}
+
+	out, err := os.Create(outPath)
 	if err != nil {
 		return fmt.Errorf("failed to create output file: %w", err)
 	}
