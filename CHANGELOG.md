@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.2](https://github.com/chenasraf/sofmani/compare/v1.14.1...v1.14.2) (2025-12-05)
+
+
+### Bug Fixes
+
+* github release bin download/extract ([952b3fc](https://github.com/chenasraf/sofmani/commit/952b3fc26ae54c885edae504164c1ef8fda3529d))
+
 ## [1.14.1](https://github.com/chenasraf/sofmani/compare/v1.14.0...v1.14.1) (2025-12-05)
 
 
