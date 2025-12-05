@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.14.1](https://github.com/chenasraf/sofmani/compare/v1.14.0...v1.14.1) (2025-12-05)
+
+
+### Bug Fixes
+
+* remove old binary to prevent file busy error ([128299e](https://github.com/chenasraf/sofmani/commit/128299e39a60db0a481527e50f321de6c16a3b1b))
+* use correct cache dir ([a1de214](https://github.com/chenasraf/sofmani/commit/a1de214ba1e40bcb880c992f01e27f06d93a3168))
+
 ## [1.14.0](https://github.com/chenasraf/sofmani/compare/v1.13.1...v1.14.0) (2025-12-05)
 
 
