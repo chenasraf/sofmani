@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.1](https://github.com/chenasraf/sofmani/compare/v1.13.0...v1.13.1) (2025-12-05)
+
+
+### Bug Fixes
+
+* uninitialized logger ([aec4740](https://github.com/chenasraf/sofmani/commit/aec4740c87a80b634f4fe2d144fcc5fbb98073ba))
+
 ## [1.13.0](https://github.com/chenasraf/sofmani/compare/v1.12.0...v1.13.0) (2025-12-05)
 
 
