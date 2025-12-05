@@ -42,6 +42,10 @@ type AppCliConfig struct {
 	CheckUpdates *bool
 	// Filter is a list of installer names to filter by.
 	Filter []string
+	// LogFile is the path to the log file.
+	LogFile *string
+	// ShowLogFile indicates that only the log file path should be shown.
+	ShowLogFile bool
 }
 
 // AppConfigDefaults provides default configurations for installer types.
@@ -198,6 +202,8 @@ func ParseCliConfig() *AppCliConfig {
 		Debug:        nil,
 		CheckUpdates: nil,
 		Filter:       []string{},
+		LogFile:      nil,
+		ShowLogFile:  false,
 	}
 	file := FindConfigFile()
 	for len(args) > 0 {
@@ -214,6 +220,15 @@ func ParseCliConfig() *AppCliConfig {
 			if len(args) > 1 {
 				config.Filter = append(config.Filter, args[1])
 				args = args[1:]
+			}
+		case "-l", "--log-file":
+			if len(args) > 1 && !strings.HasPrefix(args[1], "-") {
+				logFile := args[1]
+				config.LogFile = &logFile
+				args = args[1:]
+			} else {
+				// No value provided, just show log file path
+				config.ShowLogFile = true
 			}
 		case "-h", "--help":
 			printHelp()
@@ -233,6 +248,10 @@ func ParseCliConfig() *AppCliConfig {
 		}
 		args = args[1:]
 	}
+	// If only showing log file, don't require config file
+	if config.ShowLogFile {
+		return config
+	}
 	if file == "" {
 		fmt.Fprintln(os.Stderr, "No config file found")
 		os.Exit(1)
@@ -249,8 +268,9 @@ func printHelp() {
 	fmt.Println("  -D, --no-debug     Disable debug mode")
 	fmt.Println("  -u, --update       Enable update checks")
 	fmt.Println("  -U, --no-update    Disable update checks")
-	fmt.Println("  -h, --help         Show this help message")
 	fmt.Println("  -f, --filter       Filter by installer name (can be used multiple times)")
+	fmt.Println("  -l, --log-file     Set log file path, or show current path if no value given")
+	fmt.Println("  -h, --help         Show this help message")
 	fmt.Println("  -v, --version      Show version")
 	fmt.Println("")
 	fmt.Println("For online documentation, see https://github.com/chenasraf/sofmani/tree/master/docs")

@@ -17,7 +17,22 @@ var appVersion []byte // appVersion is embedded from version.txt and contains th
 // main is the entry point of the application.
 func main() {
 	appconfig.SetVersion(strings.TrimSpace(string(appVersion)))
-	cfg, err := LoadConfig()
+
+	// Parse CLI config first to check for --log-file flag
+	cliConfig := appconfig.ParseCliConfig()
+
+	// Handle --log-file without value: show log file path and exit
+	if cliConfig.ShowLogFile {
+		fmt.Println(logger.GetLogFile())
+		return
+	}
+
+	// Set custom log file if provided
+	if cliConfig.LogFile != nil {
+		logger.SetLogFile(*cliConfig.LogFile)
+	}
+
+	cfg, err := loadConfigFromCli(cliConfig)
 	if err != nil {
 		fmt.Println(fmt.Errorf("error loading config: %v", err))
 		return

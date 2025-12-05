@@ -13,13 +13,15 @@ import (
 
 // Logger provides logging functionality with support for file and console output.
 type Logger struct {
-	fileLogger *log.Logger // fileLogger is the logger for writing to the log file.
-	consoleOut *log.Logger // consoleOut is the logger for writing to the console.
-	logFile    *os.File    // logFile is the opened log file.
-	debug      bool        // debug indicates whether debug logging is enabled.
+	fileLogger  *log.Logger // fileLogger is the logger for writing to the log file.
+	consoleOut  *log.Logger // consoleOut is the logger for writing to the console.
+	logFile     *os.File    // logFile is the opened log file.
+	logFilePath string      // logFilePath is the path to the log file.
+	debug       bool        // debug indicates whether debug logging is enabled.
 }
 
-var logger *Logger // logger is the global logger instance.
+var logger *Logger        // logger is the global logger instance.
+var customLogFile *string // customLogFile holds the custom log file path if set.
 
 // GetLogDir returns the appropriate log directory based on the operating system.
 func GetLogDir() string {
@@ -41,11 +43,29 @@ func GetLogDir() string {
 	return logDir
 }
 
+// GetDefaultLogFile returns the default log file path.
+func GetDefaultLogFile() string {
+	return filepath.Join(GetLogDir(), "sofmani.log")
+}
+
+// GetLogFile returns the current log file path (custom or default).
+func GetLogFile() string {
+	if customLogFile != nil {
+		return *customLogFile
+	}
+	return GetDefaultLogFile()
+}
+
+// SetLogFile sets a custom log file path.
+func SetLogFile(path string) {
+	customLogFile = &path
+}
+
 // InitLogger initializes the global logger with the specified debug mode.
 // It creates the log directory and file if they don't exist.
 func InitLogger(debug bool) *Logger {
-	logDir := GetLogDir()
-	filePath := filepath.Join(logDir, "sofmani.log")
+	filePath := GetLogFile()
+	logDir := filepath.Dir(filePath)
 	if _, err := os.Stat(logDir); os.IsNotExist(err) {
 		err := os.MkdirAll(logDir, 0755)
 		if err != nil {
@@ -65,10 +85,11 @@ func InitLogger(debug bool) *Logger {
 
 	// Initialize the logger
 	logger = &Logger{
-		fileLogger: fileLogger,
-		consoleOut: consoleOut,
-		logFile:    logFile,
-		debug:      debug,
+		fileLogger:  fileLogger,
+		consoleOut:  consoleOut,
+		logFile:     logFile,
+		logFilePath: filePath,
+		debug:       debug,
 	}
 
 	return logger
