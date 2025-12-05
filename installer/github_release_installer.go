@@ -240,7 +240,7 @@ func (i *GitHubReleaseInstaller) CheckNeedsUpdate() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if latest != strings.TrimSpace(latest) {
+	if latest != cachedTag {
 		return true, nil
 	}
 	return false, nil
