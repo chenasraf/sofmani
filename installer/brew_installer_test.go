@@ -8,6 +8,7 @@ import (
 
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
+	"github.com/stretchr/testify/assert"
 )
 
 func newTestBrewInstaller(data *appconfig.InstallerData) *BrewInstaller {
@@ -242,4 +243,226 @@ func TestBrewNeedsUpdateWithExitCode(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestBrewGetFullName(t *testing.T) {
+	logger.InitLogger(false)
+
+	t.Run("returns name without tap", func(t *testing.T) {
+		data := &appconfig.InstallerData{
+			Name: strPtr("vim"),
+			Type: appconfig.InstallerTypeBrew,
+		}
+		installer := newTestBrewInstaller(data)
+		assert.Equal(t, "vim", installer.GetFullName())
+	})
+
+	t.Run("returns tap/name with tap", func(t *testing.T) {
+		data := &appconfig.InstallerData{
+			Name: strPtr("sofmani"),
+			Type: appconfig.InstallerTypeBrew,
+			Opts: &map[string]any{
+				"tap": "chenasraf/tap",
+			},
+		}
+		installer := newTestBrewInstaller(data)
+		assert.Equal(t, "chenasraf/tap/sofmani", installer.GetFullName())
+	})
+}
+
+func TestBrewIsCask(t *testing.T) {
+	logger.InitLogger(false)
+
+	t.Run("returns false when cask is not set", func(t *testing.T) {
+		data := &appconfig.InstallerData{
+			Name: strPtr("vim"),
+			Type: appconfig.InstallerTypeBrew,
+		}
+		installer := newTestBrewInstaller(data)
+		assert.False(t, installer.IsCask())
+	})
+
+	t.Run("returns false when cask is false", func(t *testing.T) {
+		data := &appconfig.InstallerData{
+			Name: strPtr("firefox"),
+			Type: appconfig.InstallerTypeBrew,
+			Opts: &map[string]any{
+				"cask": false,
+			},
+		}
+		installer := newTestBrewInstaller(data)
+		assert.False(t, installer.IsCask())
+	})
+
+	t.Run("returns true when cask is true", func(t *testing.T) {
+		data := &appconfig.InstallerData{
+			Name: strPtr("firefox"),
+			Type: appconfig.InstallerTypeBrew,
+			Opts: &map[string]any{
+				"cask": true,
+			},
+		}
+		installer := newTestBrewInstaller(data)
+		assert.True(t, installer.IsCask())
+	})
+}
+
+func TestBrewGetBinName(t *testing.T) {
+	logger.InitLogger(false)
+
+	t.Run("returns name when bin_name is not set", func(t *testing.T) {
+		data := &appconfig.InstallerData{
+			Name: strPtr("vim"),
+			Type: appconfig.InstallerTypeBrew,
+		}
+		installer := newTestBrewInstaller(data)
+		assert.Equal(t, "vim", installer.GetBinName())
+	})
+
+	t.Run("returns bin_name when set", func(t *testing.T) {
+		binName := "nvim"
+		data := &appconfig.InstallerData{
+			Name:    strPtr("neovim"),
+			Type:    appconfig.InstallerTypeBrew,
+			BinName: &binName,
+		}
+		installer := newTestBrewInstaller(data)
+		assert.Equal(t, "nvim", installer.GetBinName())
+	})
+
+	t.Run("returns name when bin_name is empty", func(t *testing.T) {
+		binName := ""
+		data := &appconfig.InstallerData{
+			Name:    strPtr("vim"),
+			Type:    appconfig.InstallerTypeBrew,
+			BinName: &binName,
+		}
+		installer := newTestBrewInstaller(data)
+		assert.Equal(t, "vim", installer.GetBinName())
+	})
+}
+
+func TestBrewGetData(t *testing.T) {
+	logger.InitLogger(false)
+
+	t.Run("returns the installer data", func(t *testing.T) {
+		data := &appconfig.InstallerData{
+			Name: strPtr("vim"),
+			Type: appconfig.InstallerTypeBrew,
+		}
+		installer := newTestBrewInstaller(data)
+		result := installer.GetData()
+
+		assert.Equal(t, data, result)
+		assert.Equal(t, "vim", *result.Name)
+	})
+}
+
+func TestNewBrewInstaller(t *testing.T) {
+	logger.InitLogger(false)
+
+	t.Run("creates installer with config and data", func(t *testing.T) {
+		cfg := &appconfig.AppConfig{}
+		data := &appconfig.InstallerData{
+			Name: strPtr("vim"),
+			Type: appconfig.InstallerTypeBrew,
+		}
+		installer := NewBrewInstaller(cfg, data)
+
+		assert.NotNil(t, installer)
+		assert.Equal(t, cfg, installer.Config)
+		assert.Equal(t, data, installer.Info)
+		assert.Equal(t, data, installer.Data)
+	})
+}
+
+func TestBrewCheckIsInstalled(t *testing.T) {
+	logger.InitLogger(false)
+
+	t.Run("runs custom check when provided", func(t *testing.T) {
+		checkCmd := "true"
+		data := &appconfig.InstallerData{
+			Name:           strPtr("test-brew"),
+			Type:           appconfig.InstallerTypeBrew,
+			CheckInstalled: &checkCmd,
+		}
+		installer := newTestBrewInstaller(data)
+		result, err := installer.CheckIsInstalled()
+
+		assert.NoError(t, err)
+		assert.True(t, result)
+	})
+
+	t.Run("runs custom check that fails", func(t *testing.T) {
+		checkCmd := "false"
+		data := &appconfig.InstallerData{
+			Name:           strPtr("test-brew"),
+			Type:           appconfig.InstallerTypeBrew,
+			CheckInstalled: &checkCmd,
+		}
+		installer := newTestBrewInstaller(data)
+		result, err := installer.CheckIsInstalled()
+
+		assert.NoError(t, err)
+		assert.False(t, result)
+	})
+}
+
+func TestBrewCheckNeedsUpdate(t *testing.T) {
+	logger.InitLogger(false)
+
+	t.Run("runs custom check when provided", func(t *testing.T) {
+		checkCmd := "true" // Returns exit code 0, meaning update available
+		data := &appconfig.InstallerData{
+			Name:           strPtr("test-brew"),
+			Type:           appconfig.InstallerTypeBrew,
+			CheckHasUpdate: &checkCmd,
+		}
+		installer := newTestBrewInstaller(data)
+		result, err := installer.CheckNeedsUpdate()
+
+		assert.NoError(t, err)
+		assert.True(t, result)
+	})
+
+	t.Run("custom check returns false when no update", func(t *testing.T) {
+		checkCmd := "false" // Returns exit code 1, meaning no update
+		data := &appconfig.InstallerData{
+			Name:           strPtr("test-brew"),
+			Type:           appconfig.InstallerTypeBrew,
+			CheckHasUpdate: &checkCmd,
+		}
+		installer := newTestBrewInstaller(data)
+		result, err := installer.CheckNeedsUpdate()
+
+		assert.NoError(t, err)
+		assert.False(t, result)
+	})
+}
+
+func TestBrewGetOptsWrongTypes(t *testing.T) {
+	logger.InitLogger(false)
+
+	t.Run("handles wrong type values gracefully", func(t *testing.T) {
+		data := &appconfig.InstallerData{
+			Name: strPtr("vim"),
+			Type: appconfig.InstallerTypeBrew,
+			Opts: &map[string]any{
+				"tap":           123,   // Wrong type
+				"cask":          "yes", // Wrong type
+				"flags":         true,  // Wrong type
+				"install_flags": 456,   // Wrong type
+				"update_flags":  false, // Wrong type
+			},
+		}
+		installer := newTestBrewInstaller(data)
+		opts := installer.GetOpts()
+
+		// Should return nil when type assertion fails
+		assert.Nil(t, opts.Tap)
+		assert.Nil(t, opts.Cask)
+		assert.Nil(t, opts.Flags)
+		assert.Nil(t, opts.InstallFlags)
+		assert.Nil(t, opts.UpdateFlags)
+	})
 }
