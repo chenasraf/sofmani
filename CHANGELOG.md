@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.14.0](https://github.com/chenasraf/sofmani/compare/v1.13.1...v1.14.0) (2025-12-05)
+
+
+### Features
+
+* add --log-file/-l flag ([995abdb](https://github.com/chenasraf/sofmani/commit/995abdbbf83ea26a9b9cdfe186e3014ce496255c))
+
+
+### Bug Fixes
+
+* github release installer tag comparison ([a3430f4](https://github.com/chenasraf/sofmani/commit/a3430f49b0822dc55c87fe5cd5191956d9a04bee))
+* linux log file location ([0a1974e](https://github.com/chenasraf/sofmani/commit/0a1974ee57d888a5d5cca2b71d24df04051eced7))
+* truncate log if too large ([287a90e](https://github.com/chenasraf/sofmani/commit/287a90e2a6c5eab4ae15eb57855db4e45db1e3a9))
+
 ## [1.13.1](https://github.com/chenasraf/sofmani/compare/v1.13.0...v1.13.1) (2025-12-05)
 
 
