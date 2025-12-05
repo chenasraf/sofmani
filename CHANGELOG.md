@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.13.0](https://github.com/chenasraf/sofmani/compare/v1.12.0...v1.13.0) (2025-12-05)
+
+
+### Features
+
+* add AarchGnu token ([feecd81](https://github.com/chenasraf/sofmani/commit/feecd81b4ad8a5536bcfa926377abd2df53c92aa))
+* add go template vars to github_installer ([10805ca](https://github.com/chenasraf/sofmani/commit/10805ca195e223071d18f82c997959027e653dd3))
+* manifest git download without clone ([a7053cf](https://github.com/chenasraf/sofmani/commit/a7053cfb2c59bb6dd7490aab817c02634d656eb9))
+
 ## [1.12.0](https://github.com/chenasraf/sofmani/compare/v1.11.2...v1.12.0) (2025-12-03)
 
 
