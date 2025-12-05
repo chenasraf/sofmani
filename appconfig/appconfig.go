@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/chenasraf/sofmani/logger"
 	"github.com/chenasraf/sofmani/platform"
 	"github.com/chenasraf/sofmani/utils"
 	"github.com/eschao/config"
@@ -108,7 +107,7 @@ func FindConfigFile() string {
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
-		logger.Error("Failed to get user home directory: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to get user home directory: %v\n", err)
 		return ""
 	}
 	file := ""
@@ -235,7 +234,7 @@ func ParseCliConfig() *AppCliConfig {
 		args = args[1:]
 	}
 	if file == "" {
-		logger.Error("No config file found")
+		fmt.Fprintln(os.Stderr, "No config file found")
 		os.Exit(1)
 	}
 	config.ConfigFile = file
