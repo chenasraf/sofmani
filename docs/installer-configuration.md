@@ -187,6 +187,25 @@ These fields are shared by all installer types. Some fields may vary in behavior
       download_filename: myapp_{tag}_linux.tar.gz # outputs: myapp_v1.0.0_linux.tar.gz
       ```
 
+    - `opts.github_token`: GitHub personal access token for authenticated API requests.
+      Authenticated requests have a much higher rate limit (5,000/hour vs 60/hour for
+      unauthenticated).
+
+      Supports environment variable expansion, so you don't need to hard-code credentials:
+
+      ```yaml
+      # Using environment variables (recommended)
+      github_token: $GITHUB_TOKEN
+      github_token: ${GITHUB_TOKEN}
+
+      # Can also be set as a default for all github-release installers
+      defaults:
+        type:
+          github-release:
+            opts:
+              github_token: $GITHUB_TOKEN
+      ```
+
 - **`manifest`**
 
   - **Description**: Installs an entire manifest from a local or remote file.
@@ -369,6 +388,7 @@ install:
       strategy: tar
       destination: /usr/local/bin
       download_filename: lazygit_{{ .Version }}_Linux_{{ .ArchAlias }}.tar.gz
+      github_token: $GITHUB_TOKEN # optional, for higher rate limits
 ```
 
 ### shell

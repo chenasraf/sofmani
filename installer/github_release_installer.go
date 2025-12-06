@@ -37,6 +37,9 @@ type GitHubReleaseOpts struct {
 	DownloadFilename *platform.PlatformMap[string]
 	// Strategy is the installation strategy to use (none, tar, zip).
 	Strategy *GitHubReleaseInstallStrategy
+	// GithubToken is the GitHub personal access token for authenticated API requests.
+	// Supports environment variable expansion (e.g., "$GITHUB_TOKEN" or "${GITHUB_TOKEN}").
+	GithubToken *string
 }
 
 // GitHubReleaseInstallStrategy represents the installation strategy for a GitHub release.
@@ -114,7 +117,16 @@ func (i *GitHubReleaseInstaller) Install() error {
 	}
 	downloadUrl := fmt.Sprintf("https://github.com/%s/releases/download/%s/%s", *opts.Repository, tag, filename)
 	logger.Debug("Downloading from %s", downloadUrl)
-	resp, err := http.Get(downloadUrl)
+
+	req, err := http.NewRequest("GET", downloadUrl, nil)
+	if err != nil {
+		return err
+	}
+	if opts.GithubToken != nil && *opts.GithubToken != "" {
+		req.Header.Set("Authorization", "Bearer "+*opts.GithubToken)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -366,14 +378,28 @@ func (i *GitHubReleaseInstaller) GetOpts() *GitHubReleaseOpts {
 			strat := GitHubReleaseInstallStrategy(strings.ToLower(strategy))
 			opts.Strategy = &strat
 		}
+		if token, ok := (*info.Opts)["github_token"].(string); ok {
+			token = utils.GetRealPath(i.GetData().Environ(), token)
+			opts.GithubToken = &token
+		}
 	}
 	return opts
 }
 
 func (i *GitHubReleaseInstaller) GetLatestTag() (string, error) {
-	latestReleaseUrl := fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", *i.GetOpts().Repository)
+	opts := i.GetOpts()
+	latestReleaseUrl := fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", *opts.Repository)
 	logger.Debug("Getting latest release from %s", latestReleaseUrl)
-	resp, err := http.Get(latestReleaseUrl)
+
+	req, err := http.NewRequest("GET", latestReleaseUrl, nil)
+	if err != nil {
+		return "", err
+	}
+	if opts.GithubToken != nil && *opts.GithubToken != "" {
+		req.Header.Set("Authorization", "Bearer "+*opts.GithubToken)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", err
 	}
