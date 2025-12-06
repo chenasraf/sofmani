@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.0](https://github.com/chenasraf/sofmani/compare/v1.14.2...v1.15.0) (2025-12-06)
+
+
+### Features
+
+* add github token support for github release installer ([4503098](https://github.com/chenasraf/sofmani/commit/45030982f187436e90fd7eafaa907203604d407d))
+
 ## [1.14.2](https://github.com/chenasraf/sofmani/compare/v1.14.1...v1.14.2) (2025-12-05)
 
 
