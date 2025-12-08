@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.15.0](https://github.com/chenasraf/sofmani/compare/v1.14.2...v1.15.0) (2025-12-08)
+
+
+### Features
+
+* add github token support for github release installer ([4503098](https://github.com/chenasraf/sofmani/commit/45030982f187436e90fd7eafaa907203604d407d))
+
+
+### Bug Fixes
+
+* show defaults log only when actually applying defaults ([989515f](https://github.com/chenasraf/sofmani/commit/989515ff2876935fe7afe15ee9de55464eed0ad2))
+
 ## [1.14.2](https://github.com/chenasraf/sofmani/compare/v1.14.1...v1.14.2) (2025-12-05)
 
 
