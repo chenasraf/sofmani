@@ -2,7 +2,6 @@ package installer
 
 import (
 	"github.com/chenasraf/sofmani/appconfig"
-	"github.com/chenasraf/sofmani/logger"
 	"github.com/chenasraf/sofmani/platform"
 	"maps"
 )
@@ -20,7 +19,6 @@ func InstallerWithDefaults(
 	// per-type overrides from defaults
 	if defaults != nil && defaults.Type != nil {
 		if override, ok := (*defaults.Type)[installerType]; ok {
-			logger.Debug("Applying defaults for %s", installerType)
 			if override.Opts != nil {
 				source := *override.Opts
 				target := *data.Opts

@@ -137,6 +137,14 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 	info := installer.GetData()
 	name := *info.Name
 	curOS := platform.GetPlatform()
+
+	// Log if defaults were applied for this installer type
+	if config.Defaults != nil && config.Defaults.Type != nil {
+		if _, ok := (*config.Defaults.Type)[info.Type]; ok {
+			logger.Debug("Applying defaults for %s", info.Type)
+		}
+	}
+
 	logger.Debug("Checking if %s (%s) should run on %s", name, info.Type, curOS)
 	env := config.Environ()
 	if !installer.GetData().Platforms.GetShouldRunOnOS(curOS) {
