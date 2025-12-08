@@ -85,7 +85,9 @@ func (i *GitHubReleaseInstaller) Install() error {
 	if err != nil {
 		return err
 	}
-	tmpOut, err := os.Create(fmt.Sprintf("%s/%s.download", tmpDir, name))
+	tmpFile := fmt.Sprintf("%s/%s.download", tmpDir, name)
+	logger.Debug("Created temp directory: %s", tmpDir)
+	tmpOut, err := os.Create(tmpFile)
 	if err != nil {
 		return fmt.Errorf("failed to create temporary file: %w", err)
 	}
@@ -116,7 +118,9 @@ func (i *GitHubReleaseInstaller) Install() error {
 		return fmt.Errorf("failed to apply template to filename: %w", err)
 	}
 	downloadUrl := fmt.Sprintf("https://github.com/%s/releases/download/%s/%s", *opts.Repository, tag, filename)
-	logger.Debug("Downloading from %s", downloadUrl)
+	logger.Debug("Downloading file: %s", filename)
+	logger.Debug("Download URL: %s", downloadUrl)
+	logger.Debug("Temp file: %s", tmpFile)
 
 	req, err := http.NewRequest("GET", downloadUrl, nil)
 	if err != nil {
@@ -144,6 +148,7 @@ func (i *GitHubReleaseInstaller) Install() error {
 	if n == 0 {
 		return fmt.Errorf("no data was written to the file")
 	}
+	logger.Debug("Downloaded %d bytes to temp file", n)
 
 	strategy := GitHubReleaseInstallStrategyNone
 
@@ -151,12 +156,12 @@ func (i *GitHubReleaseInstaller) Install() error {
 		strategy = *opts.Strategy
 	}
 
-	logger.Debug("Strategy %s", strategy)
+	logger.Debug("Using strategy: %s", strategy)
 
 	success := false
 
 	outPath := filepath.Join(*opts.Destination, i.GetBinName())
-	logger.Debug("Creating file %s", outPath)
+	logger.Debug("Final destination: %s", outPath)
 
 	// Remove existing file first to avoid "text file busy" error on Linux
 	// when updating a running executable
@@ -176,7 +181,7 @@ func (i *GitHubReleaseInstaller) Install() error {
 
 	switch strategy {
 	case GitHubReleaseInstallStrategyTar:
-		logger.Debug("Extracting tar file %s", tmpOut.Name())
+		logger.Debug("Strategy 'tar': extracting archive to %s", tmpDir)
 		success, err = i.RunCmdGetSuccess("tar", "-xvf", tmpOut.Name(), "-C", tmpDir)
 		if !success {
 			return fmt.Errorf("failed to extract tar file: %w", err)
@@ -184,6 +189,7 @@ func (i *GitHubReleaseInstaller) Install() error {
 		if err != nil {
 			return err
 		}
+		logger.Debug("Strategy 'tar': copying binary '%s' to destination", i.GetBinName())
 		success, err = i.CopyExtractedFile(out, tmpDir)
 		if !success {
 			return fmt.Errorf("failed to copy extracted file: %w", err)
@@ -192,7 +198,7 @@ func (i *GitHubReleaseInstaller) Install() error {
 			return err
 		}
 	case GitHubReleaseInstallStrategyZip:
-		logger.Debug("Extracting zip file %s", tmpOut.Name())
+		logger.Debug("Strategy 'zip': extracting archive to %s", tmpDir)
 		success, err = i.RunCmdGetSuccess("unzip", tmpOut.Name(), "-d", tmpDir)
 		if !success {
 			return fmt.Errorf("failed to extract zip file: %w", err)
@@ -200,6 +206,7 @@ func (i *GitHubReleaseInstaller) Install() error {
 		if err != nil {
 			return err
 		}
+		logger.Debug("Strategy 'zip': copying binary '%s' to destination", i.GetBinName())
 		success, err = i.CopyExtractedFile(out, tmpDir)
 		if !success {
 			return fmt.Errorf("failed to copy extracted file: %w", err)
@@ -208,6 +215,7 @@ func (i *GitHubReleaseInstaller) Install() error {
 			return err
 		}
 	default:
+		logger.Debug("Strategy 'none': copying downloaded file directly to destination")
 		// Seek back to beginning of temp file before copying
 		if _, err = tmpOut.Seek(0, 0); err != nil {
 			return fmt.Errorf("failed to seek temp file: %w", err)
@@ -231,12 +239,14 @@ func (i *GitHubReleaseInstaller) Install() error {
 	if err = os.Chmod(outPath, 0755); err != nil {
 		return fmt.Errorf("failed to make file executable: %w", err)
 	}
+	logger.Debug("Set executable permissions on %s", outPath)
 
 	err = i.UpdateCache(tag)
 	if err != nil {
 		return err
 	}
 
+	logger.Debug("Installation complete: %s -> %s", filename, outPath)
 	return nil
 }
 
