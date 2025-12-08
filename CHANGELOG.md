@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.1](https://github.com/chenasraf/sofmani/compare/v1.15.0...v1.15.1) (2025-12-08)
+
+
+### Bug Fixes
+
+* fail on github-release download error ([fa4f14a](https://github.com/chenasraf/sofmani/commit/fa4f14a7d49dc25fcf53f4ae9424af8833a26cb2))
+
 ## [1.15.0](https://github.com/chenasraf/sofmani/compare/v1.14.2...v1.15.0) (2025-12-08)
 
 
