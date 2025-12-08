@@ -141,6 +141,10 @@ func (i *GitHubReleaseInstaller) Install() error {
 		}
 	}()
 
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("failed to download release asset: %s returned status %d", downloadUrl, resp.StatusCode)
+	}
+
 	n, err := io.Copy(tmpOut, resp.Body)
 	if err != nil {
 		return err
