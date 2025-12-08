@@ -123,6 +123,7 @@ func (i *GitHubReleaseInstaller) Install() error {
 		return err
 	}
 	if opts.GithubToken != nil && *opts.GithubToken != "" {
+		logger.Debug("Using GitHub token for authentication")
 		req.Header.Set("Authorization", "Bearer "+*opts.GithubToken)
 	}
 
