@@ -184,10 +184,10 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 		return err
 	}
 	if installed {
-		logger.Debug("%s is already installed", name)
+		logger.Debug("%s (%s) is already installed", name, info.Type)
 
 		if *config.CheckUpdates {
-			logger.Info("Checking updates for %s", name)
+			logger.Info("Checking updates for %s: %s", info.Type, name)
 			needsUpdate, err := installer.CheckNeedsUpdate()
 			if err != nil {
 				return err
