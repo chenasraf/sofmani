@@ -3,6 +3,7 @@ package appconfig
 import (
 	"strings"
 
+	"github.com/chenasraf/sofmani/machine"
 	"github.com/chenasraf/sofmani/platform"
 	"github.com/chenasraf/sofmani/utils"
 	"github.com/samber/lo"
@@ -24,6 +25,8 @@ type InstallerData struct {
 	PlatformEnv *platform.PlatformMap[map[string]string] `json:"platform_env"      yaml:"platform_env"`
 	// Platforms is a list of platforms where this installer should run.
 	Platforms *platform.Platforms `json:"platforms"         yaml:"platforms"`
+	// Machines is a list of machine IDs where this installer should run.
+	Machines *machine.Machines `json:"machines"          yaml:"machines"`
 	// Steps is a list of sub-installers for group installers.
 	Steps *[]InstallerData `json:"steps"             yaml:"steps"`
 	// Opts is a map of options specific to the installer type.

@@ -9,6 +9,7 @@ import (
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/installer"
 	"github.com/chenasraf/sofmani/logger"
+	"github.com/chenasraf/sofmani/machine"
 	"github.com/chenasraf/sofmani/utils"
 )
 
@@ -25,6 +26,12 @@ func main() {
 	// Handle --log-file without value: show log file path and exit
 	if cliConfig.ShowLogFile {
 		fmt.Println(logger.GetLogFile())
+		return
+	}
+
+	// Handle --machine-id: show machine ID and exit
+	if cliConfig.ShowMachineID {
+		fmt.Println(machine.GetMachineID())
 		return
 	}
 
@@ -53,6 +60,14 @@ func main() {
 	logger.Debug("Config:")
 	for _, line := range cfg.GetConfigDesc() {
 		logger.Debug("%s", line)
+	}
+
+	// Set MACHINE_ID environment variable
+	machineID := machine.GetMachineID()
+	logger.Debug("Setting env MACHINE_ID=%s", machineID)
+	if err := os.Setenv("MACHINE_ID", machineID); err != nil {
+		logger.Error("failed to set environment variable MACHINE_ID: %v", err)
+		return
 	}
 
 	if cfg.Env != nil {

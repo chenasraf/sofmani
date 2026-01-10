@@ -1,9 +1,11 @@
 package installer
 
 import (
-	"github.com/chenasraf/sofmani/appconfig"
-	"github.com/chenasraf/sofmani/platform"
 	"maps"
+
+	"github.com/chenasraf/sofmani/appconfig"
+	"github.com/chenasraf/sofmani/machine"
+	"github.com/chenasraf/sofmani/platform"
 )
 
 // InstallerWithDefaults applies default configurations to an installer data object.
@@ -65,6 +67,9 @@ func InstallerWithDefaults(
 			if override.Platforms != nil {
 				data.Platforms = override.Platforms
 			}
+			if override.Machines != nil {
+				data.Machines = override.Machines
+			}
 			if override.PreUpdate != nil {
 				data.PreUpdate = override.PreUpdate
 			}
@@ -111,6 +116,10 @@ func FillDefaults(data *appconfig.InstallerData) {
 	if data.Platforms == nil {
 		platforms := platform.Platforms{}
 		data.Platforms = &platforms
+	}
+	if data.Machines == nil {
+		machines := machine.Machines{}
+		data.Machines = &machines
 	}
 	if data.Steps == nil {
 		data.Steps = &[]appconfig.InstallerData{}

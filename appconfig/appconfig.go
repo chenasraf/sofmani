@@ -28,6 +28,8 @@ type AppConfig struct {
 	Env *map[string]string `json:"env"            yaml:"env"`
 	// PlatformEnv is a map of platform-specific environment variables to set.
 	PlatformEnv *platform.PlatformMap[map[string]string] `json:"platform_env"   yaml:"platform_env"`
+	// MachineAliases is a map of friendly names to machine IDs.
+	MachineAliases *map[string]string `json:"machine_aliases" yaml:"machine_aliases"`
 	// Filter is a list of installer names to filter by.
 	Filter []string
 }
@@ -46,6 +48,8 @@ type AppCliConfig struct {
 	LogFile *string
 	// ShowLogFile indicates that only the log file path should be shown.
 	ShowLogFile bool
+	// ShowMachineID indicates that only the machine ID should be shown.
+	ShowMachineID bool
 }
 
 // AppConfigDefaults provides default configurations for installer types.
@@ -198,12 +202,13 @@ func boolPtr(b bool) *bool {
 func ParseCliConfig() *AppCliConfig {
 	args := os.Args[1:]
 	config := &AppCliConfig{
-		ConfigFile:   "",
-		Debug:        nil,
-		CheckUpdates: nil,
-		Filter:       []string{},
-		LogFile:      nil,
-		ShowLogFile:  false,
+		ConfigFile:    "",
+		Debug:         nil,
+		CheckUpdates:  nil,
+		Filter:        []string{},
+		LogFile:       nil,
+		ShowLogFile:   false,
+		ShowMachineID: false,
 	}
 	file := FindConfigFile()
 	for len(args) > 0 {
@@ -230,6 +235,8 @@ func ParseCliConfig() *AppCliConfig {
 				// No value provided, just show log file path
 				config.ShowLogFile = true
 			}
+		case "-m", "--machine-id":
+			config.ShowMachineID = true
 		case "-h", "--help":
 			printHelp()
 			os.Exit(0)
@@ -248,8 +255,8 @@ func ParseCliConfig() *AppCliConfig {
 		}
 		args = args[1:]
 	}
-	// If only showing log file, don't require config file
-	if config.ShowLogFile {
+	// If only showing log file or machine ID, don't require config file
+	if config.ShowLogFile || config.ShowMachineID {
 		return config
 	}
 	if file == "" {
@@ -270,6 +277,7 @@ func printHelp() {
 	fmt.Println("  -U, --no-update    Disable update checks")
 	fmt.Println("  -f, --filter       Filter by installer name (can be used multiple times)")
 	fmt.Println("  -l, --log-file     Set log file path, or show current path if no value given")
+	fmt.Println("  -m, --machine-id   Show machine ID and exit")
 	fmt.Println("  -h, --help         Show this help message")
 	fmt.Println("  -v, --version      Show version")
 	fmt.Println("")

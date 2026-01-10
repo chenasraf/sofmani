@@ -38,6 +38,19 @@ Here is a breakdown of all configuration options:
   - OS environment variables are passed and may be overridden for this config and all of its
     installers here.
 
+- **`machine_aliases`** (Object)
+  - A mapping of friendly names to machine IDs.
+  - Use `sofmani --machine-id` to get the machine ID for each of your machines.
+  - These aliases can then be used in installer `machines.only` and `machines.except` fields
+    instead of the raw machine IDs.
+  - Example:
+    ```yaml
+    machine_aliases:
+      work-laptop: 5fa2a8e8193868df
+      home-desktop: a1b2c3d4e5f67890
+      home-server: fedcba0987654321
+    ```
+
 ## Example Config
 
 ```yaml

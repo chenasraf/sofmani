@@ -11,15 +11,17 @@ repository.
 
 You can call `sofmani` with the following flags to alter the behavior for the current run:
 
-| Flag                | Description                                             |
-| ------------------- | ------------------------------------------------------- |
-| `-d`, `--debug`     | Enable debug mode.                                      |
-| `-D`, `--no-debug`  | Disable debug mode (default).                           |
-| `-u`, `--update`    | Enable update checking.                                 |
-| `-U`, `--no-update` | Disable update checking (default).                      |
-| `-f`, `--filter`    | Filter by installer name (can be used multiple times)\* |
-| `-h`, `--help`      | Display help information and exit.                      |
-| `-v`, `--version`   | Display version information and exit.                   |
+| Flag                  | Description                                             |
+| --------------------- | ------------------------------------------------------- |
+| `-d`, `--debug`       | Enable debug mode.                                      |
+| `-D`, `--no-debug`    | Disable debug mode (default).                           |
+| `-u`, `--update`      | Enable update checking.                                 |
+| `-U`, `--no-update`   | Disable update checking (default).                      |
+| `-f`, `--filter`      | Filter by installer name (can be used multiple times)\* |
+| `-l`, `--log-file`    | Set log file path, or show current path if no value.    |
+| `-m`, `--machine-id`  | Show machine ID and exit.                               |
+| `-h`, `--help`        | Display help information and exit.                      |
+| `-v`, `--version`     | Display version information and exit.                   |
 
 Each of these flags overrides the loaded config file, so while your default config can choose not to
 check for updates by default, you or another user can add the `--update` flag to override this
@@ -49,6 +51,21 @@ included.
 - To run all installers except those that contain "sofmani", use `-f "!sofmani"`.
 - To only installers that contain "sofmani", but exclude ones tagged "config", use
   `-f sofmani -f "!tag:config"`.
+
+### Machine ID
+
+The machine ID is a unique, deterministic identifier for the current machine. It is generated from
+stable system identifiers (hardware UUID on macOS, `/etc/machine-id` on Linux, registry GUID on
+Windows) and remains constant even if hostname or other system settings change.
+
+To view the current machine's ID:
+
+```sh
+sofmani --machine-id
+```
+
+This ID can be used with the `machines` configuration option to run specific installers only on
+certain machines. See [Installer Configuration](./installer-configuration.md#fields) for details.
 
 ## Examples
 

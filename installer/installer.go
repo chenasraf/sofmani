@@ -5,6 +5,7 @@ import (
 
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
+	"github.com/chenasraf/sofmani/machine"
 	"github.com/chenasraf/sofmani/platform"
 	"github.com/chenasraf/sofmani/utils"
 )
@@ -149,6 +150,16 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 	env := config.Environ()
 	if !installer.GetData().Platforms.GetShouldRunOnOS(curOS) {
 		logger.Debug("%s should not run on %s, skipping", name, curOS)
+		return nil
+	}
+
+	machineID := machine.GetMachineID()
+	var machineAliases map[string]string
+	if config.MachineAliases != nil {
+		machineAliases = *config.MachineAliases
+	}
+	if !installer.GetData().Machines.GetShouldRunOnMachine(machineID, machineAliases) {
+		logger.Debug("%s should not run on machine %s, skipping", name, machineID)
 		return nil
 	}
 	if !FilterInstaller(installer, config.Filter) {

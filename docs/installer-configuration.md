@@ -47,6 +47,22 @@ These fields are shared by all installer types. Some fields may vary in behavior
       - **Type**: Array of Strings
       - **Description**: Platforms where the step should **not** execute; replaces `platforms.only`.
 
+- **`machines`**
+
+  - **Type**: Object (optional)
+  - **Description**: Machine-specific execution controls. Use this to run installers only on
+    specific machines. Get the machine ID by running `sofmani --machine-id`. You can use either
+    raw machine IDs or aliases defined in the top-level `machine_aliases` configuration.
+    See `machines` subfields below.
+  - **Subfields**:
+    - **`machines.only`**
+      - **Type**: Array of Strings
+      - **Description**: Machine IDs or aliases where the step should execute. Supercedes
+        `machines.except`.
+    - **`machines.except`**
+      - **Type**: Array of Strings
+      - **Description**: Machine IDs or aliases where the step should **not** execute.
+
 - **`steps`**
 
   - **Type**: Array of Installers
@@ -354,6 +370,49 @@ install:
           only: ['linux']
         opts:
           command: 'curl https://pyenv.run | bash'
+```
+
+### Machine-specific installers
+
+```yaml
+# Define friendly names for your machines (get IDs with `sofmani --machine-id`)
+machine_aliases:
+  work-laptop: a1b2c3d4e5f67890
+  home-desktop: 5fa2a8e8193868df
+  home-server: fedcba0987654321
+
+install:
+  # Only install on specific machines using aliases
+  - name: work-tools
+    type: group
+    machines:
+      only: ['work-laptop']
+    steps:
+      - name: slack
+        type: brew
+        opts:
+          cask: true
+      - name: zoom
+        type: brew
+        opts:
+          cask: true
+
+  # Install everywhere except the home server
+  - name: desktop-apps
+    type: group
+    machines:
+      except: ['home-server']
+    steps:
+      - name: firefox
+        type: brew
+        opts:
+          cask: true
+
+  # You can also use raw machine IDs directly
+  - name: special-tool
+    type: brew
+    machines:
+      only: ['a1b2c3d4e5f67890'] # Raw machine ID also works
 ```
 
 ### manifest
