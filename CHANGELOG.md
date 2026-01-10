@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.0](https://github.com/chenasraf/sofmani/compare/v1.15.1...v1.16.0) (2026-01-10)
+
+
+### Features
+
+* install on specific machines by machine id ([bb36269](https://github.com/chenasraf/sofmani/commit/bb36269d3d64c0fb185b4f5a8ddf121fd8cc1b20))
+
 ## [1.15.1](https://github.com/chenasraf/sofmani/compare/v1.15.0...v1.15.1) (2025-12-08)
 
 
