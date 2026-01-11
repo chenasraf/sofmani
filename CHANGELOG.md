@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.1](https://github.com/chenasraf/sofmani/compare/v1.16.0...v1.16.1) (2026-01-11)
+
+
+### Bug Fixes
+
+* download_filename map parsing ([e78e830](https://github.com/chenasraf/sofmani/commit/e78e8308de8418220f0fd909d8912ab0ea769edd))
+
 ## [1.16.0](https://github.com/chenasraf/sofmani/compare/v1.15.1...v1.16.0) (2026-01-10)
 
 
