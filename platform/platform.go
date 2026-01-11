@@ -239,6 +239,26 @@ func NewPlatformMap[T any](input any) *PlatformMap[T] {
 			}
 		}
 		return ParselatformMap(flat)
+	case map[any]any:
+		// Handle YAML unmarshaling which produces map[any]any
+		flat := make(map[string]T)
+		for k, val := range v {
+			if keyStr, ok := k.(string); ok {
+				if typedVal, ok := val.(T); ok {
+					flat[keyStr] = typedVal
+				}
+			}
+		}
+		return ParselatformMap(flat)
+	case map[string]any:
+		// Handle JSON unmarshaling or mixed YAML which produces map[string]interface{}
+		flat := make(map[string]T)
+		for k, val := range v {
+			if typedVal, ok := val.(T); ok {
+				flat[k] = typedVal
+			}
+		}
+		return ParselatformMap(flat)
 	case T:
 		return ParsePlatformSingleValue(v)
 	default:

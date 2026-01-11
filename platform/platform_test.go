@@ -295,6 +295,75 @@ func TestNewPlatformMap(t *testing.T) {
 		assert.Equal(t, "mac", *pm.MacOS)
 		assert.Nil(t, pm.Linux)
 	})
+
+	t.Run("handles map[any]any from YAML unmarshaling", func(t *testing.T) {
+		// Simulate what YAML unmarshaling produces for nested maps
+		input := map[any]any{
+			"macos":   "mac-value",
+			"linux":   "linux-value",
+			"windows": "windows-value",
+		}
+		pm := NewPlatformMap[string](input)
+		assert.Equal(t, "mac-value", *pm.MacOS)
+		assert.Equal(t, "linux-value", *pm.Linux)
+		assert.Equal(t, "windows-value", *pm.Windows)
+	})
+
+	t.Run("handles map[any]any with partial platforms", func(t *testing.T) {
+		input := map[any]any{
+			"macos": "mac-only",
+		}
+		pm := NewPlatformMap[string](input)
+		assert.Equal(t, "mac-only", *pm.MacOS)
+		assert.Nil(t, pm.Linux)
+		assert.Nil(t, pm.Windows)
+	})
+
+	t.Run("handles map[string]any from JSON unmarshaling", func(t *testing.T) {
+		// Simulate what JSON unmarshaling or mixed YAML produces
+		input := map[string]any{
+			"macos":   "mac-value",
+			"linux":   "linux-value",
+			"windows": "windows-value",
+		}
+		pm := NewPlatformMap[string](input)
+		assert.Equal(t, "mac-value", *pm.MacOS)
+		assert.Equal(t, "linux-value", *pm.Linux)
+		assert.Equal(t, "windows-value", *pm.Windows)
+	})
+
+	t.Run("handles map[string]any with partial platforms", func(t *testing.T) {
+		input := map[string]any{
+			"linux": "linux-only",
+		}
+		pm := NewPlatformMap[string](input)
+		assert.Nil(t, pm.MacOS)
+		assert.Equal(t, "linux-only", *pm.Linux)
+		assert.Nil(t, pm.Windows)
+	})
+
+	t.Run("handles map[any]any with non-string keys gracefully", func(t *testing.T) {
+		// Non-string keys should be ignored
+		input := map[any]any{
+			"macos": "mac-value",
+			123:     "ignored",
+		}
+		pm := NewPlatformMap[string](input)
+		assert.Equal(t, "mac-value", *pm.MacOS)
+		assert.Nil(t, pm.Linux)
+		assert.Nil(t, pm.Windows)
+	})
+
+	t.Run("handles map[any]any with wrong value type gracefully", func(t *testing.T) {
+		// Wrong value types should be ignored
+		input := map[any]any{
+			"macos": "mac-value",
+			"linux": 123, // wrong type, should be ignored
+		}
+		pm := NewPlatformMap[string](input)
+		assert.Equal(t, "mac-value", *pm.MacOS)
+		assert.Nil(t, pm.Linux)
+	})
 }
 
 func TestSetOSAndSetArch(t *testing.T) {
