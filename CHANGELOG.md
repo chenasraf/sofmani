@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.0](https://github.com/chenasraf/sofmani/compare/v1.16.1...v1.17.0) (2026-01-15)
+
+
+### Features
+
+* log install/update summary ([d9b2b52](https://github.com/chenasraf/sofmani/commit/d9b2b52e672bcb8f8a6b12b5fa326fa0a819b12d))
+
 ## [1.16.1](https://github.com/chenasraf/sofmani/compare/v1.16.0...v1.16.1) (2026-01-11)
 
 
