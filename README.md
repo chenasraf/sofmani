@@ -114,15 +114,17 @@ See [the documentation](/docs) for more information and examples.
 
 The following flags are supported to customize behavior:
 
-| Flag                | Description                                           |
-| ------------------- | ----------------------------------------------------- |
-| `-d`, `--debug`     | Enable debug mode.                                    |
-| `-D`, `--no-debug`  | Disable debug mode (default).                         |
-| `-u`, `--update`    | Enable update checking.                               |
-| `-U`, `--no-update` | Disable update checking (default).                    |
-| `-f`, `--filter`    | Filter by installer name (can be used multiple times) |
-| `-h`, `--help`      | Display help information and exit.                    |
-| `-v`, `--version`   | Display version information and exit.                 |
+| Flag                 | Description                                           |
+| -------------------- | ----------------------------------------------------- |
+| `-d`, `--debug`      | Enable debug mode.                                    |
+| `-D`, `--no-debug`   | Disable debug mode (default).                         |
+| `-u`, `--update`     | Enable update checking.                               |
+| `-U`, `--no-update`  | Disable update checking (default).                    |
+| `-s`, `--summary`    | Enable installation summary (default).                |
+| `-S`, `--no-summary` | Disable installation summary.                         |
+| `-f`, `--filter`     | Filter by installer name (can be used multiple times) |
+| `-h`, `--help`       | Display help information and exit.                    |
+| `-v`, `--version`    | Display version information and exit.                 |
 
 If a configuration file is not explicitly provided, `sofmani` attempts to locate a `sofmani.yaml`,
 `sofmani.yml` or `sofmani.json` in the following directories, in this order (first match is used):
@@ -150,6 +152,7 @@ For a full breakdown with all the supported options, see
 | --------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `debug`         | Boolean | Enable or disable debug mode. Default: `false`.                                                                                                                        |
 | `check_updates` | Boolean | Enable or disable checking for updates before running operations. Default: `false`.                                                                                    |
+| `summary`       | Boolean | Enable or disable the installation summary at the end. Default: `true`.                                                                                                |
 | `defaults`      | Object  | Defaults to apply to all installer types, such as specifying supported platforms or commonly used flags.                                                               |
 | `env`           | Object  | Environment variables that will be set for the context of the installer. OS env vars are passed, and may be overridden for this config and all of its installers here. |
 | `install`       | Array   | Installation steps to execute.                                                                                                                                         |
@@ -184,26 +187,21 @@ actions. Steps can be of **several types**, such as `brew`, `rsync`, `shell`, an
 For a full list with all the supported options, see [the docs](./docs/installer-configuration.md).
 
 - **`shell`**
-
   - Executes arbitrary shell commands.
 
 - **`group`**
-
   - Executes a logical group of steps in sequence.
   - Allows nesting multiple steps together.
 
 - **`git`**
-
   - Clones a git repository to a local directory.
   - If `name` is a full git URL (https or SSH), the repository is cloned directly. If it is a
     repository path, e.g. `chenasraf/sofmani`, GitHub is assumed.
 
 - **`github-release`**
-
   - Downloads a GitHub release asset. Optionally untar/unzip the downloaded file.
 
 - **`manifest`**
-
   - Installs an entire manifest from a local or remote file.
   - Every entry in the `install` array will be run, similar to how `steps` are run for `group`
     installers.
@@ -211,35 +209,28 @@ For a full list with all the supported options, see [the docs](./docs/installer-
   - `env` and `defaults` will be merged into the loaded config, overriding any existing values.
 
 - **`rsync`**
-
   - Copy files from `source` to `destination` using rsync.
 
 - **`brew`**
-
   - Installs packages using Homebrew.
 
 - **`npm`/`pnpm`/`yarn`**
-
   - Installs packages using npm/pnpm/yarn.
   - Use `type: npm` for `npm install`, `type: pnpm` for `pnpm install`, and `type: yarn` for
     `yarn install`.
 
 - **`apt`/`apk`**
-
   - Installs packages using apt/apk install.
   - Use `type: apt` for `apt install`, and `type: apk` for `apk add`.
 
 - **`pacman`/`yay`**
-
   - Installs packages using pacman or yay (Arch Linux).
   - Use `type: pacman` for official repository packages, and `type: yay` for AUR packages.
 
 - **`pipx`**
-
   - Installs packages using pipx.
 
 - **`docker`**
-
   - Pulls and runs a Docker container by name
   - Supports optional `flags`
   - Supports container name override (`bin_name`)

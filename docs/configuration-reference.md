@@ -21,6 +21,12 @@ Here is a breakdown of all configuration options:
   - Enable or disable checking for updates before running operations.
   - Default: `false`.
 
+- **`summary`** (Boolean)
+
+  - Enable or disable the installation summary at the end.
+  - The summary shows newly installed and upgraded software in a hierarchical format.
+  - Default: `true`.
+
 - **`defaults`** (Object)
 
   - Defaults to apply to all installer types, such as specifying supported platforms or commonly
@@ -56,6 +62,7 @@ Here is a breakdown of all configuration options:
 ```yaml
 debug: false
 check_updates: true
+summary: true
 defaults:
   type:
     brew:

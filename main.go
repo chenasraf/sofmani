@@ -10,6 +10,7 @@ import (
 	"github.com/chenasraf/sofmani/installer"
 	"github.com/chenasraf/sofmani/logger"
 	"github.com/chenasraf/sofmani/machine"
+	"github.com/chenasraf/sofmani/summary"
 	"github.com/chenasraf/sofmani/utils"
 )
 
@@ -111,12 +112,21 @@ func main() {
 		os.Exit(1)
 	}
 
+	installSummary := summary.NewSummary()
 	for _, i := range instances {
-		err = installer.RunInstaller(cfg, i)
+		result, err := installer.RunInstaller(cfg, i)
 		if err != nil {
 			logger.Error("%s", err)
 			os.Exit(1)
 		}
+		if result != nil {
+			installSummary.Add(*result)
+		}
+	}
+	// Print summary if enabled (default: true)
+	showSummary := cfg.Summary == nil || *cfg.Summary
+	if showSummary {
+		installSummary.Print()
 	}
 	logger.Info("Complete")
 }

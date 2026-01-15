@@ -7,6 +7,7 @@ import (
 	"github.com/chenasraf/sofmani/logger"
 	"github.com/chenasraf/sofmani/machine"
 	"github.com/chenasraf/sofmani/platform"
+	"github.com/chenasraf/sofmani/summary"
 	"github.com/chenasraf/sofmani/utils"
 )
 
@@ -133,11 +134,23 @@ func (i *InstallerBase) RunCmdGetOutput(command string, args ...string) ([]byte,
 	return utils.RunCmdGetOutput(data.Environ(), command, args...)
 }
 
+// IChildResultsProvider is an optional interface for installers that have nested results.
+type IChildResultsProvider interface {
+	// GetChildResults returns the results from nested installers.
+	GetChildResults() []summary.InstallResult
+}
+
 // RunInstaller executes the installation or update process for a given installer.
-func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
+// It returns the result of the installation/update and any error that occurred.
+func RunInstaller(config *appconfig.AppConfig, installer IInstaller) (*summary.InstallResult, error) {
 	info := installer.GetData()
 	name := *info.Name
 	curOS := platform.GetPlatform()
+
+	result := &summary.InstallResult{
+		Name: name,
+		Type: string(info.Type),
+	}
 
 	// Log if defaults were applied for this installer type
 	if config.Defaults != nil && config.Defaults.Type != nil {
@@ -150,7 +163,8 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 	env := config.Environ()
 	if !installer.GetData().Platforms.GetShouldRunOnOS(curOS) {
 		logger.Debug("%s should not run on %s, skipping", name, curOS)
-		return nil
+		result.Action = summary.ActionSkipped
+		return result, nil
 	}
 
 	machineID := machine.GetMachineID()
@@ -160,28 +174,31 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 	}
 	if !installer.GetData().Machines.GetShouldRunOnMachine(machineID, machineAliases) {
 		logger.Debug("%s should not run on machine %s, skipping", name, machineID)
-		return nil
+		result.Action = summary.ActionSkipped
+		return result, nil
 	}
 	if !FilterInstaller(installer, config.Filter) {
 		logger.Debug("%s is filtered, skipping", name)
-		return nil
+		result.Action = summary.ActionSkipped
+		return result, nil
 	}
 
 	enabled, err := InstallerIsEnabled(installer)
 
 	if err != nil {
-		return fmt.Errorf("failed to check if %s is enabled: %s", name, err)
+		return nil, fmt.Errorf("failed to check if %s is enabled: %s", name, err)
 	}
 
 	if !enabled {
 		logger.Debug("%s is disabled, skipping", name)
-		return nil
+		result.Action = summary.ActionSkipped
+		return result, nil
 	}
 
 	logger.Debug("Checking %s: %s", info.Type, name)
 	installed, err := installer.CheckIsInstalled()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if installed {
 		logger.Debug("%s (%s) is already installed", name, info.Type)
@@ -190,7 +207,7 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 			logger.Info("Checking updates for %s: %s", info.Type, name)
 			needsUpdate, err := installer.CheckNeedsUpdate()
 			if err != nil {
-				return err
+				return nil, err
 			}
 			if needsUpdate {
 				logger.Info("Updating %s", name)
@@ -198,28 +215,29 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 					logger.Debug("Running pre-update command for %s", name)
 					err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetData().EnvShell), utils.GetOSShellArgs(*info.PreUpdate)...)
 					if err != nil {
-						return err
+						return nil, err
 					}
 				}
 				logger.Debug("Running update command for %s", name)
 				err := installer.Update()
 				if err != nil {
 					logger.Error("Failed to update %s: %v", name, err)
-					return fmt.Errorf("failed to update %s: %w", name, err)
+					return nil, fmt.Errorf("failed to update %s: %w", name, err)
 				}
 				if info.PostUpdate != nil {
 					logger.Debug("Running post-update command for %s", name)
 					err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetData().EnvShell), utils.GetOSShellArgs(*info.PostUpdate)...)
 					if err != nil {
-						return err
+						return nil, err
 					}
 				}
+				result.Action = summary.ActionUpgraded
 			} else {
 				logger.Info("%s (%s) is up-to-date", name, info.Type)
+				result.Action = summary.ActionUpToDate
 			}
-			return nil
 		} else {
-			return nil
+			result.Action = summary.ActionUpToDate
 		}
 	} else {
 		logger.Info("Installing %s: %s", installer.GetData().Type, name)
@@ -227,21 +245,28 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) error {
 			logger.Debug("Running pre-install command for %s (%s)", name, info.Type)
 			err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetData().EnvShell), utils.GetOSShellArgs(*info.PreInstall)...)
 			if err != nil {
-				return err
+				return nil, err
 			}
 		}
 		logger.Debug("Running installer for %s (%s)", name, info.Type)
 		err = installer.Install()
+		if err != nil {
+			return nil, err
+		}
 		if info.PostInstall != nil {
 			logger.Debug("Running post-install command for %s (%s)", name, info.Type)
 			err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetData().EnvShell), utils.GetOSShellArgs(*info.PostInstall)...)
 			if err != nil {
-				return err
+				return nil, err
 			}
 		}
+		result.Action = summary.ActionInstalled
 	}
-	if err != nil {
-		return err
+
+	// Collect child results for group/manifest installers
+	if provider, ok := installer.(IChildResultsProvider); ok {
+		result.Children = provider.GetChildResults()
 	}
-	return nil
+
+	return result, nil
 }

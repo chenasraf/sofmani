@@ -35,6 +35,7 @@ func TestRunInstaller(t *testing.T) {
 		data:        &appconfig.InstallerData{Name: strPtr("test"), Type: appconfig.InstallerTypeBrew},
 		isInstalled: false,
 	}
-	err := RunInstaller(config, mockInstaller)
+	result, err := RunInstaller(config, mockInstaller)
 	assert.NoError(t, err)
+	assert.NotNil(t, result)
 }

@@ -20,6 +20,8 @@ type AppConfig struct {
 	Debug *bool `json:"debug"          yaml:"debug"`
 	// CheckUpdates enables or disables checking for updates.
 	CheckUpdates *bool `json:"check_updates"  yaml:"check_updates"`
+	// Summary enables or disables the installation summary at the end.
+	Summary *bool `json:"summary"        yaml:"summary"`
 	// Install is a list of installers to run.
 	Install []InstallerData `json:"install"        yaml:"install"`
 	// Defaults provides default configurations for installer types.
@@ -42,6 +44,8 @@ type AppCliConfig struct {
 	Debug *bool
 	// CheckUpdates enables or disables checking for updates.
 	CheckUpdates *bool
+	// Summary enables or disables the installation summary at the end.
+	Summary *bool
 	// Filter is a list of installer names to filter by.
 	Filter []string
 	// LogFile is the path to the log file.
@@ -78,6 +82,9 @@ func ParseConfig(overrides *AppCliConfig) (*AppConfig, error) {
 		}
 		if overrides.CheckUpdates != nil {
 			appConfig.CheckUpdates = overrides.CheckUpdates
+		}
+		if overrides.Summary != nil {
+			appConfig.Summary = overrides.Summary
 		}
 		appConfig.Filter = overrides.Filter
 		return appConfig, nil
@@ -153,8 +160,13 @@ func (c *AppConfig) GetConfigDesc() []string {
 	if c.CheckUpdates != nil {
 		checkUpdates = *c.CheckUpdates
 	}
+	showSummary := true // default is enabled
+	if c.Summary != nil {
+		showSummary = *c.Summary
+	}
 	desc = append(desc, fmt.Sprintf("Debug: %t", isDebug))
 	desc = append(desc, fmt.Sprintf("CheckUpdates: %t", checkUpdates))
+	desc = append(desc, fmt.Sprintf("Summary: %t", showSummary))
 
 	if c.Env != nil {
 		desc = append(desc, "Environment Variables:")
@@ -205,6 +217,7 @@ func ParseCliConfig() *AppCliConfig {
 		ConfigFile:    "",
 		Debug:         nil,
 		CheckUpdates:  nil,
+		Summary:       nil,
 		Filter:        []string{},
 		LogFile:       nil,
 		ShowLogFile:   false,
@@ -221,6 +234,10 @@ func ParseCliConfig() *AppCliConfig {
 			config.CheckUpdates = boolPtr(true)
 		case "-U", "--no-update":
 			config.CheckUpdates = boolPtr(false)
+		case "-s", "--summary":
+			config.Summary = boolPtr(true)
+		case "-S", "--no-summary":
+			config.Summary = boolPtr(false)
 		case "-f", "--filter":
 			if len(args) > 1 {
 				config.Filter = append(config.Filter, args[1])
@@ -275,6 +292,8 @@ func printHelp() {
 	fmt.Println("  -D, --no-debug     Disable debug mode")
 	fmt.Println("  -u, --update       Enable update checks")
 	fmt.Println("  -U, --no-update    Disable update checks")
+	fmt.Println("  -s, --summary      Enable installation summary (default)")
+	fmt.Println("  -S, --no-summary   Disable installation summary")
 	fmt.Println("  -f, --filter       Filter by installer name (can be used multiple times)")
 	fmt.Println("  -l, --log-file     Set log file path, or show current path if no value given")
 	fmt.Println("  -m, --machine-id   Show machine ID and exit")

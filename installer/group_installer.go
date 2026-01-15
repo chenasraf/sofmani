@@ -5,6 +5,7 @@ import (
 
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
+	"github.com/chenasraf/sofmani/summary"
 	"github.com/chenasraf/sofmani/utils"
 )
 
@@ -15,6 +16,8 @@ type GroupInstaller struct {
 	Config *appconfig.AppConfig
 	// Data is the installer data.
 	Data *appconfig.InstallerData
+	// childResults stores results from nested installers.
+	childResults []summary.InstallResult
 }
 
 // GroupOpts represents options for the GroupInstaller.
@@ -37,6 +40,7 @@ func (i *GroupInstaller) Install() error {
 	info := i.GetData()
 	name := *info.Name
 	logger.Debug("Installing group %s", name)
+	i.childResults = []summary.InstallResult{}
 	for _, step := range *i.Data.Steps {
 		installer, err := GetInstaller(i.Config, &step)
 		if err != nil {
@@ -45,14 +49,22 @@ func (i *GroupInstaller) Install() error {
 		if installer == nil {
 			logger.Warn("Installer type %s is not supported, skipping", step.Type)
 		} else {
-			err := RunInstaller(i.Config, installer)
+			result, err := RunInstaller(i.Config, installer)
 			if err != nil {
 				logger.Error("Failed to run installer for step %s: %v", *step.Name, err)
 				return fmt.Errorf("failed to run installer for step %s: %w", *step.Name, err)
 			}
+			if result != nil {
+				i.childResults = append(i.childResults, *result)
+			}
 		}
 	}
 	return nil
+}
+
+// GetChildResults implements IChildResultsProvider.
+func (i *GroupInstaller) GetChildResults() []summary.InstallResult {
+	return i.childResults
 }
 
 // Update implements IInstaller.

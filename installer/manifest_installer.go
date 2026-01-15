@@ -10,6 +10,7 @@ import (
 
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
+	"github.com/chenasraf/sofmani/summary"
 	"github.com/chenasraf/sofmani/utils"
 )
 
@@ -22,6 +23,8 @@ type ManifestInstaller struct {
 	Info *appconfig.InstallerData
 	// ManifestConfig is the configuration loaded from the manifest file.
 	ManifestConfig *appconfig.AppConfig
+	// childResults stores results from nested installers.
+	childResults []summary.InstallResult
 }
 
 // ManifestOpts represents options for the ManifestInstaller.
@@ -62,6 +65,7 @@ func (i *ManifestInstaller) Install() error {
 	name := *info.Name
 	config := i.ManifestConfig
 	logger.Info("Installing manifest %s", name)
+	i.childResults = []summary.InstallResult{}
 	for _, step := range config.Install {
 		logger.Debug("Checking step %s", *step.Name)
 		installer, err := GetInstaller(config, &step)
@@ -71,14 +75,22 @@ func (i *ManifestInstaller) Install() error {
 		if installer == nil {
 			logger.Warn("Installer type %s is not supported, skipping", step.Type)
 		} else {
-			err := RunInstaller(config, installer)
+			result, err := RunInstaller(config, installer)
 			if err != nil {
 				logger.Error("Failed to run installer for step %s: %v", *step.Name, err)
 				return fmt.Errorf("failed to run installer for step %s: %w", *step.Name, err)
 			}
+			if result != nil {
+				i.childResults = append(i.childResults, *result)
+			}
 		}
 	}
 	return nil
+}
+
+// GetChildResults implements IChildResultsProvider.
+func (i *ManifestInstaller) GetChildResults() []summary.InstallResult {
+	return i.childResults
 }
 
 // Update implements IInstaller.
