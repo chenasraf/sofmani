@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.19.0](https://github.com/chenasraf/sofmani/compare/v1.18.0...v1.19.0) (2026-01-22)
+
+
+### Features
+
+* add categories ([d8b1924](https://github.com/chenasraf/sofmani/commit/d8b1924dbaffd54e2fd4c804cb16f228ddb6cd89))
+
 ## [1.18.0](https://github.com/chenasraf/sofmani/compare/v1.17.0...v1.18.0) (2026-01-22)
 
 
