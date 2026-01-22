@@ -15,12 +15,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Get latest tag
+      - name: Get latest release info
         id: latest
         run: |
           tag=$(gh release view --json tagName -q .tagName)
           echo "Latest release tag: $tag"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+          # Get release body and escape for JSON
+          body=$(gh release view --json body -q .body)
+          # Use delimiter for multiline output
+          echo "body<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$body" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -30,7 +37,16 @@ jobs:
         run: |
           tag="${{ steps.latest.outputs.tag }}"
           repo="${{ github.event.repository.name }}"
-          data="{\"event_type\":\"trigger-from-release\",\"client_payload\":{\"tag\":\"$tag\",\"repo\":\"$repo\"}}"
+          # Use jq to properly escape the body for JSON
+          body=$(cat <<'BODY_EOF'
+          ${{ steps.latest.outputs.body }}
+          BODY_EOF
+          )
+          data=$(jq -n \
+            --arg tag "$tag" \
+            --arg repo "$repo" \
+            --arg body "$body" \
+            '{event_type: "trigger-from-release", client_payload: {tag: $tag, repo: $repo, body: $body}}')
           echo "Dispatching tag $tag from $repo"
           echo "Data: $data"
           curl -X POST \
