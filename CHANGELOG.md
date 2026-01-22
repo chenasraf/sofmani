@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.18.0](https://github.com/chenasraf/sofmani/compare/v1.17.0...v1.18.0) (2026-01-22)
+
+
+### Features
+
+* add skip_summary option ([ccdb1a7](https://github.com/chenasraf/sofmani/commit/ccdb1a726a015cf997676b6b66351630191722e8))
+* improve rsync install/update check ([c029afb](https://github.com/chenasraf/sofmani/commit/c029afbf29c3c46efe09c2a4cb4be6ae26aa6563))
+* show current summary on user interrupt ([89d8746](https://github.com/chenasraf/sofmani/commit/89d87463a4965598075529e75e889cb188cdf7ee))
+* update logging style & formatting ([0cbf174](https://github.com/chenasraf/sofmani/commit/0cbf174850512c78ee5b94497f71da0f257cd0a0))
+
 ## [1.17.0](https://github.com/chenasraf/sofmani/compare/v1.16.1...v1.17.0) (2026-01-15)
 
 
