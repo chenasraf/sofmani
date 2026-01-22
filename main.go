@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
+	"os/signal"
 	"strings"
 
 	"github.com/chenasraf/sofmani/appconfig"
@@ -112,21 +113,43 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Set up signal handling for graceful shutdown
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt)
+	interrupted := false
+
 	installSummary := summary.NewSummary()
 	for _, i := range instances {
+		// Check for interrupt before each installer
+		select {
+		case <-sigChan:
+			interrupted = true
+			logger.Warn("Interrupted by user")
+		default:
+		}
+		if interrupted {
+			break
+		}
+
 		result, err := installer.RunInstaller(cfg, i)
 		if err != nil {
 			logger.Error("%s", err)
-			os.Exit(1)
+			break
 		}
 		if result != nil {
 			installSummary.Add(*result)
 		}
 	}
+
 	// Print summary if enabled (default: true)
 	showSummary := cfg.Summary == nil || *cfg.Summary
 	if showSummary {
 		installSummary.Print()
+	}
+
+	if interrupted {
+		logger.Info("Cancelled")
+		os.Exit(130) // Standard exit code for SIGINT
 	}
 	logger.Info("Complete")
 }
