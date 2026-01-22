@@ -5,11 +5,38 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/chenasraf/sofmani/platform"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/fatih/color"
 )
+
+// Highlight markers (using unlikely byte sequences)
+const (
+	highlightStart = "\x00HS\x00"
+	highlightEnd   = "\x00HE\x00"
+)
+
+// ANSI color codes
+const (
+	ansiHighlight  = "\033[1;96m" // Bright cyan for highlights
+	ansiBlueBold   = "\033[1;34m"
+	ansiYellowBold = "\033[1;33m"
+	ansiRedBold    = "\033[1;31m"
+	ansiGreenBold  = "\033[1;32m"
+	ansiReset      = "\033[0m"
+)
+
+// Highlight marks text to be displayed in white/bold in console output.
+// Use this for installer names, types, and other important identifiers.
+func Highlight(text string) string {
+	return highlightStart + text + highlightEnd
+}
+
+// H is a shorthand alias for Highlight.
+func H(text string) string {
+	return Highlight(text)
+}
 
 // Logger provides logging functionality with support for file and console output.
 type Logger struct {
@@ -115,49 +142,64 @@ func InitLogger(debug bool) *Logger {
 	return logger
 }
 
+// stripHighlightMarkers removes highlight markers from text (for file output).
+func stripHighlightMarkers(text string) string {
+	text = strings.ReplaceAll(text, highlightStart, "")
+	text = strings.ReplaceAll(text, highlightEnd, "")
+	return text
+}
+
+// processHighlights converts highlight markers to ANSI codes for console output.
+func processHighlights(text string, baseColorSeq string) string {
+	// Replace start marker with highlight color
+	text = strings.ReplaceAll(text, highlightStart, ansiHighlight)
+	// Replace end marker with reset + base color (to restore the log level color)
+	text = strings.ReplaceAll(text, highlightEnd, ansiReset+baseColorSeq)
+	return text
+}
+
 // log is an internal helper function for logging messages with a specific level and color.
-func (l *Logger) log(level string, colorizer *color.Color, format string, args ...any) {
-	// Create timestamped message
-	// timestamp := time.Now().Format("2006-01-02 15:04:05")
+func (l *Logger) log(level string, colorSeq string, format string, args ...any) {
 	message := fmt.Sprintf("[%s] %s", level, fmt.Sprintf(format, args...))
 
-	// Write to file
-	l.fileLogger.Println(message)
+	// Write to file (strip all highlight markers - file should have no colors)
+	fileMessage := stripHighlightMarkers(message)
+	l.fileLogger.Println(fileMessage)
 
 	if level == "DEBUG" && !l.debug {
 		return
 	}
 
 	// Write to console with color
-	if colorizer != nil {
-		l.consoleOut.Println(colorizer.Sprint(message))
+	if colorSeq != "" {
+		consoleMessage := processHighlights(message, colorSeq)
+		// Wrap entire message in base color and reset at end
+		l.consoleOut.Println(colorSeq + consoleMessage + ansiReset)
 	} else {
-		l.consoleOut.Println(message)
+		// No base color - just convert highlights to white
+		consoleMessage := processHighlights(message, "")
+		l.consoleOut.Println(consoleMessage)
 	}
 }
 
 // Info logs an informational message.
 func Info(format string, args ...any) {
-	colorBlue := color.New(color.FgBlue).Add(color.Bold)
-	logger.log(" INFO", colorBlue, format, args...)
+	logger.log(" INFO", ansiBlueBold, format, args...)
 }
 
 // Warn logs a warning message.
 func Warn(format string, args ...any) {
-	colorYellow := color.New(color.FgYellow).Add(color.Bold)
-	logger.log(" WARN", colorYellow, format, args...)
+	logger.log(" WARN", ansiYellowBold, format, args...)
 }
 
 // Error logs an error message.
 func Error(format string, args ...any) {
-	colorRed := color.New(color.FgRed).Add(color.Bold)
-	logger.log("ERROR", colorRed, format, args...)
+	logger.log("ERROR", ansiRedBold, format, args...)
 }
 
 // Debug logs a debug message. Only printed if debug mode is enabled.
 func Debug(format string, args ...any) {
-	colorGreen := color.New(color.FgGreen).Add(color.Bold)
-	logger.log("DEBUG", colorGreen, format, args...)
+	logger.log("DEBUG", ansiGreenBold, format, args...)
 }
 
 // Spew logs a detailed representation of a value using spew.Dump.

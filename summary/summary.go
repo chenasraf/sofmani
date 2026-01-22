@@ -197,7 +197,7 @@ func hasChildrenWithAction(children []InstallResult, action Action) bool {
 // printResult prints a single result with the given indentation level.
 func (s *Summary) printResult(r InstallResult, indent int) {
 	prefix := strings.Repeat("  ", indent)
-	logger.Info("%s- %s: %s", prefix, r.Type, r.Name)
+	logger.Info("%s- %s: %s", prefix, logger.H(r.Type), logger.H(r.Name))
 
 	for _, child := range r.Children {
 		s.printResult(child, indent+1)

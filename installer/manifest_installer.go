@@ -64,20 +64,20 @@ func (i *ManifestInstaller) Install() error {
 	info := i.GetData()
 	name := *info.Name
 	config := i.ManifestConfig
-	logger.Info("Installing manifest %s", name)
+	logger.Info("Installing manifest %s", logger.H(name))
 	i.childResults = []summary.InstallResult{}
 	for _, step := range config.Install {
-		logger.Debug("Checking step %s", *step.Name)
+		logger.Debug("Checking step %s", logger.H(*step.Name))
 		installer, err := GetInstaller(config, &step)
 		if err != nil {
 			return err
 		}
 		if installer == nil {
-			logger.Warn("Installer type %s is not supported, skipping", step.Type)
+			logger.Warn("Installer type %s is not supported, skipping", logger.H(string(step.Type)))
 		} else {
 			result, err := RunInstaller(config, installer)
 			if err != nil {
-				logger.Error("Failed to run installer for step %s: %v", *step.Name, err)
+				logger.Error("Failed to run installer for step %s: %v", logger.H(*step.Name), err)
 				return fmt.Errorf("failed to run installer for step %s: %w", *step.Name, err)
 			}
 			if result != nil {

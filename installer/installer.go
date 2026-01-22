@@ -165,10 +165,10 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) (*summary.I
 		}
 	}
 
-	logger.Debug("Checking if %s (%s) should run on %s", name, info.Type, curOS)
+	logger.Debug("Checking if %s: %s should run on %s", logger.H(string(info.Type)), logger.H(name), curOS)
 	env := config.Environ()
 	if !installer.GetData().Platforms.GetShouldRunOnOS(curOS) {
-		logger.Debug("%s should not run on %s, skipping", name, curOS)
+		logger.Debug("%s should not run on %s, skipping", logger.H(name), curOS)
 		result.Action = summary.ActionSkipped
 		return result, nil
 	}
@@ -179,12 +179,12 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) (*summary.I
 		machineAliases = *config.MachineAliases
 	}
 	if !installer.GetData().Machines.GetShouldRunOnMachine(machineID, machineAliases) {
-		logger.Debug("%s should not run on machine %s, skipping", name, machineID)
+		logger.Debug("%s should not run on machine %s, skipping", logger.H(name), machineID)
 		result.Action = summary.ActionSkipped
 		return result, nil
 	}
 	if !FilterInstaller(installer, config.Filter) {
-		logger.Debug("%s is filtered, skipping", name)
+		logger.Debug("%s is filtered, skipping", logger.H(name))
 		result.Action = summary.ActionSkipped
 		return result, nil
 	}
@@ -196,42 +196,42 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) (*summary.I
 	}
 
 	if !enabled {
-		logger.Debug("%s is disabled, skipping", name)
+		logger.Debug("%s is disabled, skipping", logger.H(name))
 		result.Action = summary.ActionSkipped
 		return result, nil
 	}
 
-	logger.Debug("Checking %s: %s", info.Type, name)
+	logger.Debug("Checking %s: %s", logger.H(string(info.Type)), logger.H(name))
 	installed, err := installer.CheckIsInstalled()
 	if err != nil {
 		return nil, err
 	}
 	if installed {
-		logger.Debug("%s (%s) is already installed", name, info.Type)
+		logger.Debug("%s: %s is already installed", logger.H(string(info.Type)), logger.H(name))
 
 		if *config.CheckUpdates {
-			logger.Info("Checking updates for %s: %s", info.Type, name)
+			logger.Info("Checking updates for %s: %s", logger.H(string(info.Type)), logger.H(name))
 			needsUpdate, err := installer.CheckNeedsUpdate()
 			if err != nil {
 				return nil, err
 			}
 			if needsUpdate {
-				logger.Info("Updating %s", name)
+				logger.Info("Updating %s", logger.H(name))
 				if info.PreUpdate != nil {
-					logger.Debug("Running pre-update command for %s", name)
+					logger.Debug("Running pre-update command for %s", logger.H(name))
 					err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetData().EnvShell), utils.GetOSShellArgs(*info.PreUpdate)...)
 					if err != nil {
 						return nil, err
 					}
 				}
-				logger.Debug("Running update command for %s", name)
+				logger.Debug("Running update command for %s", logger.H(name))
 				err := installer.Update()
 				if err != nil {
-					logger.Error("Failed to update %s: %v", name, err)
+					logger.Error("Failed to update %s: %v", logger.H(name), err)
 					return nil, fmt.Errorf("failed to update %s: %w", name, err)
 				}
 				if info.PostUpdate != nil {
-					logger.Debug("Running post-update command for %s", name)
+					logger.Debug("Running post-update command for %s", logger.H(name))
 					err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetData().EnvShell), utils.GetOSShellArgs(*info.PostUpdate)...)
 					if err != nil {
 						return nil, err
@@ -239,28 +239,28 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) (*summary.I
 				}
 				result.Action = summary.ActionUpgraded
 			} else {
-				logger.Info("%s (%s) is up-to-date", name, info.Type)
+				logger.Info("%s: %s is up-to-date", logger.H(string(info.Type)), logger.H(name))
 				result.Action = summary.ActionUpToDate
 			}
 		} else {
 			result.Action = summary.ActionUpToDate
 		}
 	} else {
-		logger.Info("Installing %s: %s", installer.GetData().Type, name)
+		logger.Info("Installing %s: %s", logger.H(string(installer.GetData().Type)), logger.H(name))
 		if info.PreInstall != nil {
-			logger.Debug("Running pre-install command for %s (%s)", name, info.Type)
+			logger.Debug("Running pre-install command for %s: %s", logger.H(string(info.Type)), logger.H(name))
 			err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetData().EnvShell), utils.GetOSShellArgs(*info.PreInstall)...)
 			if err != nil {
 				return nil, err
 			}
 		}
-		logger.Debug("Running installer for %s (%s)", name, info.Type)
+		logger.Debug("Running installer for %s: %s", logger.H(string(info.Type)), logger.H(name))
 		err = installer.Install()
 		if err != nil {
 			return nil, err
 		}
 		if info.PostInstall != nil {
-			logger.Debug("Running post-install command for %s (%s)", name, info.Type)
+			logger.Debug("Running post-install command for %s: %s", logger.H(string(info.Type)), logger.H(name))
 			err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetData().EnvShell), utils.GetOSShellArgs(*info.PostInstall)...)
 			if err != nil {
 				return nil, err

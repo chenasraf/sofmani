@@ -39,7 +39,7 @@ func (i *GroupInstaller) Validate() []ValidationError {
 func (i *GroupInstaller) Install() error {
 	info := i.GetData()
 	name := *info.Name
-	logger.Debug("Installing group %s", name)
+	logger.Debug("Installing group %s", logger.H(name))
 	i.childResults = []summary.InstallResult{}
 	for _, step := range *i.Data.Steps {
 		installer, err := GetInstaller(i.Config, &step)
@@ -47,11 +47,11 @@ func (i *GroupInstaller) Install() error {
 			return err
 		}
 		if installer == nil {
-			logger.Warn("Installer type %s is not supported, skipping", step.Type)
+			logger.Warn("Installer type %s is not supported, skipping", logger.H(string(step.Type)))
 		} else {
 			result, err := RunInstaller(i.Config, installer)
 			if err != nil {
-				logger.Error("Failed to run installer for step %s: %v", *step.Name, err)
+				logger.Error("Failed to run installer for step %s: %v", logger.H(*step.Name), err)
 				return fmt.Errorf("failed to run installer for step %s: %w", *step.Name, err)
 			}
 			if result != nil {
