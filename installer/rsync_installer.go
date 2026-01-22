@@ -1,6 +1,7 @@
 package installer
 
 import (
+	"os"
 	"strings"
 
 	"github.com/chenasraf/sofmani/appconfig"
@@ -71,12 +72,33 @@ func (i *RsyncInstaller) Update() error {
 	return i.Install()
 }
 
+// checkNeedsSync uses rsync dry-run to check if any files need to be synced.
+func (i *RsyncInstaller) checkNeedsSync() (bool, error) {
+	data := i.GetData()
+	env := data.Environ()
+	src := utils.GetRealPath(env, *i.GetOpts().Source)
+	dest := utils.GetRealPath(env, *i.GetOpts().Destination)
+
+	flags := []string{"-n", "--itemize-changes", "-tr"}
+	if i.GetOpts().Flags != nil {
+		flags = append(flags, strings.Split(*i.GetOpts().Flags, " ")...)
+	}
+	flags = append(flags, src, dest)
+
+	output, err := i.RunCmdGetOutput("rsync", flags...)
+	if err != nil {
+		return false, err
+	}
+	// If there's any output, files need to be synced
+	return len(strings.TrimSpace(string(output))) > 0, nil
+}
+
 // CheckNeedsUpdate implements IInstaller.
 func (i *RsyncInstaller) CheckNeedsUpdate() (bool, error) {
 	if i.HasCustomUpdateCheck() {
 		return i.RunCustomUpdateCheck()
 	}
-	return true, nil
+	return i.checkNeedsSync()
 }
 
 // CheckIsInstalled implements IInstaller.
@@ -84,7 +106,12 @@ func (i *RsyncInstaller) CheckIsInstalled() (bool, error) {
 	if i.HasCustomInstallCheck() {
 		return i.RunCustomInstallCheck()
 	}
-	return false, nil
+	// Check if destination exists
+	data := i.GetData()
+	env := data.Environ()
+	dest := utils.GetRealPath(env, *i.GetOpts().Destination)
+	_, err := os.Stat(dest)
+	return err == nil, nil
 }
 
 // GetData implements IInstaller.
