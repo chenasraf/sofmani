@@ -44,6 +44,11 @@ func (s *SkipSummary) UnmarshalYAML(unmarshal func(any) error) error {
 
 // InstallerData represents the configuration for a single installer.
 type InstallerData struct {
+	// Category is a special field for visual organization. When set, this entry only displays
+	// a bordered header and does not perform any installation.
+	Category *string `json:"category"          yaml:"category"`
+	// Desc is an optional description shown below the category name in the bordered header.
+	Desc *string `json:"desc"              yaml:"desc"`
 	// Enabled determines if the installer is enabled. Can be a boolean string ("true", "false") or a condition.
 	Enabled *string `json:"enabled"           yaml:"enabled"`
 	// Name is the name of the installer.
@@ -117,4 +122,9 @@ func (i *InstallerData) GetTagsList() []string {
 	return lo.Map(strings.Split(*i.Tags, " "), func(tag string, i int) string {
 		return strings.TrimSpace(tag)
 	})
+}
+
+// IsCategory returns true if this entry is a category header (not an actual installer).
+func (i *InstallerData) IsCategory() bool {
+	return i.Category != nil && len(*i.Category) > 0
 }

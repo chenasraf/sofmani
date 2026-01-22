@@ -3,6 +3,79 @@
 The `install` field describes the steps to execute. Each step represents an action or group of
 actions. Steps can be of **several types**, such as `brew`, `rsync`, `shell`, and more.
 
+## Categories
+
+You can add **category headers** to visually organize your installers list. Categories are special
+entries that display a bordered header in the output but don't perform any installation.
+
+### Fields
+
+- **`category`**
+
+  - **Type**: String (required for category entries)
+  - **Description**: The category name to display. When this field is present, the entry is treated
+    as a category header, not an installer.
+
+- **`desc`**
+
+  - **Type**: String (optional)
+  - **Description**: An optional description shown below the category name. Supports multi-line
+    text with automatic word wrapping. Existing line breaks are preserved.
+
+### Example
+
+```yaml
+install:
+  - category: Development Tools
+
+  - name: neovim
+    type: brew
+
+  - name: lazygit
+    type: brew
+
+  - category: System Utilities
+    desc: Tools for system maintenance and monitoring.
+
+  - name: htop
+    type: brew
+
+  - category: Configuration
+    desc: |
+      These installers sync configuration files from dotfiles.
+      They run on every execution to keep configs up to date.
+
+  - name: nvim-config
+    type: rsync
+    opts:
+      source: ~/.dotfiles/.config/nvim
+      destination: ~/.config/nvim
+```
+
+### Output
+
+Categories are displayed with a bordered header:
+
+```
+┌──────────────────────────────────────────────────────────┐
+│ Development Tools                                        │
+└──────────────────────────────────────────────────────────┘
+```
+
+With a description:
+
+```
+┌──────────────────────────────────────────────────────────┐
+│ System Utilities                                         │
+├──────────────────────────────────────────────────────────┤
+│ Tools for system maintenance and monitoring.             │
+└──────────────────────────────────────────────────────────┘
+```
+
+The box width adapts to narrower terminals (minimum of terminal width or 60 characters).
+
+---
+
 ## Fields
 
 These fields are shared by all installer types. Some fields may vary in behavior depending on the

@@ -20,6 +20,7 @@ reproducible.
 - Configurable **platform-specific behaviors**.
 - Automatic software updates using custom logic.
 - Group software installations into logical "steps" with sophisticated orchestration.
+- **Category headers** to visually organize your installers list.
 
 ---
 
@@ -161,6 +162,19 @@ For a full breakdown with all the supported options, see
 
 The `install` field describes the steps to execute. Each step represents an action or group of
 actions. Steps can be of **several types**, such as `brew`, `rsync`, `shell`, and more.
+
+You can also add **category headers** to organize your installers visually:
+
+```yaml
+install:
+  - category: Development Tools
+    desc: Optional description for the category.
+
+  - name: neovim
+    type: brew
+```
+
+See [Installer Configuration](./docs/installer-configuration.md#categories) for more details.
 
 | Field              | Type                  | Description                                                                                                                                                                                                                                                                                   |
 | ------------------ | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

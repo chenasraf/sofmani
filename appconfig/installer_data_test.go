@@ -213,3 +213,69 @@ func TestSkipSummary_UnmarshalYAML(t *testing.T) {
 func parseYAML(yamlStr string, v any) error {
 	return yamlPkg.Unmarshal([]byte(yamlStr), v)
 }
+
+func TestInstallerData_IsCategory(t *testing.T) {
+	t.Run("returns true when Category is set", func(t *testing.T) {
+		category := "Development Tools"
+		data := &InstallerData{
+			Category: &category,
+		}
+		assert.True(t, data.IsCategory())
+	})
+
+	t.Run("returns false when Category is nil", func(t *testing.T) {
+		data := &InstallerData{}
+		assert.False(t, data.IsCategory())
+	})
+
+	t.Run("returns false when Category is empty string", func(t *testing.T) {
+		category := ""
+		data := &InstallerData{
+			Category: &category,
+		}
+		assert.False(t, data.IsCategory())
+	})
+
+	t.Run("category parsed from YAML", func(t *testing.T) {
+		yaml := `category: System Utilities`
+		var data InstallerData
+		err := parseYAML(yaml, &data)
+		assert.NoError(t, err)
+		assert.True(t, data.IsCategory())
+		assert.Equal(t, "System Utilities", *data.Category)
+	})
+
+	t.Run("category with desc parsed from YAML", func(t *testing.T) {
+		yaml := `category: System Utilities
+desc: These are system tools.`
+		var data InstallerData
+		err := parseYAML(yaml, &data)
+		assert.NoError(t, err)
+		assert.True(t, data.IsCategory())
+		assert.Equal(t, "System Utilities", *data.Category)
+		assert.Equal(t, "These are system tools.", *data.Desc)
+	})
+
+	t.Run("category with multiline desc parsed from YAML", func(t *testing.T) {
+		yaml := `category: Development
+desc: |
+  First line.
+  Second line.`
+		var data InstallerData
+		err := parseYAML(yaml, &data)
+		assert.NoError(t, err)
+		assert.True(t, data.IsCategory())
+		assert.Equal(t, "Development", *data.Category)
+		assert.Contains(t, *data.Desc, "First line.")
+		assert.Contains(t, *data.Desc, "Second line.")
+	})
+
+	t.Run("regular installer is not a category", func(t *testing.T) {
+		yaml := `name: test
+type: shell`
+		var data InstallerData
+		err := parseYAML(yaml, &data)
+		assert.NoError(t, err)
+		assert.False(t, data.IsCategory())
+	})
+}

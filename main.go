@@ -84,11 +84,26 @@ func main() {
 	}
 
 	logger.Info("Checking all installers...")
-	instances := []installer.IInstaller{}
+
+	// First pass: validate all installers (skip category entries)
+	type installItem struct {
+		installer  installer.IInstaller
+		isCategory bool
+		data       *appconfig.InstallerData
+	}
+	items := []installItem{}
 	hasValidationErrors := false
 
-	for _, i := range cfg.Install {
-		installerInstance, err := installer.GetInstaller(cfg, &i)
+	for idx := range cfg.Install {
+		i := &cfg.Install[idx]
+
+		// Handle category entries specially - they don't need validation
+		if i.IsCategory() {
+			items = append(items, installItem{isCategory: true, data: i})
+			continue
+		}
+
+		installerInstance, err := installer.GetInstaller(cfg, i)
 		if err != nil {
 			logger.Error("%s", err)
 			return
@@ -100,10 +115,10 @@ func main() {
 			if len(errors) > 0 {
 				hasValidationErrors = true
 				for _, e := range errors {
-					logger.Error(e.Error())
+					logger.Error("%s", e.Error())
 				}
 			} else {
-				instances = append(instances, installerInstance)
+				items = append(items, installItem{installer: installerInstance, data: i})
 			}
 		}
 	}
@@ -119,8 +134,8 @@ func main() {
 	interrupted := false
 
 	installSummary := summary.NewSummary()
-	for _, i := range instances {
-		// Check for interrupt before each installer
+	for _, item := range items {
+		// Check for interrupt before each item
 		select {
 		case <-sigChan:
 			interrupted = true
@@ -131,7 +146,13 @@ func main() {
 			break
 		}
 
-		result, err := installer.RunInstaller(cfg, i)
+		// Handle category entries - just log the header
+		if item.isCategory {
+			logger.Category(*item.data.Category, item.data.Desc)
+			continue
+		}
+
+		result, err := installer.RunInstaller(cfg, item.installer)
 		if err != nil {
 			logger.Error("%s", err)
 			break

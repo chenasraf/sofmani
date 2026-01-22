@@ -9,6 +9,7 @@ import (
 
 	"github.com/chenasraf/sofmani/platform"
 	"github.com/davecgh/go-spew/spew"
+	"golang.org/x/term"
 )
 
 // Highlight markers (using unlikely byte sequences)
@@ -218,4 +219,108 @@ func CloseLogger() {
 			fmt.Printf("Could not close log file: %v\n", err)
 		}
 	}
+}
+
+// Box-drawing characters for category headers
+const (
+	boxTopLeft      = "┌"
+	boxTopRight     = "┐"
+	boxBottomLeft   = "└"
+	boxBottomRight  = "┘"
+	boxHorizontal   = "─"
+	boxVertical     = "│"
+	boxLeftT        = "├"
+	boxRightT       = "┤"
+	boxDefaultWidth = 60
+)
+
+// getBoxWidth returns the width to use for category boxes.
+// It uses the terminal width if it's narrower than the default, otherwise uses the default.
+func getBoxWidth() int {
+	width, _, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil || width <= 0 {
+		return boxDefaultWidth
+	}
+	if width < boxDefaultWidth {
+		return width
+	}
+	return boxDefaultWidth
+}
+
+// Category logs a category header with a decorative border.
+// If desc is provided, it will be displayed below the category name with auto-wrapping.
+func Category(name string, desc *string) {
+	boxWidth := getBoxWidth()
+	innerWidth := boxWidth - 4 // Account for "│ " and " │"
+
+	// Build the border lines
+	horizontalLine := strings.Repeat(boxHorizontal, boxWidth-2)
+	topBorder := boxTopLeft + horizontalLine + boxTopRight
+	bottomBorder := boxBottomLeft + horizontalLine + boxBottomRight
+	separator := boxLeftT + horizontalLine + boxRightT
+
+	// Log the header
+	Info("")
+	Info("%s", topBorder)
+	Info("%s", formatBoxLine(name, innerWidth))
+
+	// Log description if provided
+	if desc != nil && len(*desc) > 0 {
+		Info("%s", separator)
+		for _, line := range wrapText(*desc, innerWidth) {
+			Info("%s", formatBoxLine(line, innerWidth))
+		}
+	}
+
+	Info("%s", bottomBorder)
+	Info("")
+}
+
+// formatBoxLine formats a line of text to fit within the box.
+func formatBoxLine(text string, innerWidth int) string {
+	// Truncate if too long
+	if len(text) > innerWidth {
+		text = text[:innerWidth]
+	}
+	// Pad to fill the width
+	padding := strings.Repeat(" ", innerWidth-len(text))
+	return boxVertical + " " + text + padding + " " + boxVertical
+}
+
+// wrapText wraps text to fit within maxWidth, respecting existing newlines.
+func wrapText(text string, maxWidth int) []string {
+	var result []string
+
+	// Split by existing newlines first to respect user formatting
+	for paragraph := range strings.SplitSeq(text, "\n") {
+		if len(paragraph) == 0 {
+			result = append(result, "")
+			continue
+		}
+
+		// Wrap each paragraph
+		words := strings.Fields(paragraph)
+		if len(words) == 0 {
+			result = append(result, "")
+			continue
+		}
+
+		var currentLine string
+		for _, word := range words {
+			switch {
+			case currentLine == "":
+				currentLine = word
+			case len(currentLine)+1+len(word) <= maxWidth:
+				currentLine += " " + word
+			default:
+				result = append(result, currentLine)
+				currentLine = word
+			}
+		}
+		if currentLine != "" {
+			result = append(result, currentLine)
+		}
+	}
+
+	return result
 }
