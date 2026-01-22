@@ -30,6 +30,10 @@ type InstallResult struct {
 	Action Action
 	// Children contains results from nested installers (for group/manifest).
 	Children []InstallResult
+	// SkipSummaryInstall indicates whether to exclude this from install summary.
+	SkipSummaryInstall bool
+	// SkipSummaryUpdate indicates whether to exclude this from update summary.
+	SkipSummaryUpdate bool
 }
 
 // Summary collects installation results for final reporting.
@@ -94,10 +98,26 @@ func isContainerType(installerType string) bool {
 	return installerType == "group" || installerType == "manifest"
 }
 
+// shouldSkipSummary checks if a result should be skipped from summary based on action.
+func shouldSkipSummary(r InstallResult, action Action) bool {
+	if action == ActionInstalled && r.SkipSummaryInstall {
+		return true
+	}
+	if action == ActionUpgraded && r.SkipSummaryUpdate {
+		return true
+	}
+	return false
+}
+
 // collectResultsByAction recursively collects results matching the action.
 // For group/manifest installers, it returns the parent with filtered children.
 func collectResultsByAction(r InstallResult, action Action) []InstallResult {
 	var results []InstallResult
+
+	// Check if this result should be skipped from summary
+	if shouldSkipSummary(r, action) {
+		return results
+	}
 
 	if isContainerType(r.Type) {
 		// For container types (groups/manifests), only include if children match
@@ -128,6 +148,11 @@ func collectResultsByAction(r InstallResult, action Action) []InstallResult {
 func filterChildrenByAction(children []InstallResult, action Action) []InstallResult {
 	var filtered []InstallResult
 	for _, child := range children {
+		// Skip if this child should be excluded from summary
+		if shouldSkipSummary(child, action) {
+			continue
+		}
+
 		if isContainerType(child.Type) {
 			// For containers, only include if they have matching children
 			if hasChildrenWithAction(child.Children, action) {
@@ -155,6 +180,10 @@ func filterChildrenByAction(children []InstallResult, action Action) []InstallRe
 // hasChildrenWithAction checks if any children (recursively) match the action.
 func hasChildrenWithAction(children []InstallResult, action Action) bool {
 	for _, child := range children {
+		// Skip children that should be excluded from summary
+		if shouldSkipSummary(child, action) {
+			continue
+		}
 		if child.Action == action {
 			return true
 		}

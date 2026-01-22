@@ -131,6 +131,42 @@ These fields are shared by all installer types. Some fields may vary in behavior
       - **Description**: Shell to use for Linux command executions. If not specified, the default
         shell will be used.
 
+- **`skip_summary`**
+
+  - **Type**: Boolean or Object (optional)
+  - **Description**: Exclude this installer from the installation summary. Useful for installers
+    that always run (like config sync scripts) and would clutter the summary output.
+  - **Values**:
+    - **Boolean**: When set to `true`, the installer is excluded from both install and update
+      summaries. When set to `false` (default), the installer appears in summaries normally.
+    - **Object**: For granular control, specify which summaries to skip:
+      - **`skip_summary.install`**: Boolean - exclude from the "Installed" section of the summary.
+      - **`skip_summary.update`**: Boolean - exclude from the "Upgraded" section of the summary.
+  - **Examples**:
+    ```yaml
+    # Skip from both install and update summaries
+    - name: sync-dotfiles
+      type: rsync
+      skip_summary: true
+      opts:
+        source: ~/.dotfiles/.config
+        destination: ~/.config
+
+    # Skip only from install summary (still shows in upgrade summary)
+    - name: config-setup
+      type: shell
+      skip_summary:
+        install: true
+      opts:
+        command: ./setup.sh
+
+    # Skip only from upgrade summary (still shows in install summary)
+    - name: my-tool
+      type: brew
+      skip_summary:
+        update: true
+    ```
+
 ## Supported `type` of Installers
 
 - **`shell`**

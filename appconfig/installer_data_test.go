@@ -6,6 +6,7 @@ import (
 
 	"github.com/chenasraf/sofmani/platform"
 	"github.com/stretchr/testify/assert"
+	yamlPkg "gopkg.in/yaml.v3"
 )
 
 func TestInstallerData_Environ(t *testing.T) {
@@ -143,4 +144,72 @@ func TestInstallerType_Constants(t *testing.T) {
 		assert.Equal(t, InstallerType("pacman"), InstallerTypePacman)
 		assert.Equal(t, InstallerType("yay"), InstallerTypeYay)
 	})
+}
+
+func TestSkipSummary_UnmarshalYAML(t *testing.T) {
+	t.Run("boolean true applies to both install and update", func(t *testing.T) {
+		yaml := `skip_summary: true`
+		var data InstallerData
+		err := parseYAML(yaml, &data)
+		assert.NoError(t, err)
+		assert.NotNil(t, data.SkipSummary)
+		assert.True(t, data.SkipSummary.Install)
+		assert.True(t, data.SkipSummary.Update)
+	})
+
+	t.Run("boolean false applies to both install and update", func(t *testing.T) {
+		yaml := `skip_summary: false`
+		var data InstallerData
+		err := parseYAML(yaml, &data)
+		assert.NoError(t, err)
+		assert.NotNil(t, data.SkipSummary)
+		assert.False(t, data.SkipSummary.Install)
+		assert.False(t, data.SkipSummary.Update)
+	})
+
+	t.Run("map with install only", func(t *testing.T) {
+		yaml := `skip_summary:
+  install: true`
+		var data InstallerData
+		err := parseYAML(yaml, &data)
+		assert.NoError(t, err)
+		assert.NotNil(t, data.SkipSummary)
+		assert.True(t, data.SkipSummary.Install)
+		assert.False(t, data.SkipSummary.Update)
+	})
+
+	t.Run("map with update only", func(t *testing.T) {
+		yaml := `skip_summary:
+  update: true`
+		var data InstallerData
+		err := parseYAML(yaml, &data)
+		assert.NoError(t, err)
+		assert.NotNil(t, data.SkipSummary)
+		assert.False(t, data.SkipSummary.Install)
+		assert.True(t, data.SkipSummary.Update)
+	})
+
+	t.Run("map with both install and update", func(t *testing.T) {
+		yaml := `skip_summary:
+  install: true
+  update: false`
+		var data InstallerData
+		err := parseYAML(yaml, &data)
+		assert.NoError(t, err)
+		assert.NotNil(t, data.SkipSummary)
+		assert.True(t, data.SkipSummary.Install)
+		assert.False(t, data.SkipSummary.Update)
+	})
+
+	t.Run("nil when not specified", func(t *testing.T) {
+		yaml := `name: test`
+		var data InstallerData
+		err := parseYAML(yaml, &data)
+		assert.NoError(t, err)
+		assert.Nil(t, data.SkipSummary)
+	})
+}
+
+func parseYAML(yamlStr string, v any) error {
+	return yamlPkg.Unmarshal([]byte(yamlStr), v)
 }

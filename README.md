@@ -181,6 +181,7 @@ actions. Steps can be of **several types**, such as `brew`, `rsync`, `shell`, an
 | `env_shell`        | Object (optional)     | Shell to use for command executions. See `env_shell` subfields below.                                                                                                                                                                                                                         |
 | `env_shell.macos`  | String (optional)     | Shell to use for macOS command executions. If not specified, the default shell will be used.                                                                                                                                                                                                  |
 | `env_shell.linux`  | String (optional)     | Shell to use for Linux command executions. If not specified, the default shell will be used.                                                                                                                                                                                                  |
+| `skip_summary`     | Boolean or Object     | Exclude this installer from the summary. Set to `true` to skip both install/update summaries, or use `{install: true}` / `{update: true}` for granular control. Useful for installers that always run.                                                                                        |
 
 ### Supported `type` of Installers
 

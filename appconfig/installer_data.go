@@ -9,6 +9,39 @@ import (
 	"github.com/samber/lo"
 )
 
+// SkipSummary controls whether an installer is excluded from the summary.
+// It can be a boolean (applies to both install and update) or a map with
+// "install" and "update" keys for granular control.
+type SkipSummary struct {
+	Install bool
+	Update  bool
+}
+
+// UnmarshalYAML implements custom YAML unmarshaling for SkipSummary.
+func (s *SkipSummary) UnmarshalYAML(unmarshal func(any) error) error {
+	// Try boolean first
+	var boolVal bool
+	if err := unmarshal(&boolVal); err == nil {
+		s.Install = boolVal
+		s.Update = boolVal
+		return nil
+	}
+
+	// Try map
+	var mapVal map[string]bool
+	if err := unmarshal(&mapVal); err == nil {
+		if v, ok := mapVal["install"]; ok {
+			s.Install = v
+		}
+		if v, ok := mapVal["update"]; ok {
+			s.Update = v
+		}
+		return nil
+	}
+
+	return nil
+}
+
 // InstallerData represents the configuration for a single installer.
 type InstallerData struct {
 	// Enabled determines if the installer is enabled. Can be a boolean string ("true", "false") or a condition.
@@ -47,6 +80,8 @@ type InstallerData struct {
 	PreUpdate *string `json:"pre_update"        yaml:"pre_update"`
 	// EnvShell is a platform-specific shell to use for running commands.
 	EnvShell *platform.PlatformMap[string] `json:"env_shell"         yaml:"env_shell"`
+	// SkipSummary controls whether this installer is excluded from the summary.
+	SkipSummary *SkipSummary `json:"skip_summary"      yaml:"skip_summary"`
 }
 
 // InstallerType represents the type of an installer.

@@ -152,6 +152,12 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) (*summary.I
 		Type: string(info.Type),
 	}
 
+	// Set skip summary flags if configured
+	if info.SkipSummary != nil {
+		result.SkipSummaryInstall = info.SkipSummary.Install
+		result.SkipSummaryUpdate = info.SkipSummary.Update
+	}
+
 	// Log if defaults were applied for this installer type
 	if config.Defaults != nil && config.Defaults.Type != nil {
 		if _, ok := (*config.Defaults.Type)[info.Type]; ok {

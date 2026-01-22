@@ -395,6 +395,157 @@ func TestInstallResultStructure(t *testing.T) {
 	assert.Equal(t, "child", r.Children[0].Name)
 }
 
+func TestSkipSummary(t *testing.T) {
+	logger.InitLogger(false)
+
+	t.Run("skip install summary only", func(t *testing.T) {
+		s := NewSummary()
+		s.Add(InstallResult{
+			Name:               "always-runs",
+			Type:               "shell",
+			Action:             ActionInstalled,
+			SkipSummaryInstall: true,
+			SkipSummaryUpdate:  false,
+		})
+		s.Add(InstallResult{
+			Name:   "normal-pkg",
+			Type:   "brew",
+			Action: ActionInstalled,
+		})
+
+		installed := s.collectByAction(ActionInstalled)
+		assert.Len(t, installed, 1)
+		assert.Equal(t, "normal-pkg", installed[0].Name)
+	})
+
+	t.Run("skip update summary only", func(t *testing.T) {
+		s := NewSummary()
+		s.Add(InstallResult{
+			Name:               "always-runs",
+			Type:               "shell",
+			Action:             ActionUpgraded,
+			SkipSummaryInstall: false,
+			SkipSummaryUpdate:  true,
+		})
+		s.Add(InstallResult{
+			Name:   "normal-pkg",
+			Type:   "brew",
+			Action: ActionUpgraded,
+		})
+
+		upgraded := s.collectByAction(ActionUpgraded)
+		assert.Len(t, upgraded, 1)
+		assert.Equal(t, "normal-pkg", upgraded[0].Name)
+	})
+
+	t.Run("skip both install and update summary", func(t *testing.T) {
+		s := NewSummary()
+		s.Add(InstallResult{
+			Name:               "always-runs",
+			Type:               "shell",
+			Action:             ActionInstalled,
+			SkipSummaryInstall: true,
+			SkipSummaryUpdate:  true,
+		})
+
+		installed := s.collectByAction(ActionInstalled)
+		assert.Empty(t, installed)
+
+		// Change action to upgraded
+		s2 := NewSummary()
+		s2.Add(InstallResult{
+			Name:               "always-runs",
+			Type:               "shell",
+			Action:             ActionUpgraded,
+			SkipSummaryInstall: true,
+			SkipSummaryUpdate:  true,
+		})
+
+		upgraded := s2.collectByAction(ActionUpgraded)
+		assert.Empty(t, upgraded)
+	})
+
+	t.Run("skip install but show in update", func(t *testing.T) {
+		s := NewSummary()
+		s.Add(InstallResult{
+			Name:               "partial-skip",
+			Type:               "shell",
+			Action:             ActionInstalled,
+			SkipSummaryInstall: true,
+			SkipSummaryUpdate:  false,
+		})
+
+		installed := s.collectByAction(ActionInstalled)
+		assert.Empty(t, installed)
+
+		// Same pkg but upgraded action should appear
+		s2 := NewSummary()
+		s2.Add(InstallResult{
+			Name:               "partial-skip",
+			Type:               "shell",
+			Action:             ActionUpgraded,
+			SkipSummaryInstall: true,
+			SkipSummaryUpdate:  false,
+		})
+
+		upgraded := s2.collectByAction(ActionUpgraded)
+		assert.Len(t, upgraded, 1)
+		assert.Equal(t, "partial-skip", upgraded[0].Name)
+	})
+
+	t.Run("skip summary for children in group", func(t *testing.T) {
+		s := NewSummary()
+		s.Add(InstallResult{
+			Name:   "my-group",
+			Type:   "group",
+			Action: ActionInstalled,
+			Children: []InstallResult{
+				{Name: "child1", Type: "brew", Action: ActionInstalled, SkipSummaryInstall: true},
+				{Name: "child2", Type: "npm", Action: ActionInstalled},
+			},
+		})
+
+		installed := s.collectByAction(ActionInstalled)
+		assert.Len(t, installed, 1)
+		assert.Equal(t, "my-group", installed[0].Name)
+		assert.Len(t, installed[0].Children, 1)
+		assert.Equal(t, "child2", installed[0].Children[0].Name)
+	})
+
+	t.Run("group excluded when all children skip summary", func(t *testing.T) {
+		s := NewSummary()
+		s.Add(InstallResult{
+			Name:   "my-group",
+			Type:   "group",
+			Action: ActionInstalled,
+			Children: []InstallResult{
+				{Name: "child1", Type: "brew", Action: ActionInstalled, SkipSummaryInstall: true},
+				{Name: "child2", Type: "npm", Action: ActionInstalled, SkipSummaryInstall: true},
+			},
+		})
+
+		installed := s.collectByAction(ActionInstalled)
+		assert.Empty(t, installed)
+	})
+
+	t.Run("skip summary on group itself", func(t *testing.T) {
+		s := NewSummary()
+		s.Add(InstallResult{
+			Name:               "my-group",
+			Type:               "group",
+			Action:             ActionInstalled,
+			SkipSummaryInstall: true,
+			Children: []InstallResult{
+				{Name: "child1", Type: "brew", Action: ActionInstalled},
+				{Name: "child2", Type: "npm", Action: ActionInstalled},
+			},
+		})
+
+		installed := s.collectByAction(ActionInstalled)
+		assert.Empty(t, installed)
+	})
+}
+
 func TestComplexHierarchy(t *testing.T) {
 	logger.InitLogger(false)
 
