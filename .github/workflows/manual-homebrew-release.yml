@@ -3,56 +3,10 @@ name: Manual Homebrew Release
 on:
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 jobs:
-  release-homebrew:
-    name: Trigger Homebrew Formula Update
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Get latest release info
-        id: latest
-        run: |
-          tag=$(gh release view --json tagName -q .tagName)
-          echo "Latest release tag: $tag"
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
-
-          # Get release body and escape for JSON
-          body=$(gh release view --json body -q .body)
-          # Use delimiter for multiline output
-          echo "body<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$body" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Send dispatch to homebrew-tap
-        env:
-          GH_TOKEN: ${{ secrets.REPO_DISPATCH_PAT }}
-        run: |
-          tag="${{ steps.latest.outputs.tag }}"
-          repo="${{ github.event.repository.name }}"
-          # Use jq to properly escape the body for JSON
-          body=$(cat <<'BODY_EOF'
-          ${{ steps.latest.outputs.body }}
-          BODY_EOF
-          )
-          data=$(jq -n \
-            --arg tag "$tag" \
-            --arg repo "$repo" \
-            --arg body "$body" \
-            '{event_type: "trigger-from-release", client_payload: {tag: $tag, repo: $repo, body: $body}}')
-          echo "Dispatching tag $tag from $repo"
-          echo "Data: $data"
-          curl -X POST \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            https://api.github.com/repos/chenasraf/homebrew-tap/dispatches \
-            -d "$data"
-          echo "Dispatched tag $tag from $repo"
-          echo "Created job on https://github.com/chenasraf/homebrew-tap/actions"
+  homebrew:
+    uses: chenasraf/workflows/.github/workflows/manual-homebrew-release.yml@master
+    with:
+      homebrew-tap-repo: chenasraf/homebrew-tap
+    secrets:
+      REPO_DISPATCH_PAT: ${{ secrets.REPO_DISPATCH_PAT }}
