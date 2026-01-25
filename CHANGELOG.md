@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.19.1](https://github.com/chenasraf/sofmani/compare/v1.19.0...v1.19.1) (2026-01-25)
+
+
+### Bug Fixes
+
+* improve emoji handling in logger ([fa92ab6](https://github.com/chenasraf/sofmani/commit/fa92ab60c4116a30e0d06a9ba5a7eee1da4df714))
+
 ## [1.19.0](https://github.com/chenasraf/sofmani/compare/v1.18.0...v1.19.0) (2026-01-22)
 
 
