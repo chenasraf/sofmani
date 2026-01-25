@@ -9,6 +9,7 @@ import (
 
 	"github.com/chenasraf/sofmani/platform"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/mattn/go-runewidth"
 	"golang.org/x/term"
 )
 
@@ -278,16 +279,16 @@ func Category(name string, desc *string) {
 
 // formatBoxLine formats a line of text to fit within the box.
 func formatBoxLine(text string, innerWidth int) string {
-	// Truncate if too long
-	if len(text) > innerWidth {
-		text = text[:innerWidth]
-	}
-	// Pad to fill the width
-	padding := strings.Repeat(" ", innerWidth-len(text))
+	// Truncate if too long (using display width)
+	text = runewidth.Truncate(text, innerWidth, "")
+	// Pad to fill the width (using display width)
+	displayWidth := runewidth.StringWidth(text)
+	padding := strings.Repeat(" ", innerWidth-displayWidth)
 	return boxVertical + " " + text + padding + " " + boxVertical
 }
 
 // wrapText wraps text to fit within maxWidth, respecting existing newlines.
+// Uses display width to handle Unicode characters (including emojis) correctly.
 func wrapText(text string, maxWidth int) []string {
 	var result []string
 
@@ -306,15 +307,20 @@ func wrapText(text string, maxWidth int) []string {
 		}
 
 		var currentLine string
+		var currentWidth int
 		for _, word := range words {
+			wordWidth := runewidth.StringWidth(word)
 			switch {
 			case currentLine == "":
 				currentLine = word
-			case len(currentLine)+1+len(word) <= maxWidth:
+				currentWidth = wordWidth
+			case currentWidth+1+wordWidth <= maxWidth:
 				currentLine += " " + word
+				currentWidth += 1 + wordWidth
 			default:
 				result = append(result, currentLine)
 				currentLine = word
+				currentWidth = wordWidth
 			}
 		}
 		if currentLine != "" {
