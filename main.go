@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/chenasraf/sofmani/appconfig"
+	"github.com/chenasraf/sofmani/cmd"
 	"github.com/chenasraf/sofmani/installer"
 	"github.com/chenasraf/sofmani/logger"
 	"github.com/chenasraf/sofmani/machine"
@@ -18,25 +19,18 @@ import (
 //go:embed version.txt
 var appVersion []byte // appVersion is embedded from version.txt and contains the application version.
 
+func init() {
+	cmd.RunMain = runMain
+}
+
 // main is the entry point of the application.
 func main() {
-	appconfig.SetVersion(strings.TrimSpace(string(appVersion)))
+	cmd.SetVersion(strings.TrimSpace(string(appVersion)))
+	cmd.Execute()
+}
 
-	// Parse CLI config first to check for --log-file flag
-	cliConfig := appconfig.ParseCliConfig()
-
-	// Handle --log-file without value: show log file path and exit
-	if cliConfig.ShowLogFile {
-		fmt.Println(logger.GetLogFile())
-		return
-	}
-
-	// Handle --machine-id: show machine ID and exit
-	if cliConfig.ShowMachineID {
-		fmt.Println(machine.GetMachineID())
-		return
-	}
-
+// runMain runs the main application logic with the given CLI config.
+func runMain(cliConfig *appconfig.AppCliConfig) {
 	// Set custom log file if provided
 	if cliConfig.LogFile != nil {
 		logger.SetLogFile(*cliConfig.LogFile)

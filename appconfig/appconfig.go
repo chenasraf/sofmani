@@ -1,9 +1,7 @@
 package appconfig
 
 import (
-	"errors"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -203,109 +201,6 @@ var AppVersion string
 // SetVersion sets the application version.
 func SetVersion(v string) {
 	AppVersion = v
-}
-
-// boolPtr returns a pointer to a boolean value.
-func boolPtr(b bool) *bool {
-	return &b
-}
-
-// ParseCliConfig parses command-line arguments and returns an AppCliConfig.
-func ParseCliConfig() *AppCliConfig {
-	args := os.Args[1:]
-	config := &AppCliConfig{
-		ConfigFile:    "",
-		Debug:         nil,
-		CheckUpdates:  nil,
-		Summary:       nil,
-		Filter:        []string{},
-		LogFile:       nil,
-		ShowLogFile:   false,
-		ShowMachineID: false,
-	}
-	file := FindConfigFile()
-	for len(args) > 0 {
-		switch args[0] {
-		case "-d", "--debug":
-			config.Debug = boolPtr(true)
-		case "-D", "--no-debug":
-			config.Debug = boolPtr(false)
-		case "-u", "--update":
-			config.CheckUpdates = boolPtr(true)
-		case "-U", "--no-update":
-			config.CheckUpdates = boolPtr(false)
-		case "-s", "--summary":
-			config.Summary = boolPtr(true)
-		case "-S", "--no-summary":
-			config.Summary = boolPtr(false)
-		case "-f", "--filter":
-			if len(args) > 1 {
-				config.Filter = append(config.Filter, args[1])
-				args = args[1:]
-			}
-		case "-l", "--log-file":
-			if len(args) > 1 && !strings.HasPrefix(args[1], "-") {
-				logFile := args[1]
-				config.LogFile = &logFile
-				args = args[1:]
-			} else {
-				// No value provided, just show log file path
-				config.ShowLogFile = true
-			}
-		case "-m", "--machine-id":
-			config.ShowMachineID = true
-		case "-h", "--help":
-			printHelp()
-			os.Exit(0)
-		case "-v", "--version":
-			printVersion()
-			os.Exit(0)
-		default:
-			if strings.HasPrefix(strings.TrimSpace(args[0]), "-test.") {
-				break
-			}
-			_, err := os.Stat(file)
-			exists := !errors.Is(err, fs.ErrNotExist)
-			if exists {
-				file = args[0]
-			}
-		}
-		args = args[1:]
-	}
-	// If only showing log file or machine ID, don't require config file
-	if config.ShowLogFile || config.ShowMachineID {
-		return config
-	}
-	if file == "" {
-		fmt.Fprintln(os.Stderr, "No config file found")
-		os.Exit(1)
-	}
-	config.ConfigFile = file
-	return config
-}
-
-// printHelp prints the command-line help message.
-func printHelp() {
-	fmt.Println("Usage: sofmani [options] [config_file]")
-	fmt.Println("Options:")
-	fmt.Println("  -d, --debug        Enable debug mode")
-	fmt.Println("  -D, --no-debug     Disable debug mode")
-	fmt.Println("  -u, --update       Enable update checks")
-	fmt.Println("  -U, --no-update    Disable update checks")
-	fmt.Println("  -s, --summary      Enable installation summary (default)")
-	fmt.Println("  -S, --no-summary   Disable installation summary")
-	fmt.Println("  -f, --filter       Filter by installer name (can be used multiple times)")
-	fmt.Println("  -l, --log-file     Set log file path, or show current path if no value given")
-	fmt.Println("  -m, --machine-id   Show machine ID and exit")
-	fmt.Println("  -h, --help         Show this help message")
-	fmt.Println("  -v, --version      Show version")
-	fmt.Println("")
-	fmt.Println("For online documentation, see https://github.com/chenasraf/sofmani/tree/master/docs")
-}
-
-// printVersion prints the application version.
-func printVersion() {
-	fmt.Println(AppVersion)
 }
 
 // NewAppConfig creates a new AppConfig with default values.
