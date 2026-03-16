@@ -248,9 +248,35 @@ func getBoxWidth() int {
 	return boxDefaultWidth
 }
 
+// CategoryDisplayMode controls how category headers are rendered.
+type CategoryDisplayMode string
+
+const (
+	// CategoryDisplayBorder renders categories with a full border and spacing.
+	CategoryDisplayBorder CategoryDisplayMode = "border"
+	// CategoryDisplayBorderCompact renders categories with a border but no spacing.
+	CategoryDisplayBorderCompact CategoryDisplayMode = "border-compact"
+	// CategoryDisplayMinimal renders categories without a border or spacing.
+	CategoryDisplayMinimal CategoryDisplayMode = "minimal"
+)
+
 // Category logs a category header with a decorative border.
 // If desc is provided, it will be displayed below the category name with auto-wrapping.
-func Category(name string, desc *string) {
+// The displayMode controls the visual style: "border" (default), "border-compact", or "minimal".
+func Category(name string, desc *string, displayMode CategoryDisplayMode) {
+	switch displayMode {
+	case CategoryDisplayMinimal:
+		categoryMinimal(name, desc)
+	case CategoryDisplayBorderCompact:
+		categoryBorder(name, desc, false)
+	default:
+		categoryBorder(name, desc, true)
+	}
+}
+
+// categoryBorder renders a category with box-drawing borders.
+// If spaced is true, empty lines are added before and after.
+func categoryBorder(name string, desc *string, spaced bool) {
 	boxWidth := getBoxWidth()
 	innerWidth := boxWidth - 4 // Account for "│ " and " │"
 
@@ -261,7 +287,9 @@ func Category(name string, desc *string) {
 	separator := boxLeftT + horizontalLine + boxRightT
 
 	// Log the header
-	Info("")
+	if spaced {
+		Info("")
+	}
 	Info("%s", topBorder)
 	Info("%s", formatBoxLine(name, innerWidth))
 
@@ -274,7 +302,20 @@ func Category(name string, desc *string) {
 	}
 
 	Info("%s", bottomBorder)
-	Info("")
+	if spaced {
+		Info("")
+	}
+}
+
+// categoryMinimal renders a category as plain text without borders or spacing.
+func categoryMinimal(name string, desc *string) {
+	Info("%s", name)
+	if desc != nil && len(*desc) > 0 {
+		boxWidth := getBoxWidth()
+		for _, line := range wrapText(*desc, boxWidth) {
+			Info("%s", line)
+		}
+	}
 }
 
 // formatBoxLine formats a line of text to fit within the box.

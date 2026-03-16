@@ -142,7 +142,7 @@ func runMain(cliConfig *appconfig.AppCliConfig) {
 
 		// Handle category entries - just log the header
 		if item.isCategory {
-			logger.Category(*item.data.Category, item.data.Desc)
+			logger.Category(*item.data.Category, item.data.Desc, logger.CategoryDisplayMode(cfg.GetCategoryDisplay()))
 			continue
 		}
 

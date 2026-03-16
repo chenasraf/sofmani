@@ -12,6 +12,18 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// CategoryDisplayMode controls how category headers are rendered.
+type CategoryDisplayMode string
+
+const (
+	// CategoryDisplayBorder renders categories with a full border and spacing.
+	CategoryDisplayBorder CategoryDisplayMode = "border"
+	// CategoryDisplayBorderCompact renders categories with a border but no spacing.
+	CategoryDisplayBorderCompact CategoryDisplayMode = "border-compact"
+	// CategoryDisplayMinimal renders categories without a border or spacing.
+	CategoryDisplayMinimal CategoryDisplayMode = "minimal"
+)
+
 // AppConfig represents the main application configuration.
 type AppConfig struct {
 	// Debug enables or disables debug mode.
@@ -20,6 +32,8 @@ type AppConfig struct {
 	CheckUpdates *bool `json:"check_updates"  yaml:"check_updates"`
 	// Summary enables or disables the installation summary at the end.
 	Summary *bool `json:"summary"        yaml:"summary"`
+	// CategoryDisplay controls how category headers are rendered.
+	CategoryDisplay *CategoryDisplayMode `json:"category_display" yaml:"category_display"`
 	// Install is a list of installers to run.
 	Install []InstallerData `json:"install"        yaml:"install"`
 	// Defaults provides default configurations for installer types.
@@ -58,6 +72,14 @@ type AppCliConfig struct {
 type AppConfigDefaults struct {
 	// Type is a map of installer types to their default configurations.
 	Type *map[InstallerType]InstallerData `json:"type" yaml:"type"`
+}
+
+// GetCategoryDisplay returns the effective category display mode, defaulting to "border".
+func (c *AppConfig) GetCategoryDisplay() CategoryDisplayMode {
+	if c.CategoryDisplay != nil {
+		return *c.CategoryDisplay
+	}
+	return CategoryDisplayBorder
 }
 
 // Environ returns the combined environment variables as a slice of strings.

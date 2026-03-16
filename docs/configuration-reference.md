@@ -5,37 +5,39 @@ Here is a breakdown of all configuration options:
 ## Global Options
 
 - **`install`** (Array)
-
   - Installation steps to execute.
 
   - See [Installer Configuration](./installer-configuration.md) for supported types and options that
     you can provide.
 
 - **`debug`** (Boolean)
-
   - Enable or disable debug mode.
   - Default: `false`.
 
 - **`check_updates`** (Boolean)
-
   - Enable or disable checking for updates before running operations.
   - Default: `false`.
 
 - **`summary`** (Boolean)
-
   - Enable or disable the installation summary at the end.
   - The summary shows newly installed and upgraded software in a hierarchical format.
   - Default: `true`.
 
-- **`defaults`** (Object)
+- **`category_display`** (String)
+  - Controls how category headers are rendered in the output.
+  - Values:
+    - `border` — Full border with spacing before and after (default).
+    - `border-compact` — Border without spacing before and after.
+    - `minimal` — Plain text without border or spacing.
+  - Default: `border`.
 
+- **`defaults`** (Object)
   - Defaults to apply to all installer types, such as specifying supported platforms or commonly
     used flags.
 
   - **`defaults.type`**
 
     A mapping between each type (key) and their default options (value).
-
     - See [Installer Configuration](./installer-configuration.md) for supported types and options
       that you can override.
 
@@ -47,8 +49,8 @@ Here is a breakdown of all configuration options:
 - **`machine_aliases`** (Object)
   - A mapping of friendly names to machine IDs.
   - Use `sofmani --machine-id` to get the machine ID for each of your machines.
-  - These aliases can then be used in installer `machines.only` and `machines.except` fields
-    instead of the raw machine IDs.
+  - These aliases can then be used in installer `machines.only` and `machines.except` fields instead
+    of the raw machine IDs.
   - Example:
     ```yaml
     machine_aliases:
@@ -63,6 +65,7 @@ Here is a breakdown of all configuration options:
 debug: false
 check_updates: true
 summary: true
+category_display: border
 defaults:
   type:
     brew:

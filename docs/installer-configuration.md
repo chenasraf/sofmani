@@ -11,16 +11,14 @@ entries that display a bordered header in the output but don't perform any insta
 ### Fields
 
 - **`category`**
-
   - **Type**: String (required for category entries)
   - **Description**: The category name to display. When this field is present, the entry is treated
     as a category header, not an installer.
 
 - **`desc`**
-
   - **Type**: String (optional)
-  - **Description**: An optional description shown below the category name. Supports multi-line
-    text with automatic word wrapping. Existing line breaks are preserved.
+  - **Description**: An optional description shown below the category name. Supports multi-line text
+    with automatic word wrapping. Existing line breaks are preserved.
 
 ### Example
 
@@ -54,7 +52,11 @@ install:
 
 ### Output
 
-Categories are displayed with a bordered header:
+The appearance of category headers is controlled by the top-level `category_display` option.
+
+#### `border` (default)
+
+Categories are displayed with a bordered header and spacing before/after:
 
 ```
 ┌──────────────────────────────────────────────────────────┐
@@ -72,7 +74,27 @@ With a description:
 └──────────────────────────────────────────────────────────┘
 ```
 
-The box width adapts to narrower terminals (minimum of terminal width or 60 characters).
+#### `border-compact`
+
+Same as `border`, but without the empty lines before and after the box.
+
+#### `minimal`
+
+Categories are displayed as plain text without any border or spacing:
+
+```
+Development Tools
+```
+
+With a description:
+
+```
+System Utilities
+Tools for system maintenance and monitoring.
+```
+
+The box width (for `border` and `border-compact`) adapts to narrower terminals (minimum of terminal
+width or 60 characters).
 
 ---
 
@@ -82,33 +104,28 @@ These fields are shared by all installer types. Some fields may vary in behavior
 `type`.
 
 - **`name`**
-
   - **Type**: String (required)
   - **Description**: Identifier for the step. It does not have to be unique, but is usually used to
     check for the app's existence (can be overridden using `bin_name`).
 
 - **`type`**
-
   - **Type**: String (required)
   - **Description**: Type of the step. See [supported types](#supported-type-of-installers) for a
     comprehensive list of supported values.
 
 - **`enabled`**
-
   - **Type**: String or Boolean (optional)
   - **Description**: Enable or disable the step. Disabled steps are not run. This can either be a
     static boolean (`true` or `false`), or a command that returns a success status code for true, or
     a failure for false.
 
 - **`tags`**
-
   - **Type** String (optional)
   - **Description**: Arbitrary tags to attach to an installer. These can later be used to filter
     this installer in or out when running sofmani. This should be a string containing
     space-separated tags.
 
 - **`platforms`**
-
   - **Type**: Object (optional)
   - **Description**: Platform-specific execution controls. See `platforms` subfields below.
   - **Subfields**:
@@ -121,12 +138,11 @@ These fields are shared by all installer types. Some fields may vary in behavior
       - **Description**: Platforms where the step should **not** execute; replaces `platforms.only`.
 
 - **`machines`**
-
   - **Type**: Object (optional)
   - **Description**: Machine-specific execution controls. Use this to run installers only on
-    specific machines. Get the machine ID by running `sofmani --machine-id`. You can use either
-    raw machine IDs or aliases defined in the top-level `machine_aliases` configuration.
-    See `machines` subfields below.
+    specific machines. Get the machine ID by running `sofmani --machine-id`. You can use either raw
+    machine IDs or aliases defined in the top-level `machine_aliases` configuration. See `machines`
+    subfields below.
   - **Subfields**:
     - **`machines.only`**
       - **Type**: Array of Strings
@@ -137,26 +153,22 @@ These fields are shared by all installer types. Some fields may vary in behavior
       - **Description**: Machine IDs or aliases where the step should **not** execute.
 
 - **`steps`**
-
   - **Type**: Array of Installers
   - **Description**: Sub-steps for `group` type. Allows nesting multiple steps together. Ignored for
     all other types.
 
 - **`opts`**
-
   - **Type**: Object (optional)
   - **Description**: Step-specific options and configurations. Content varies depending on the
     `type`. See [supported types](#supported-type-of-installers) for a comprehensive list of
     supported values.
 
 - **`bin_name`**
-
   - **Type**: String (optional)
   - **Description**: Binary name for the installed software, used instead of `name` when checking
     for app's existence.
 
 - **`check_has_update`**
-
   - **Type**: String (shell script)
   - **Description**: Shell command to check whether an update is available for the installed
     software. This will override the default check provided by the corresponding `type`. The check
@@ -164,29 +176,24 @@ These fields are shared by all installer types. Some fields may vary in behavior
     the app is up to date.
 
 - **`check_installed`**
-
   - **Type**: String (shell script)
   - **Description**: Shell command to check if the step has already been installed. If the check
     succeeds (exits with status 0), it means the app is already installed and can be skipped if not
     checking for updates.
 
 - **`pre_install`**
-
   - **Type**: String (shell script)
   - **Description**: Shell script to execute _before_ the step is installed.
 
 - **`post_install`**
-
   - **Type**: String (shell script)
   - **Description**: Shell script to execute _after_ the step is installed.
 
 - **`pre_update`**
-
   - **Type**: String (shell script)
   - **Description**: Shell script to execute _before_ the step is updated (if applicable).
 
 - **`post_update`**
-
   - **Type**: String (shell script)
   - **Description**: Shell script to execute _after_ the step is updated (if applicable).
 
@@ -205,7 +212,6 @@ These fields are shared by all installer types. Some fields may vary in behavior
         shell will be used.
 
 - **`skip_summary`**
-
   - **Type**: Boolean or Object (optional)
   - **Description**: Exclude this installer from the installation summary. Useful for installers
     that always run (like config sync scripts) and would clutter the summary output.
@@ -216,6 +222,7 @@ These fields are shared by all installer types. Some fields may vary in behavior
       - **`skip_summary.install`**: Boolean - exclude from the "Installed" section of the summary.
       - **`skip_summary.update`**: Boolean - exclude from the "Upgraded" section of the summary.
   - **Examples**:
+
     ```yaml
     # Skip from both install and update summaries
     - name: sync-dotfiles
@@ -243,21 +250,18 @@ These fields are shared by all installer types. Some fields may vary in behavior
 ## Supported `type` of Installers
 
 - **`shell`**
-
   - **Description**: Executes arbitrary shell commands.
   - **Options**:
     - `opts.command`: The command to execute for installing.
     - `opts.update_command`: The command to execute for updating.
 
 - **`group`**
-
   - **Description**: Executes a logical group of steps in sequence.
     - Allows nesting multiple steps together.
   - **Options**:
     - `steps`: List of nested steps.
 
 - **`git`**
-
   - **Description**: Clones a git repository to a local directory.
     - If `name` is a full git URL (https or SSH), the repository is cloned directly.
     - If it is a repository path, e.g. `chenasraf/sofmani`, GitHub is assumed.
@@ -269,10 +273,8 @@ These fields are shared by all installer types. Some fields may vary in behavior
     - `opts.update_flags`: Additional flags to pass only to `git pull`.
 
 - **`github-release`**
-
   - **Description**: Downloads a GitHub release asset. Optionally untar/unzip the downloaded file.
   - **Options**:
-
     - `opts.repository`: The repository to download from. Should be in the format:
       `user/repository-name`
     - `opts.destination`: The target directory to extract the files to.
@@ -285,7 +287,6 @@ These fields are shared by all installer types. Some fields may vary in behavior
       This should either be a string, or a map of platforms to filenames.
 
       You can use Go template syntax to insert dynamic values into the filename:
-
       - `{{ .Tag }}` - the full tag name, e.g. `v1.0.0`
       - `{{ .Version }}` - the version without the leading "v", e.g. `1.0.0`
       - `{{ .Arch }}` - the system architecture in Go format, e.g. `amd64`, `arm64`
@@ -293,7 +294,9 @@ These fields are shared by all installer types. Some fields may vary in behavior
       - `{{ .ArchGnu }}` - the architecture in GNU/Linux format, e.g. `x86_64`, `aarch64`
       - `{{ .OS }}` - the current operating system, e.g. `macos`, `linux`, `windows`
 
-      **Legacy syntax (deprecated):** The old `{tag}`, `{version}`, `{arch}`, `{arch_alias}`, `{arch_gnu}`, and `{os}` tokens are still supported but deprecated. A deprecation warning will be logged at DEBUG level when they are used.
+      **Legacy syntax (deprecated):** The old `{tag}`, `{version}`, `{arch}`, `{arch_alias}`,
+      `{arch_gnu}`, and `{os}` tokens are still supported but deprecated. A deprecation warning will
+      be logged at DEBUG level when they are used.
 
       Examples:
 
@@ -332,7 +335,6 @@ These fields are shared by all installer types. Some fields may vary in behavior
       ```
 
 - **`manifest`**
-
   - **Description**: Installs an entire manifest from a local or remote file.
     - Every entry in the `install` array will be run, similar to how `steps` are run for `group`
       installers.
@@ -350,7 +352,6 @@ These fields are shared by all installer types. Some fields may vary in behavior
       `master`. Ignored for local files and raw HTTP URLs.
 
 - **`rsync`**
-
   - **Description**: Copy files from `source` to `destination` using rsync.
   - **Options**:
     - `opts.source`: Source directory/file.
@@ -358,7 +359,6 @@ These fields are shared by all installer types. Some fields may vary in behavior
     - `opts.flags`: Additional rsync flags (e.g., `--delete`, `--exclude`).
 
 - **`brew`**
-
   - **Description**: Installs packages using Homebrew.
 
   - **Options**:
@@ -369,7 +369,6 @@ These fields are shared by all installer types. Some fields may vary in behavior
     - `opts.update_flags`: Additional flags to pass only to `brew upgrade`.
 
 - **`npm`/`pnpm`/`yarn`**
-
   - **Description**: Installs packages using npm/pnpm/yarn.
     - Use `type: npm` for `npm install`, `type: pnpm` for `pnpm install`, and `type: yarn` for
       `yarn install`.
@@ -379,7 +378,6 @@ These fields are shared by all installer types. Some fields may vary in behavior
     - `opts.update_flags`: Additional flags to pass only during update.
 
 - **`apt`/`apk`**
-
   - **Description**: Installs packages using apt install or apt add.
     - Use `type: apt` for `apt install`, and `type: apk` for `apk add`.
   - **Options**:
@@ -388,7 +386,6 @@ These fields are shared by all installer types. Some fields may vary in behavior
     - `opts.update_flags`: Additional flags to pass only during update.
 
 - **`pacman`/`yay`**
-
   - **Description**: Installs packages using pacman or yay (Arch Linux).
     - Use `type: pacman` for official Arch repository packages.
     - Use `type: yay` for AUR (Arch User Repository) packages.
@@ -400,7 +397,6 @@ These fields are shared by all installer types. Some fields may vary in behavior
     - `opts.update_flags`: Additional flags to pass only during update.
 
 - **`pipx`**
-
   - **Description**: Installs packages using pipx.
   - **Options**:
     - `opts.flags`: Additional flags to pass to commands (fallback for install/update).
@@ -408,10 +404,8 @@ These fields are shared by all installer types. Some fields may vary in behavior
     - `opts.update_flags`: Additional flags to pass only to `pipx upgrade`.
 
 - **`docker`**
-
   - **Description**: Pulls and runs Docker containers using `docker run`. Also supports update
     checks by comparing image digests.
-
     - The image is pulled from the registry (e.g., Docker Hub or GHCR) and started with the provided
       options.
     - If the container already exists, it will be started instead of run again.
@@ -419,17 +413,14 @@ These fields are shared by all installer types. Some fields may vary in behavior
     - The container is always run with `--restart always -d`, unless overridden in a custom shell.
 
   - **Required**:
-
     - `name`: The full Docker image name, including tag (e.g.,
       `ghcr.io/open-webui/open-webui:main`).
     - `bin_name`: The container name to assign to the running instance (used in install and update
       checks).
 
   - **Options**:
-
     - `opts.flags`: A string of flags to pass to `docker run` (e.g., ports, volumes, extra args).
       These are appended after the default flags and before the image name.
-
       - Example:
 
         ```yaml
@@ -443,7 +434,6 @@ These fields are shared by all installer types. Some fields may vary in behavior
 
       This is useful if you're running on a platform like `darwin/arm64`, but want to compare
       digests for a different image target (e.g., `linux/amd64`).
-
       - Example:
 
         ```yaml
@@ -624,7 +614,7 @@ install:
     type: pacman
     bin_name: nvim
     opts:
-      needed: true  # Skip if already up-to-date
+      needed: true # Skip if already up-to-date
 
   # Install from AUR using yay
   - name: visual-studio-code-bin

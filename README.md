@@ -149,14 +149,15 @@ For a full breakdown with all the supported options, see
 
 ### Global Options
 
-| Field           | Type    | Description                                                                                                                                                            |
-| --------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `debug`         | Boolean | Enable or disable debug mode. Default: `false`.                                                                                                                        |
-| `check_updates` | Boolean | Enable or disable checking for updates before running operations. Default: `false`.                                                                                    |
-| `summary`       | Boolean | Enable or disable the installation summary at the end. Default: `true`.                                                                                                |
-| `defaults`      | Object  | Defaults to apply to all installer types, such as specifying supported platforms or commonly used flags.                                                               |
-| `env`           | Object  | Environment variables that will be set for the context of the installer. OS env vars are passed, and may be overridden for this config and all of its installers here. |
-| `install`       | Array   | Installation steps to execute.                                                                                                                                         |
+| Field              | Type    | Description                                                                                                                                                            |
+| ------------------ | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `debug`            | Boolean | Enable or disable debug mode. Default: `false`.                                                                                                                        |
+| `check_updates`    | Boolean | Enable or disable checking for updates before running operations. Default: `false`.                                                                                    |
+| `summary`          | Boolean | Enable or disable the installation summary at the end. Default: `true`.                                                                                                |
+| `category_display` | String  | Controls how category headers are rendered. Values: `border` (default), `border-compact`, `minimal`.                                                                   |
+| `defaults`         | Object  | Defaults to apply to all installer types, such as specifying supported platforms or commonly used flags.                                                               |
+| `env`              | Object  | Environment variables that will be set for the context of the installer. OS env vars are passed, and may be overridden for this config and all of its installers here. |
+| `install`          | Array   | Installation steps to execute.                                                                                                                                         |
 
 ### `install` Node
 
