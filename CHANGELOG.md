@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.20.0](https://github.com/chenasraf/sofmani/compare/v1.19.1...v1.20.0) (2026-03-16)
+
+
+### Features
+
+* add category display options ([e464ea2](https://github.com/chenasraf/sofmani/commit/e464ea24ac4b1c7b9b3d2c41f94571a81285c77c))
+
 ## [1.19.1](https://github.com/chenasraf/sofmani/compare/v1.19.0...v1.19.1) (2026-01-25)
 
 
