@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.21.0](https://github.com/chenasraf/sofmani/compare/v1.20.0...v1.21.0) (2026-03-18)
+
+
+### Features
+
+* github release add archive_bin_name option ([6ea118c](https://github.com/chenasraf/sofmani/commit/6ea118c24fe55d7e85d24b8d2f9d3677ecae61c7))
+
+
+### Bug Fixes
+
+* duplicate error logging ([4b28db9](https://github.com/chenasraf/sofmani/commit/4b28db9b3ef71f354eb84ce6917234c6f63a933c))
+
 ## [1.20.0](https://github.com/chenasraf/sofmani/compare/v1.19.1...v1.20.0) (2026-03-16)
 
 
