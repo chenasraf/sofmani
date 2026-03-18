@@ -227,7 +227,6 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) (*summary.I
 				logger.Debug("Running update command for %s", logger.H(name))
 				err := installer.Update()
 				if err != nil {
-					logger.Error("Failed to update %s: %v", logger.H(name), err)
 					return nil, fmt.Errorf("failed to update %s: %w", name, err)
 				}
 				if info.PostUpdate != nil {

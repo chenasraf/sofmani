@@ -77,7 +77,6 @@ func (i *ManifestInstaller) Install() error {
 		} else {
 			result, err := RunInstaller(config, installer)
 			if err != nil {
-				logger.Error("Failed to run installer for step %s: %v", logger.H(*step.Name), err)
 				return fmt.Errorf("failed to run installer for step %s: %w", *step.Name, err)
 			}
 			if result != nil {
