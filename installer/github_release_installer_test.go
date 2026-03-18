@@ -175,6 +175,45 @@ func TestGitHubReleaseGetBinName(t *testing.T) {
 	})
 }
 
+func TestGitHubReleaseGetArchiveBinName(t *testing.T) {
+	logger.InitLogger(false)
+
+	t.Run("returns archive_bin_name when set", func(t *testing.T) {
+		binName := "cospend"
+		data := &appconfig.InstallerData{
+			Name:    strPtr("cospend-cli"),
+			Type:    appconfig.InstallerTypeGitHubRelease,
+			BinName: &binName,
+			Opts: &map[string]any{
+				"archive_bin_name": "cospend-cli",
+			},
+		}
+		installer := newTestGitHubReleaseInstaller(data)
+		assert.Equal(t, "cospend-cli", installer.GetArchiveBinName())
+		assert.Equal(t, "cospend", installer.GetBinName())
+	})
+
+	t.Run("falls back to bin_name when archive_bin_name not set", func(t *testing.T) {
+		binName := "custom-bin"
+		data := &appconfig.InstallerData{
+			Name:    strPtr("my-app"),
+			Type:    appconfig.InstallerTypeGitHubRelease,
+			BinName: &binName,
+		}
+		installer := newTestGitHubReleaseInstaller(data)
+		assert.Equal(t, "custom-bin", installer.GetArchiveBinName())
+	})
+
+	t.Run("falls back to name when neither set", func(t *testing.T) {
+		data := &appconfig.InstallerData{
+			Name: strPtr("my-app"),
+			Type: appconfig.InstallerTypeGitHubRelease,
+		}
+		installer := newTestGitHubReleaseInstaller(data)
+		assert.Equal(t, "my-app", installer.GetArchiveBinName())
+	})
+}
+
 func TestGitHubReleaseGetFilename(t *testing.T) {
 	logger.InitLogger(false)
 

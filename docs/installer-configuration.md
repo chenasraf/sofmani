@@ -315,6 +315,22 @@ These fields are shared by all installer types. Some fields may vary in behavior
       download_filename: myapp_{tag}_linux.tar.gz # outputs: myapp_v1.0.0_linux.tar.gz
       ```
 
+    - `opts.archive_bin_name`: The name of the binary file inside the archive (tar/zip).
+      Use this when the filename inside the archive differs from the desired output `bin_name`.
+      If not set, falls back to `bin_name` (or the installer name).
+
+      ```yaml
+      - name: cospend-cli
+        bin_name: cospend
+        type: github-release
+        opts:
+          repository: chenasraf/cospend-cli
+          destination: ~/.local/bin
+          strategy: tar
+          download_filename: cospend-cli-linux-{{ .Arch }}.tar.gz
+          archive_bin_name: cospend-cli  # file inside the tar is "cospend-cli", output will be "cospend"
+      ```
+
     - `opts.github_token`: GitHub personal access token for authenticated API requests.
       Authenticated requests have a much higher rate limit (5,000/hour vs 60/hour for
       unauthenticated).

@@ -40,6 +40,10 @@ type GitHubReleaseOpts struct {
 	// GithubToken is the GitHub personal access token for authenticated API requests.
 	// Supports environment variable expansion (e.g., "$GITHUB_TOKEN" or "${GITHUB_TOKEN}").
 	GithubToken *string
+	// ArchiveBinName is the name of the binary file inside the archive (tar/zip).
+	// Use this when the filename inside the archive differs from the desired output bin_name.
+	// If not set, falls back to bin_name (or the installer name).
+	ArchiveBinName *string
 }
 
 // GitHubReleaseInstallStrategy represents the installation strategy for a GitHub release.
@@ -193,7 +197,7 @@ func (i *GitHubReleaseInstaller) Install() error {
 		if err != nil {
 			return err
 		}
-		logger.Debug("Strategy 'tar': copying binary '%s' to destination", i.GetBinName())
+		logger.Debug("Strategy 'tar': copying binary '%s' to destination", i.GetArchiveBinName())
 		success, err = i.CopyExtractedFile(out, tmpDir)
 		if !success {
 			return fmt.Errorf("failed to copy extracted file: %w", err)
@@ -210,7 +214,7 @@ func (i *GitHubReleaseInstaller) Install() error {
 		if err != nil {
 			return err
 		}
-		logger.Debug("Strategy 'zip': copying binary '%s' to destination", i.GetBinName())
+		logger.Debug("Strategy 'zip': copying binary '%s' to destination", i.GetArchiveBinName())
 		success, err = i.CopyExtractedFile(out, tmpDir)
 		if !success {
 			return fmt.Errorf("failed to copy extracted file: %w", err)
@@ -299,6 +303,16 @@ func (i *GitHubReleaseInstaller) GetBinName() string {
 	return filepath.Base(*i.Info.Name)
 }
 
+// GetArchiveBinName returns the name of the binary file inside the archive.
+// It uses ArchiveBinName from opts if provided, otherwise falls back to GetBinName().
+func (i *GitHubReleaseInstaller) GetArchiveBinName() string {
+	opts := i.GetOpts()
+	if opts.ArchiveBinName != nil {
+		return *opts.ArchiveBinName
+	}
+	return i.GetBinName()
+}
+
 // CopyExtractedFile copies the extracted file from a temporary directory to the final destination.
 func (i *GitHubReleaseInstaller) CopyExtractedFile(out *os.File, tmpDir string) (bool, error) {
 	binFile, err := os.Create(out.Name())
@@ -310,7 +324,7 @@ func (i *GitHubReleaseInstaller) CopyExtractedFile(out *os.File, tmpDir string) 
 			logger.Warn("failed to close binFile %s: %v", binFile.Name(), cerr)
 		}
 	}()
-	tmpBinFile, err := os.Open(filepath.Join(tmpDir, i.GetBinName()))
+	tmpBinFile, err := os.Open(filepath.Join(tmpDir, i.GetArchiveBinName()))
 	if err != nil {
 		return false, fmt.Errorf("failed to open temporary file: %w", err)
 	}
@@ -396,6 +410,9 @@ func (i *GitHubReleaseInstaller) GetOpts() *GitHubReleaseOpts {
 		if token, ok := (*info.Opts)["github_token"].(string); ok {
 			token = utils.GetRealPath(i.GetData().Environ(), token)
 			opts.GithubToken = &token
+		}
+		if archiveBinName, ok := (*info.Opts)["archive_bin_name"].(string); ok {
+			opts.ArchiveBinName = &archiveBinName
 		}
 	}
 	return opts
