@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.22.0](https://github.com/chenasraf/sofmani/compare/v1.21.0...v1.22.0) (2026-03-19)
+
+
+### Features
+
+* apply template vars everywhere + add device id template vars ([1496ca9](https://github.com/chenasraf/sofmani/commit/1496ca90154fa93388d11c55ee4bbd541468debf))
+
 ## [1.21.0](https://github.com/chenasraf/sofmani/compare/v1.20.0...v1.21.0) (2026-03-18)
 
 
