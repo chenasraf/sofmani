@@ -78,8 +78,20 @@ func InstallerIsEnabled(i IInstaller) (bool, error) {
 		return false, nil
 	}
 
+	// Apply template variables to the enabled command
+	cmd := *enabledCmd
+	if vars := i.GetTemplateVars(); vars != nil {
+		name := ""
+		if i.GetData().Name != nil {
+			name = *i.GetData().Name
+		}
+		if result, err := ApplyTemplate(cmd, vars, name); err == nil {
+			cmd = result
+		}
+	}
+
 	shell := utils.GetOSShell(i.GetData().EnvShell)
-	args := utils.GetOSShellArgs(*enabledCmd)
+	args := utils.GetOSShellArgs(cmd)
 
 	success, err := utils.RunCmdGetSuccess(i.GetData().Environ(), shell, args...)
 

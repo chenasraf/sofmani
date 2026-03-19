@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/chenasraf/sofmani/logger"
+	"github.com/chenasraf/sofmani/machine"
 	"github.com/chenasraf/sofmani/platform"
 	"github.com/stretchr/testify/assert"
 )
@@ -11,19 +12,36 @@ import (
 func TestNewTemplateVars(t *testing.T) {
 	logger.InitLogger(false)
 
-	vars := NewTemplateVars("v1.2.3")
+	vars := NewTemplateVars("v1.2.3", nil)
 	assert.Equal(t, "v1.2.3", vars.Tag)
 	assert.Equal(t, "1.2.3", vars.Version)
 	assert.NotEmpty(t, vars.Arch)
 	assert.NotEmpty(t, vars.ArchAlias)
 	assert.NotEmpty(t, vars.ArchGnu)
 	assert.NotEmpty(t, vars.OS)
+	assert.NotEmpty(t, vars.DeviceID)
+	assert.Empty(t, vars.DeviceIDAlias) // no aliases provided
+}
+
+func TestNewTemplateVarsWithMachineAliases(t *testing.T) {
+	logger.InitLogger(false)
+
+	machine.SetMachineID("test-machine-id")
+	defer machine.ResetMachineID()
+
+	aliases := map[string]string{
+		"my-laptop": "test-machine-id",
+		"my-server": "other-machine-id",
+	}
+	vars := NewTemplateVars("v1.0.0", aliases)
+	assert.Equal(t, "test-machine-id", vars.DeviceID)
+	assert.Equal(t, "my-laptop", vars.DeviceIDAlias)
 }
 
 func TestNewTemplateVarsWithoutVPrefix(t *testing.T) {
 	logger.InitLogger(false)
 
-	vars := NewTemplateVars("1.2.3")
+	vars := NewTemplateVars("1.2.3", nil)
 	assert.Equal(t, "1.2.3", vars.Tag)
 	assert.Equal(t, "1.2.3", vars.Version)
 }
@@ -34,12 +52,14 @@ func TestApplyTemplateGoSyntax(t *testing.T) {
 	// Set predictable values for testing
 	platform.SetOS("darwin")
 	platform.SetArch("arm64")
+	machine.SetMachineID("abc123")
 	defer func() {
 		platform.SetOS("darwin")
 		platform.SetArch("arm64")
+		machine.ResetMachineID()
 	}()
 
-	vars := NewTemplateVars("v2.0.0")
+	vars := NewTemplateVars("v2.0.0", nil)
 
 	tests := []struct {
 		name     string
@@ -82,6 +102,11 @@ func TestApplyTemplateGoSyntax(t *testing.T) {
 			expected: "app_2.0.0_macos_arm64.tar.gz",
 		},
 		{
+			name:     "DeviceID variable",
+			input:    "app_{{ .DeviceID }}.tar.gz",
+			expected: "app_abc123.tar.gz",
+		},
+		{
 			name:     "No variables",
 			input:    "app_static.tar.gz",
 			expected: "app_static.tar.gz",
@@ -97,6 +122,22 @@ func TestApplyTemplateGoSyntax(t *testing.T) {
 	}
 }
 
+func TestApplyTemplateDeviceIDAlias(t *testing.T) {
+	logger.InitLogger(false)
+
+	machine.SetMachineID("test-device-123")
+	defer machine.ResetMachineID()
+
+	aliases := map[string]string{
+		"workstation": "test-device-123",
+	}
+	vars := NewTemplateVars("v1.0.0", aliases)
+
+	result, err := ApplyTemplate("config_{{ .DeviceIDAlias }}.yaml", vars, "test-installer")
+	assert.NoError(t, err)
+	assert.Equal(t, "config_workstation.yaml", result)
+}
+
 func TestApplyTemplateLegacySyntax(t *testing.T) {
 	logger.InitLogger(false)
 
@@ -108,7 +149,7 @@ func TestApplyTemplateLegacySyntax(t *testing.T) {
 		platform.SetArch("arm64")
 	}()
 
-	vars := NewTemplateVars("v3.1.4")
+	vars := NewTemplateVars("v3.1.4", nil)
 
 	tests := []struct {
 		name     string
@@ -172,7 +213,7 @@ func TestApplyTemplateMixedSyntax(t *testing.T) {
 		platform.SetArch("arm64")
 	}()
 
-	vars := NewTemplateVars("v1.0.0")
+	vars := NewTemplateVars("v1.0.0", nil)
 
 	// Mixed syntax should work - legacy tokens are replaced first, then Go template
 	result, err := ApplyTemplate("app_{tag}_{{ .ArchAlias }}.tar.gz", vars, "test-installer")
@@ -183,7 +224,7 @@ func TestApplyTemplateMixedSyntax(t *testing.T) {
 func TestApplyTemplateInvalidGoTemplate(t *testing.T) {
 	logger.InitLogger(false)
 
-	vars := NewTemplateVars("v1.0.0")
+	vars := NewTemplateVars("v1.0.0", nil)
 
 	// Invalid Go template syntax should return an error
 	_, err := ApplyTemplate("app_{{ .InvalidField }.tar.gz", vars, "test-installer")

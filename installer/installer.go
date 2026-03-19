@@ -25,12 +25,18 @@ type IInstaller interface {
 	Update() error
 	// Validate validates the installer configuration.
 	Validate() []ValidationError
+	// SetTemplateVars sets the template variables for string expansion.
+	SetTemplateVars(vars *TemplateVars)
+	// GetTemplateVars returns the template variables.
+	GetTemplateVars() *TemplateVars
 }
 
 // InstallerBase provides a base implementation for common installer functionality.
 type InstallerBase struct {
 	// Data is the installer data.
 	Data *appconfig.InstallerData
+	// TemplateVars holds template variables for string expansion in commands and hooks.
+	TemplateVars *TemplateVars
 }
 
 // GetInstaller returns an IInstaller instance based on the installer type.
@@ -70,6 +76,16 @@ func (i *InstallerBase) GetData() *appconfig.InstallerData {
 	return i.Data
 }
 
+// SetTemplateVars sets the template variables for string expansion.
+func (i *InstallerBase) SetTemplateVars(vars *TemplateVars) {
+	i.TemplateVars = vars
+}
+
+// GetTemplateVars returns the template variables.
+func (i *InstallerBase) GetTemplateVars() *TemplateVars {
+	return i.TemplateVars
+}
+
 // BaseValidate performs basic validation common to all installers.
 func (i *InstallerBase) BaseValidate() []ValidationError {
 	errors := []ValidationError{}
@@ -80,17 +96,34 @@ func (i *InstallerBase) BaseValidate() []ValidationError {
 	return errors
 }
 
+// applyTemplate applies template variables to a string if TemplateVars is set.
+func (i *InstallerBase) applyTemplate(input string) string {
+	if i.TemplateVars == nil {
+		return input
+	}
+	name := ""
+	if i.Data != nil && i.Data.Name != nil {
+		name = *i.Data.Name
+	}
+	result, err := ApplyTemplate(input, i.TemplateVars, name)
+	if err != nil {
+		logger.Warn("Failed to apply template to %q: %v", input, err)
+		return input
+	}
+	return result
+}
+
 // RunCustomUpdateCheck runs a custom command to check for updates.
 func (i *InstallerBase) RunCustomUpdateCheck() (bool, error) {
 	envShell := utils.GetOSShell(i.GetData().EnvShell)
-	args := utils.GetOSShellArgs(*i.GetData().CheckHasUpdate)
+	args := utils.GetOSShellArgs(i.applyTemplate(*i.GetData().CheckHasUpdate))
 	return utils.RunCmdGetSuccessPassThrough(i.Data.Environ(), envShell, args...)
 }
 
 // RunCustomInstallCheck runs a custom command to check if the software is installed.
 func (i *InstallerBase) RunCustomInstallCheck() (bool, error) {
 	envShell := utils.GetOSShell(i.GetData().EnvShell)
-	args := utils.GetOSShellArgs(*i.GetData().CheckInstalled)
+	args := utils.GetOSShellArgs(i.applyTemplate(*i.GetData().CheckInstalled))
 	return utils.RunCmdGetSuccessPassThrough(i.Data.Environ(), envShell, args...)
 }
 
@@ -105,9 +138,10 @@ func (i *InstallerBase) HasCustomInstallCheck() bool {
 }
 
 // RunCmdAsFile runs a command as a temporary file.
+// Template variables are applied to the command before execution.
 func (i *InstallerBase) RunCmdAsFile(command string) error {
 	data := i.GetData()
-	return utils.RunCmdAsFile(data.Environ(), command, data.EnvShell)
+	return utils.RunCmdAsFile(data.Environ(), i.applyTemplate(command), data.EnvShell)
 }
 
 // RunCmdPassThrough runs a command and passes through its output.
@@ -167,17 +201,28 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) (*summary.I
 
 	logger.Debug("Checking if %s: %s should run on %s", logger.H(string(info.Type)), logger.H(name), curOS)
 	env := config.Environ()
+
+	// Inject DEVICE_ID and DEVICE_ID_ALIAS as environment variables
+	machineID := machine.GetMachineID()
+	env = append(env, "DEVICE_ID="+machineID)
+	var machineAliases map[string]string
+	if config.MachineAliases != nil {
+		machineAliases = *config.MachineAliases
+	}
+	if alias := resolveDeviceAlias(machineID, machineAliases); alias != "" {
+		env = append(env, "DEVICE_ID_ALIAS="+alias)
+	}
+
+	// Set up template variables for string expansion in commands and hooks
+	templateVars := NewTemplateVars("", machineAliases)
+	installer.SetTemplateVars(templateVars)
+
 	if !installer.GetData().Platforms.GetShouldRunOnOS(curOS) {
 		logger.Debug("%s should not run on %s, skipping", logger.H(name), curOS)
 		result.Action = summary.ActionSkipped
 		return result, nil
 	}
 
-	machineID := machine.GetMachineID()
-	var machineAliases map[string]string
-	if config.MachineAliases != nil {
-		machineAliases = *config.MachineAliases
-	}
 	if !installer.GetData().Machines.GetShouldRunOnMachine(machineID, machineAliases) {
 		logger.Debug("%s should not run on machine %s, skipping", logger.H(name), machineID)
 		result.Action = summary.ActionSkipped
@@ -187,6 +232,16 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) (*summary.I
 		logger.Debug("%s is filtered, skipping", logger.H(name))
 		result.Action = summary.ActionSkipped
 		return result, nil
+	}
+
+	// applyTmpl applies template variables to a string for this installer.
+	applyTmpl := func(input string) string {
+		result, err := ApplyTemplate(input, templateVars, name)
+		if err != nil {
+			logger.Warn("Failed to apply template to %q: %v", input, err)
+			return input
+		}
+		return result
 	}
 
 	enabled, err := InstallerIsEnabled(installer)
@@ -219,7 +274,7 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) (*summary.I
 				logger.Info("Updating %s", logger.H(name))
 				if info.PreUpdate != nil {
 					logger.Debug("Running pre-update command for %s", logger.H(name))
-					err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetData().EnvShell), utils.GetOSShellArgs(*info.PreUpdate)...)
+					err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetData().EnvShell), utils.GetOSShellArgs(applyTmpl(*info.PreUpdate))...)
 					if err != nil {
 						return nil, err
 					}
@@ -231,7 +286,7 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) (*summary.I
 				}
 				if info.PostUpdate != nil {
 					logger.Debug("Running post-update command for %s", logger.H(name))
-					err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetData().EnvShell), utils.GetOSShellArgs(*info.PostUpdate)...)
+					err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetData().EnvShell), utils.GetOSShellArgs(applyTmpl(*info.PostUpdate))...)
 					if err != nil {
 						return nil, err
 					}
@@ -248,7 +303,7 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) (*summary.I
 		logger.Info("Installing %s: %s", logger.H(string(installer.GetData().Type)), logger.H(name))
 		if info.PreInstall != nil {
 			logger.Debug("Running pre-install command for %s: %s", logger.H(string(info.Type)), logger.H(name))
-			err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetData().EnvShell), utils.GetOSShellArgs(*info.PreInstall)...)
+			err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetData().EnvShell), utils.GetOSShellArgs(applyTmpl(*info.PreInstall))...)
 			if err != nil {
 				return nil, err
 			}
@@ -260,7 +315,7 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) (*summary.I
 		}
 		if info.PostInstall != nil {
 			logger.Debug("Running post-install command for %s: %s", logger.H(string(info.Type)), logger.H(name))
-			err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetData().EnvShell), utils.GetOSShellArgs(*info.PostInstall)...)
+			err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetData().EnvShell), utils.GetOSShellArgs(applyTmpl(*info.PostInstall))...)
 			if err != nil {
 				return nil, err
 			}

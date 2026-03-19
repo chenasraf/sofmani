@@ -26,6 +26,8 @@ type MockInstaller struct {
 	checkUpdate error
 	// validationErrors simulates validation errors for the installer.
 	validationErrors []ValidationError
+	// templateVars holds template variables for testing.
+	templateVars *TemplateVars
 }
 
 // GetData returns the installer data for the mock installer.
@@ -56,6 +58,16 @@ func (m *MockInstaller) Update() error {
 // Validate simulates validating the installer configuration.
 func (m *MockInstaller) Validate() []ValidationError {
 	return m.validationErrors
+}
+
+// SetTemplateVars sets the template variables for the mock installer.
+func (m *MockInstaller) SetTemplateVars(vars *TemplateVars) {
+	m.templateVars = vars
+}
+
+// GetTemplateVars returns the template variables for the mock installer.
+func (m *MockInstaller) GetTemplateVars() *TemplateVars {
+	return m.templateVars
 }
 
 // strPtr returns a pointer to the given string.

@@ -6,6 +6,7 @@ import (
 	"text/template"
 
 	"github.com/chenasraf/sofmani/logger"
+	"github.com/chenasraf/sofmani/machine"
 	"github.com/chenasraf/sofmani/platform"
 )
 
@@ -23,29 +24,50 @@ type TemplateVars struct {
 	ArchGnu string
 	// OS is the current operating system (e.g., "macos", "linux", "windows").
 	OS string
+	// DeviceID is the unique machine identifier (truncated SHA-256 hash).
+	DeviceID string
+	// DeviceIDAlias is the friendly alias for the current machine, if one is defined in machine_aliases.
+	DeviceIDAlias string
 }
 
 // legacyTokens maps old-style tokens to their TemplateVars field names.
 var legacyTokens = map[string]string{
-	"{tag}":        "Tag",
-	"{version}":    "Version",
-	"{arch}":       "Arch",
-	"{arch_alias}": "ArchAlias",
-	"{arch_gnu}":   "ArchGnu",
-	"{os}":         "OS",
+	"{tag}":             "Tag",
+	"{version}":         "Version",
+	"{arch}":            "Arch",
+	"{arch_alias}":      "ArchAlias",
+	"{arch_gnu}":        "ArchGnu",
+	"{os}":              "OS",
+	"{device_id}":       "DeviceID",
+	"{device_id_alias}": "DeviceIDAlias",
 }
 
 // NewTemplateVars creates a new TemplateVars with the provided tag and current system info.
-func NewTemplateVars(tag string) *TemplateVars {
+// The machineAliases parameter is a map of friendly names to machine IDs, used to resolve DeviceIDAlias.
+func NewTemplateVars(tag string, machineAliases map[string]string) *TemplateVars {
 	version, _ := strings.CutPrefix(tag, "v")
+	deviceID := machine.GetMachineID()
 	return &TemplateVars{
-		Tag:       tag,
-		Version:   version,
-		Arch:      string(platform.GetArch()),
-		ArchAlias: platform.GetArchAlias(),
-		ArchGnu:   platform.GetArchGnu(),
-		OS:        string(platform.GetPlatform()),
+		Tag:           tag,
+		Version:       version,
+		Arch:          string(platform.GetArch()),
+		ArchAlias:     platform.GetArchAlias(),
+		ArchGnu:       platform.GetArchGnu(),
+		OS:            string(platform.GetPlatform()),
+		DeviceID:      deviceID,
+		DeviceIDAlias: resolveDeviceAlias(deviceID, machineAliases),
 	}
+}
+
+// resolveDeviceAlias returns the alias for the given machine ID by reverse-looking up the aliases map.
+// Returns an empty string if no alias is found.
+func resolveDeviceAlias(machineID string, aliases map[string]string) string {
+	for alias, id := range aliases {
+		if id == machineID {
+			return alias
+		}
+	}
+	return ""
 }
 
 // ApplyTemplate applies template variables to a string.
@@ -98,6 +120,10 @@ func applyLegacyTokens(input string, vars *TemplateVars, installerName string) s
 				value = vars.ArchGnu
 			case "OS":
 				value = vars.OS
+			case "DeviceID":
+				value = vars.DeviceID
+			case "DeviceIDAlias":
+				value = vars.DeviceIDAlias
 			}
 			result = strings.ReplaceAll(result, token, value)
 		}

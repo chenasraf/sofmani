@@ -116,7 +116,11 @@ func (i *GitHubReleaseInstaller) Install() error {
 	if filename == "" {
 		return fmt.Errorf("no download filename provided")
 	}
-	templateVars := NewTemplateVars(tag)
+	var machineAliases map[string]string
+	if i.Config.MachineAliases != nil {
+		machineAliases = *i.Config.MachineAliases
+	}
+	templateVars := NewTemplateVars(tag, machineAliases)
 	filename, err = ApplyTemplate(filename, templateVars, name)
 	if err != nil {
 		return fmt.Errorf("failed to apply template to filename: %w", err)
