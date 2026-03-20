@@ -117,7 +117,7 @@ These fields are shared by all installer types. Some fields may vary in behavior
   - **Type**: String or Boolean (optional)
   - **Description**: Enable or disable the step. Disabled steps are not run. This can either be a
     static boolean (`true` or `false`), or a command that returns a success status code for true, or
-    a failure for false.
+    a failure for false. Commands support [template variables](#template-variables).
 
 - **`tags`**
   - **Type** String (optional)
@@ -173,29 +173,33 @@ These fields are shared by all installer types. Some fields may vary in behavior
   - **Description**: Shell command to check whether an update is available for the installed
     software. This will override the default check provided by the corresponding `type`. The check
     **must succeed** (return exit code 0) if the app has an update, or fail (other status codes) if
-    the app is up to date.
+    the app is up to date. Supports [template variables](#template-variables).
 
 - **`check_installed`**
   - **Type**: String (shell script)
   - **Description**: Shell command to check if the step has already been installed. If the check
     succeeds (exits with status 0), it means the app is already installed and can be skipped if not
-    checking for updates.
+    checking for updates. Supports [template variables](#template-variables).
 
 - **`pre_install`**
   - **Type**: String (shell script)
-  - **Description**: Shell script to execute _before_ the step is installed.
+  - **Description**: Shell script to execute _before_ the step is installed. Supports
+    [template variables](#template-variables).
 
 - **`post_install`**
   - **Type**: String (shell script)
-  - **Description**: Shell script to execute _after_ the step is installed.
+  - **Description**: Shell script to execute _after_ the step is installed. Supports
+    [template variables](#template-variables).
 
 - **`pre_update`**
   - **Type**: String (shell script)
-  - **Description**: Shell script to execute _before_ the step is updated (if applicable).
+  - **Description**: Shell script to execute _before_ the step is updated (if applicable). Supports
+    [template variables](#template-variables).
 
 - **`post_update`**
   - **Type**: String (shell script)
-  - **Description**: Shell script to execute _after_ the step is updated (if applicable).
+  - **Description**: Shell script to execute _after_ the step is updated (if applicable). Supports
+    [template variables](#template-variables).
 
 - **`env_shell`**
   - **Type**: Object (optional)
@@ -247,10 +251,55 @@ These fields are shared by all installer types. Some fields may vary in behavior
         update: true
     ```
 
+## Template Variables
+
+All shell commands across installers support **Go template syntax** for dynamic value insertion.
+This includes `opts.command`, `opts.update_command`, `pre_install`, `post_install`, `pre_update`,
+`post_update`, `check_installed`, `check_has_update`, and `enabled` (when it's a shell command).
+
+Available variables:
+
+| Variable               | Description                                                                          | Example                     |
+| ---------------------- | ------------------------------------------------------------------------------------ | --------------------------- |
+| `{{ .Arch }}`          | System architecture in Go format                                                     | `amd64`, `arm64`            |
+| `{{ .ArchAlias }}`     | Architecture in common alias format                                                  | `x86_64`, `arm64`           |
+| `{{ .ArchGnu }}`       | Architecture in GNU/Linux format                                                     | `x86_64`, `aarch64`         |
+| `{{ .OS }}`            | Current operating system                                                             | `macos`, `linux`, `windows` |
+| `{{ .DeviceID }}`      | Unique machine identifier (truncated SHA-256 hash)                                   | `5fa2a8e8193868df`          |
+| `{{ .DeviceIDAlias }}` | Friendly alias for the current machine, if defined in `machine_aliases`              | `work-laptop`               |
+| `{{ .Tag }}`           | Full tag name (only available in `github-release` `download_filename`)               | `v1.0.0`                    |
+| `{{ .Version }}`       | Version without leading "v" (only available in `github-release` `download_filename`) | `1.0.0`                     |
+
+In addition, `DEVICE_ID` and `DEVICE_ID_ALIAS` are injected as **environment variables** into all
+command executions, so they can also be referenced as `$DEVICE_ID` and `$DEVICE_ID_ALIAS` in shell
+commands.
+
+### Example
+
+```yaml
+machine_aliases:
+  work-laptop: 5fa2a8e8193868df
+  home-desktop: a1b2c3d4e5f67890
+
+install:
+  - name: sync-config
+    type: shell
+    opts:
+      command: cp ~/dotfiles/config-{{ .DeviceIDAlias }}.yaml ~/.config/myapp/config.yaml
+
+  - name: setup-tool
+    type: shell
+    opts:
+      command: |
+        echo "Setting up on device $DEVICE_ID ({{ .DeviceIDAlias }})"
+        ./setup.sh --arch {{ .Arch }} --os {{ .OS }}
+```
+
 ## Supported `type` of Installers
 
 - **`shell`**
-  - **Description**: Executes arbitrary shell commands.
+  - **Description**: Executes arbitrary shell commands. Commands support
+    [template variables](#template-variables).
   - **Options**:
     - `opts.command`: The command to execute for installing.
     - `opts.update_command`: The command to execute for updating.
@@ -293,10 +342,13 @@ These fields are shared by all installer types. Some fields may vary in behavior
       - `{{ .ArchAlias }}` - the architecture in common alias format, e.g. `x86_64`, `arm64`
       - `{{ .ArchGnu }}` - the architecture in GNU/Linux format, e.g. `x86_64`, `aarch64`
       - `{{ .OS }}` - the current operating system, e.g. `macos`, `linux`, `windows`
+      - `{{ .DeviceID }}` - the unique machine identifier (truncated SHA-256 hash)
+      - `{{ .DeviceIDAlias }}` - the friendly alias for the current machine, if defined in
+        `machine_aliases`
 
       **Legacy syntax (deprecated):** The old `{tag}`, `{version}`, `{arch}`, `{arch_alias}`,
-      `{arch_gnu}`, and `{os}` tokens are still supported but deprecated. A deprecation warning will
-      be logged at DEBUG level when they are used.
+      `{arch_gnu}`, `{os}`, `{device_id}`, and `{device_id_alias}` tokens are still supported but
+      deprecated. A deprecation warning will be logged at DEBUG level when they are used.
 
       Examples:
 
@@ -315,9 +367,9 @@ These fields are shared by all installer types. Some fields may vary in behavior
       download_filename: myapp_{tag}_linux.tar.gz # outputs: myapp_v1.0.0_linux.tar.gz
       ```
 
-    - `opts.archive_bin_name`: The name of the binary file inside the archive (tar/zip).
-      Use this when the filename inside the archive differs from the desired output `bin_name`.
-      If not set, falls back to `bin_name` (or the installer name).
+    - `opts.archive_bin_name`: The name of the binary file inside the archive (tar/zip). Use this
+      when the filename inside the archive differs from the desired output `bin_name`. If not set,
+      falls back to `bin_name` (or the installer name).
 
       ```yaml
       - name: cospend-cli
@@ -328,7 +380,7 @@ These fields are shared by all installer types. Some fields may vary in behavior
           destination: ~/.local/bin
           strategy: tar
           download_filename: cospend-cli-linux-{{ .Arch }}.tar.gz
-          archive_bin_name: cospend-cli  # file inside the tar is "cospend-cli", output will be "cospend"
+          archive_bin_name: cospend-cli # file inside the tar is "cospend-cli", output will be "cospend"
       ```
 
     - `opts.github_token`: GitHub personal access token for authenticated API requests.

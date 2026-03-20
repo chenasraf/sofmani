@@ -51,6 +51,8 @@ Here is a breakdown of all configuration options:
   - Use `sofmani --machine-id` to get the machine ID for each of your machines.
   - These aliases can then be used in installer `machines.only` and `machines.except` fields instead
     of the raw machine IDs.
+  - The alias for the current machine is also available as the `{{ .DeviceIDAlias }}` template
+    variable and the `$DEVICE_ID_ALIAS` environment variable in all commands.
   - Example:
     ```yaml
     machine_aliases:

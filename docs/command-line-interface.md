@@ -11,19 +11,19 @@ repository.
 
 You can call `sofmani` with the following flags to alter the behavior for the current run:
 
-| Flag                  | Description                                             |
-| --------------------- | ------------------------------------------------------- |
-| `-d`, `--debug`       | Enable debug mode.                                      |
-| `-D`, `--no-debug`    | Disable debug mode (default).                           |
-| `-u`, `--update`      | Enable update checking.                                 |
-| `-U`, `--no-update`   | Disable update checking (default).                      |
-| `-s`, `--summary`     | Enable installation summary (default).                  |
-| `-S`, `--no-summary`  | Disable installation summary.                           |
-| `-f`, `--filter`      | Filter by installer name (can be used multiple times)\* |
-| `-l`, `--log-file`    | Set log file path, or show current path if no value.    |
-| `-m`, `--machine-id`  | Show machine ID and exit.                               |
-| `-h`, `--help`        | Display help information and exit.                      |
-| `-v`, `--version`     | Display version information and exit.                   |
+| Flag                 | Description                                             |
+| -------------------- | ------------------------------------------------------- |
+| `-d`, `--debug`      | Enable debug mode.                                      |
+| `-D`, `--no-debug`   | Disable debug mode (default).                           |
+| `-u`, `--update`     | Enable update checking.                                 |
+| `-U`, `--no-update`  | Disable update checking (default).                      |
+| `-s`, `--summary`    | Enable installation summary (default).                  |
+| `-S`, `--no-summary` | Disable installation summary.                           |
+| `-f`, `--filter`     | Filter by installer name (can be used multiple times)\* |
+| `-l`, `--log-file`   | Set log file path, or show current path if no value.    |
+| `-m`, `--machine-id` | Show machine ID and exit.                               |
+| `-h`, `--help`       | Display help information and exit.                      |
+| `-v`, `--version`    | Display version information and exit.                   |
 
 Each of these flags overrides the loaded config file, so while your default config can choose not to
 check for updates by default, you or another user can add the `--update` flag to override this
