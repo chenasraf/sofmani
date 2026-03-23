@@ -56,6 +56,11 @@ func (i *AptInstaller) Install() error {
 		install = "add"
 	}
 	args := []string{install}
+	if i.IsVerbose() {
+		if i.PackageManager == PackageManagerApk {
+			args = append(args, "--verbose")
+		}
+	}
 	if confirm := i.getConfirmArg(); confirm != "" {
 		args = append(args, confirm)
 	}
@@ -82,6 +87,11 @@ func (i *AptInstaller) getConfirmArg() string {
 func (i *AptInstaller) Update() error {
 	opts := i.GetOpts()
 	args := []string{"upgrade"}
+	if i.IsVerbose() {
+		if i.PackageManager == PackageManagerApk {
+			args = append(args, "--verbose")
+		}
+	}
 	if confirm := i.getConfirmArg(); confirm != "" {
 		args = append(args, confirm)
 	}

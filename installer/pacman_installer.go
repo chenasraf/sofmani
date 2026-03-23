@@ -49,6 +49,9 @@ func (i *PacmanInstaller) Install() error {
 	name := *i.Info.Name
 	opts := i.GetOpts()
 	args := []string{"-S", "--noconfirm"}
+	if i.IsVerbose() {
+		args = append(args, "--verbose")
+	}
 	if opts.Needed != nil && *opts.Needed {
 		args = append(args, "--needed")
 	}
@@ -66,6 +69,9 @@ func (i *PacmanInstaller) Update() error {
 	name := *i.Info.Name
 	opts := i.GetOpts()
 	args := []string{"-S", "--noconfirm"}
+	if i.IsVerbose() {
+		args = append(args, "--verbose")
+	}
 	if opts.Needed != nil && *opts.Needed {
 		args = append(args, "--needed")
 	}

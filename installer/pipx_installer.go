@@ -37,6 +37,9 @@ func (i *PipxInstaller) Install() error {
 	name := *i.Info.Name
 	opts := i.GetOpts()
 	args := []string{"install"}
+	if i.IsVerbose() {
+		args = append(args, "--verbose")
+	}
 	if opts.InstallFlags != nil {
 		args = append(args, strings.Fields(*opts.InstallFlags)...)
 	} else if opts.Flags != nil {
@@ -50,6 +53,9 @@ func (i *PipxInstaller) Install() error {
 func (i *PipxInstaller) Update() error {
 	opts := i.GetOpts()
 	args := []string{"upgrade"}
+	if i.IsVerbose() {
+		args = append(args, "--verbose")
+	}
 	if opts.UpdateFlags != nil {
 		args = append(args, strings.Fields(*opts.UpdateFlags)...)
 	} else if opts.Flags != nil {

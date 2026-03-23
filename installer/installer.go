@@ -86,6 +86,11 @@ func (i *InstallerBase) GetTemplateVars() *TemplateVars {
 	return i.TemplateVars
 }
 
+// IsVerbose returns true if verbose output is enabled for this installer.
+func (i *InstallerBase) IsVerbose() bool {
+	return i.Data != nil && i.Data.Verbose != nil && *i.Data.Verbose
+}
+
 // BaseValidate performs basic validation common to all installers.
 func (i *InstallerBase) BaseValidate() []ValidationError {
 	errors := []ValidationError{}

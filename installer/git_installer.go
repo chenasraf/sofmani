@@ -51,6 +51,9 @@ func (i *GitInstaller) Validate() []ValidationError {
 func (i *GitInstaller) Install() error {
 	opts := i.GetOpts()
 	args := []string{"clone"}
+	if i.IsVerbose() {
+		args = append(args, "--verbose")
+	}
 	if opts.InstallFlags != nil {
 		args = append(args, strings.Fields(*opts.InstallFlags)...)
 	} else if opts.Flags != nil {
@@ -71,6 +74,9 @@ func (i *GitInstaller) Install() error {
 func (i *GitInstaller) Update() error {
 	opts := i.GetOpts()
 	args := []string{"-C", i.GetInstallDir(), "pull"}
+	if i.IsVerbose() {
+		args = append(args, "--verbose")
+	}
 	if opts.UpdateFlags != nil {
 		args = append(args, strings.Fields(*opts.UpdateFlags)...)
 	} else if opts.Flags != nil {

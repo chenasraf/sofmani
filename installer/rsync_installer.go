@@ -48,7 +48,7 @@ func (i *RsyncInstaller) Validate() []ValidationError {
 // Install implements IInstaller.
 func (i *RsyncInstaller) Install() error {
 	defaultFlags := "-tr"
-	if i.Config.Debug != nil && *i.Config.Debug {
+	if i.IsVerbose() || (i.Config.Debug != nil && *i.Config.Debug) {
 		defaultFlags += "v"
 	}
 	flags := []string{defaultFlags}

@@ -87,6 +87,8 @@ type InstallerData struct {
 	EnvShell *platform.PlatformMap[string] `json:"env_shell"         yaml:"env_shell"`
 	// SkipSummary controls whether this installer is excluded from the summary.
 	SkipSummary *SkipSummary `json:"skip_summary"      yaml:"skip_summary"`
+	// Verbose enables verbose output for the installer's native commands.
+	Verbose *bool `json:"verbose"           yaml:"verbose"`
 }
 
 // InstallerType represents the type of an installer.

@@ -56,6 +56,9 @@ func (i *BrewInstaller) Install() error {
 	name := i.GetFullName()
 	opts := i.GetOpts()
 	cmd := "brew install"
+	if i.IsVerbose() {
+		cmd += " --verbose"
+	}
 	if i.IsCask() {
 		cmd += " --cask"
 	}
@@ -72,6 +75,9 @@ func (i *BrewInstaller) Update() error {
 	name := i.GetFullName()
 	opts := i.GetOpts()
 	cmd := "brew upgrade"
+	if i.IsVerbose() {
+		cmd += " --verbose"
+	}
 	if i.IsCask() {
 		cmd += " --cask"
 	}

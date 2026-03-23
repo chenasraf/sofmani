@@ -88,6 +88,9 @@ func InstallerWithDefaults(
 			if override.CheckInstalled != nil {
 				data.CheckInstalled = override.CheckInstalled
 			}
+			if override.Verbose != nil && data.Verbose == nil {
+				data.Verbose = override.Verbose
+			}
 		}
 	}
 	return data

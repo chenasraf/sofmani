@@ -49,6 +49,9 @@ func (i *NpmInstaller) Validate() []ValidationError {
 func (i *NpmInstaller) Install() error {
 	opts := i.GetOpts()
 	args := []string{"install", "--global"}
+	if i.IsVerbose() {
+		args = append(args, "--verbose")
+	}
 	if opts.InstallFlags != nil {
 		args = append(args, strings.Fields(*opts.InstallFlags)...)
 	} else if opts.Flags != nil {
@@ -62,6 +65,9 @@ func (i *NpmInstaller) Install() error {
 func (i *NpmInstaller) Update() error {
 	opts := i.GetOpts()
 	args := []string{"install", "--global"}
+	if i.IsVerbose() {
+		args = append(args, "--verbose")
+	}
 	if opts.UpdateFlags != nil {
 		args = append(args, strings.Fields(*opts.UpdateFlags)...)
 	} else if opts.Flags != nil {

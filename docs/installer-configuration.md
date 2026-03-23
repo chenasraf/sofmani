@@ -215,6 +215,49 @@ These fields are shared by all installer types. Some fields may vary in behavior
       - **Description**: Shell to use for Linux command executions. If not specified, the default
         shell will be used.
 
+- **`verbose`**
+  - **Type**: Boolean (optional)
+  - **Description**: Enable verbose output for the installer's native commands. When set to `true`,
+    the installer will pass verbose flags to the underlying tool, producing more detailed output
+    during installation and updates. The specific flag used depends on the installer type. Can also
+    be set via [defaults](#) per installer type.
+  - **Default**: `false` (not set)
+  - **Verbose flags per installer type**:
+
+    | Type              | Verbose flag    |
+    | ----------------- | --------------- |
+    | `rsync`           | `-v`            |
+    | `brew`            | `--verbose`     |
+    | `git`             | `--verbose`     |
+    | `npm`/`pnpm`/`yarn` | `--verbose`  |
+    | `pipx`            | `--verbose`     |
+    | `pacman`/`yay`    | `--verbose`     |
+    | `apk`             | `--verbose`     |
+    | `apt`             | _(no-op)_       |
+    | `docker`          | _(no-op)_       |
+    | `shell`           | _(no-op)_       |
+    | `github-release`  | _(no-op)_       |
+    | `manifest`        | _(no-op)_       |
+    | `group`           | _(no-op)_       |
+
+  - **Examples**:
+
+    ```yaml
+    # Enable verbose for a single installer
+    - name: xdg-config
+      type: rsync
+      verbose: true
+      opts:
+        source: ~/.dotfiles/.config
+        destination: ~/.config
+
+    # Enable verbose for all brew installers via defaults
+    defaults:
+      type:
+        brew:
+          verbose: true
+    ```
+
 - **`skip_summary`**
   - **Type**: Boolean or Object (optional)
   - **Description**: Exclude this installer from the installation summary. Useful for installers
