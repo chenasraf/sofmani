@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.23.0](https://github.com/chenasraf/sofmani/compare/v1.22.0...v1.23.0) (2026-03-23)
+
+
+### Features
+
+* add verbose flag to applicable installers ([d75cf7a](https://github.com/chenasraf/sofmani/commit/d75cf7a8cd6db4bdb9c6e7fcdc5ebcdd7d5281c0))
+
 ## [1.22.0](https://github.com/chenasraf/sofmani/compare/v1.21.0...v1.22.0) (2026-03-19)
 
 
