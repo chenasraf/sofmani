@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.24.0](https://github.com/chenasraf/sofmani/compare/v1.23.0...v1.24.0) (2026-03-24)
+
+
+### Features
+
+* add cargo installer ([972d167](https://github.com/chenasraf/sofmani/commit/972d167cb530cfbb0d9f9e91c0fac16afed0eace))
+
 ## [1.23.0](https://github.com/chenasraf/sofmani/compare/v1.22.0...v1.23.0) (2026-03-23)
 
 
