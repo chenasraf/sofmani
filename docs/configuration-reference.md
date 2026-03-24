@@ -1,5 +1,10 @@
 # Configuration Reference
 
+## Table of Contents
+
+- [Global Options](#global-options)
+- [Example Config](#example-config)
+
 Here is a breakdown of all configuration options:
 
 ## Global Options

@@ -1,5 +1,13 @@
 # Getting Started
 
+## Table of Contents
+
+- [Installation](#installation)
+  - [Download Precompiled Binaries](#download-precompiled-binaries)
+  - [Homebrew (macOS/Linux only)](#homebrew-macoslinux-only)
+  - [Linux](#linux)
+- [Config file location](#config-file-location)
+
 ## Installation
 
 ### Download Precompiled Binaries

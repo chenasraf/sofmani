@@ -1,5 +1,12 @@
 # Command Line Interface (CLI)
 
+## Table of Contents
+
+- [CLI Flags](#cli-flags)
+  - [Installer Filters](#installer-filters)
+  - [Machine ID](#machine-id)
+- [Examples](#examples)
+
 The sofmani CLI will iterate through each of your install steps (called "Installers") and execute
 them in sequence.
 

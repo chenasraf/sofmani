@@ -12,6 +12,24 @@ reproducible.
 
 ---
 
+## Table of Contents
+
+- [Features](#-features)
+- [Installation](#-installation)
+- [Getting Started](#-getting-started)
+- [Usage](#-usage)
+  - [Command-Line Flags](#command-line-flags)
+- [Configuration Reference](#-configuration-reference)
+  - [Global Options](#global-options)
+  - [`install` Node](#install-node)
+  - [Supported `type` of Installers](#supported-type-of-installers)
+- [Example Workflow](#-example-workflow)
+- [Tips and Tricks](#-tips-and-tricks)
+- [Contributing](#️-contributing)
+- [License](#-license)
+
+---
+
 ## 🚀 Features
 
 - Install and provision software using a **declarative YAML/JSON configuration**.
