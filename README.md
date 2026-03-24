@@ -250,6 +250,9 @@ For a full list with all the supported options, see [the docs](./docs/installer-
 - **`pipx`**
   - Installs packages using pipx.
 
+- **`cargo`**
+  - Installs packages using Rust's cargo.
+
 - **`docker`**
   - Pulls and runs a Docker container by name
   - Supports optional `flags`

@@ -3,6 +3,27 @@
 The `install` field describes the steps to execute. Each step represents an action or group of
 actions. Steps can be of **several types**, such as `brew`, `rsync`, `shell`, and more.
 
+## Table of Contents
+
+- [Categories](#categories)
+- [Fields](#fields)
+- [Template Variables](#template-variables)
+- [Supported `type` of Installers](#supported-type-of-installers)
+  - [`shell`](#shell)
+  - [`group`](#group)
+  - [`git`](#git)
+  - [`github-release`](#github-release)
+  - [`manifest`](#manifest)
+  - [`rsync`](#rsync)
+  - [`brew`](#brew)
+  - [`npm`/`pnpm`/`yarn`](#npmpnpmyarn)
+  - [`apt`/`apk`](#aptapk)
+  - [`pacman`/`yay`](#pacmanyay)
+  - [`pipx`](#pipx)
+  - [`cargo`](#cargo)
+  - [`docker`](#docker)
+- [Installer Examples](#installer-examples)
+
 ## Categories
 
 You can add **category headers** to visually organize your installers list. Categories are special
@@ -231,6 +252,7 @@ These fields are shared by all installer types. Some fields may vary in behavior
     | `git`             | `--verbose`     |
     | `npm`/`pnpm`/`yarn` | `--verbose`  |
     | `pipx`            | `--verbose`     |
+    | `cargo`           | `--verbose`     |
     | `pacman`/`yay`    | `--verbose`     |
     | `apk`             | `--verbose`     |
     | `apt`             | _(no-op)_       |
@@ -514,6 +536,15 @@ install:
     - `opts.install_flags`: Additional flags to pass only to `pipx install`.
     - `opts.update_flags`: Additional flags to pass only to `pipx upgrade`.
 
+- **`cargo`**
+  - **Description**: Installs packages using Rust's cargo.
+    - Uses `cargo install` for both installation and updates.
+    - `cargo install` will automatically skip rebuilding if the package is already up-to-date.
+  - **Options**:
+    - `opts.flags`: Additional flags to pass to commands (fallback for install/update).
+    - `opts.install_flags`: Additional flags to pass only during install.
+    - `opts.update_flags`: Additional flags to pass only during update.
+
 - **`docker`**
   - **Description**: Pulls and runs Docker containers using `docker run`. Also supports update
     checks by comparing image digests.
@@ -731,6 +762,15 @@ install:
   - name: visual-studio-code-bin
     type: yay
     bin_name: code
+```
+
+### cargo
+
+```yaml
+install:
+  - name: ripgrep
+    type: cargo
+    bin_name: rg
 ```
 
 ### docker

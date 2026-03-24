@@ -67,6 +67,8 @@ func GetInstaller(config *appconfig.AppConfig, data *appconfig.InstallerData) (I
 		return NewGitInstaller(config, data), nil
 	case appconfig.InstallerTypeManifest:
 		return NewManifestInstaller(config, data), nil
+	case appconfig.InstallerTypeCargo:
+		return NewCargoInstaller(config, data), nil
 	}
 	return nil, nil
 }

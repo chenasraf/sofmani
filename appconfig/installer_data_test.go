@@ -143,6 +143,7 @@ func TestInstallerType_Constants(t *testing.T) {
 		assert.Equal(t, InstallerType("manifest"), InstallerTypeManifest)
 		assert.Equal(t, InstallerType("pacman"), InstallerTypePacman)
 		assert.Equal(t, InstallerType("yay"), InstallerTypeYay)
+		assert.Equal(t, InstallerType("cargo"), InstallerTypeCargo)
 	})
 }
 
