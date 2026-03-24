@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/chenasraf/sofmani/platform"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,18 +17,18 @@ func TestPlatformMapResolve(t *testing.T) {
 		platform string
 		expected *string
 	}{
-		{"MacOS", "darwin", strPtr("macos")},
-		{"Linux", "linux", strPtr("linux")},
-		{"Windows", "windows", strPtr("windows")},
+		{"MacOS", "darwin", lo.ToPtr("macos")},
+		{"Linux", "linux", lo.ToPtr("linux")},
+		{"Windows", "windows", lo.ToPtr("windows")},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			platform.SetOS(tt.platform)
 			pm := platform.PlatformMap[string]{
-				MacOS:   strPtr("macos"),
-				Linux:   strPtr("linux"),
-				Windows: strPtr("windows"),
+				MacOS:   lo.ToPtr("macos"),
+				Linux:   lo.ToPtr("linux"),
+				Windows: lo.ToPtr("windows"),
 			}
 			assert.Equal(t, tt.expected, pm.Resolve())
 		})
@@ -134,8 +135,4 @@ func TestFindConfigFile(t *testing.T) {
 	// Test finding the config file
 	assert.NoError(t, os.Chdir(dir))
 	assert.True(t, strings.HasSuffix(FindConfigFile(), file))
-}
-
-func strPtr(s string) *string {
-	return &s
 }

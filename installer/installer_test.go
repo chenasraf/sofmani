@@ -5,6 +5,7 @@ import (
 
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -32,7 +33,7 @@ func TestInstallerWithDefaults(t *testing.T) {
 func TestRunInstaller(t *testing.T) {
 	config := &appconfig.AppConfig{}
 	mockInstaller := &MockInstaller{
-		data:        &appconfig.InstallerData{Name: strPtr("test"), Type: appconfig.InstallerTypeBrew},
+		data:        &appconfig.InstallerData{Name: lo.ToPtr("test"), Type: appconfig.InstallerTypeBrew},
 		isInstalled: false,
 	}
 	result, err := RunInstaller(config, mockInstaller)

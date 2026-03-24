@@ -5,6 +5,7 @@ import (
 
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
+	"github.com/samber/lo"
 )
 
 func newAptInstaller(data *appconfig.InstallerData) *AptInstaller {
@@ -21,7 +22,7 @@ func TestAptValidation(t *testing.T) {
 	logger.InitLogger(false)
 	aptInstaller := newAptInstaller(
 		&appconfig.InstallerData{
-			Name: strPtr("test-apt"),
+			Name: lo.ToPtr("test-apt"),
 			Type: appconfig.InstallerTypeApt,
 		},
 	)
@@ -33,7 +34,7 @@ func TestAptGetOpts(t *testing.T) {
 
 	// Test default opts (no options set)
 	defaultData := &appconfig.InstallerData{
-		Name: strPtr("vim"),
+		Name: lo.ToPtr("vim"),
 		Type: appconfig.InstallerTypeApt,
 	}
 	installer := newAptInstaller(defaultData)
@@ -50,7 +51,7 @@ func TestAptGetOpts(t *testing.T) {
 
 	// Test with flags option
 	flagsData := &appconfig.InstallerData{
-		Name: strPtr("vim"),
+		Name: lo.ToPtr("vim"),
 		Type: appconfig.InstallerTypeApt,
 		Opts: &map[string]any{
 			"flags": "-y --no-install-recommends",
@@ -64,7 +65,7 @@ func TestAptGetOpts(t *testing.T) {
 
 	// Test with install_flags option
 	installFlagsData := &appconfig.InstallerData{
-		Name: strPtr("vim"),
+		Name: lo.ToPtr("vim"),
 		Type: appconfig.InstallerTypeApt,
 		Opts: &map[string]any{
 			"install_flags": "--no-install-recommends",
@@ -78,7 +79,7 @@ func TestAptGetOpts(t *testing.T) {
 
 	// Test with update_flags option
 	updateFlagsData := &appconfig.InstallerData{
-		Name: strPtr("vim"),
+		Name: lo.ToPtr("vim"),
 		Type: appconfig.InstallerTypeApt,
 		Opts: &map[string]any{
 			"update_flags": "--only-upgrade",
@@ -92,7 +93,7 @@ func TestAptGetOpts(t *testing.T) {
 
 	// Test with all flags options combined
 	allFlagsData := &appconfig.InstallerData{
-		Name: strPtr("vim"),
+		Name: lo.ToPtr("vim"),
 		Type: appconfig.InstallerTypeApt,
 		Opts: &map[string]any{
 			"flags":         "--common",

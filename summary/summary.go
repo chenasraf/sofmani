@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/chenasraf/sofmani/logger"
+	"github.com/samber/lo"
 )
 
 // Action represents the action taken for an installer.
@@ -85,12 +86,9 @@ func (s *Summary) Print() {
 
 // collectByAction returns all results (including nested) that match the given action.
 func (s *Summary) collectByAction(action Action) []InstallResult {
-	var results []InstallResult
-	for _, r := range s.results {
-		collected := collectResultsByAction(r, action)
-		results = append(results, collected...)
-	}
-	return results
+	return lo.FlatMap(s.results, func(r InstallResult, _ int) []InstallResult {
+		return collectResultsByAction(r, action)
+	})
 }
 
 // isContainerType returns true if the installer type is a container (group/manifest).
@@ -179,19 +177,12 @@ func filterChildrenByAction(children []InstallResult, action Action) []InstallRe
 
 // hasChildrenWithAction checks if any children (recursively) match the action.
 func hasChildrenWithAction(children []InstallResult, action Action) bool {
-	for _, child := range children {
-		// Skip children that should be excluded from summary
+	return lo.SomeBy(children, func(child InstallResult) bool {
 		if shouldSkipSummary(child, action) {
-			continue
+			return false
 		}
-		if child.Action == action {
-			return true
-		}
-		if hasChildrenWithAction(child.Children, action) {
-			return true
-		}
-	}
-	return false
+		return child.Action == action || hasChildrenWithAction(child.Children, action)
+	})
 }
 
 // printResult prints a single result with the given indentation level.

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"maps"
 	"strings"
+
+	"github.com/samber/lo"
 )
 
 // ResolveEnvPaths takes one or more slices of environment variable strings (e.g., "KEY=VALUE"),
@@ -62,11 +64,9 @@ func EnvSliceAsMap(env []string) map[string]string {
 
 // EnvMapAsSlice converts a map of environment variables to a slice of "KEY=VALUE" strings.
 func EnvMapAsSlice(env map[string]string) []string {
-	out := []string{}
-	for k, v := range env {
-		out = append(out, fmt.Sprintf("%s=%s", k, v))
-	}
-	return out
+	return lo.MapToSlice(env, func(k string, v string) string {
+		return fmt.Sprintf("%s=%s", k, v)
+	})
 }
 
 // mergeEnvs helper function to merge a source slice of env strings into a target map (represented as a slice).

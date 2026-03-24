@@ -9,6 +9,7 @@ import (
 	"github.com/chenasraf/sofmani/platform"
 	"github.com/chenasraf/sofmani/utils"
 	"github.com/eschao/config"
+	"github.com/samber/lo"
 	"gopkg.in/yaml.v3"
 )
 
@@ -76,10 +77,7 @@ type AppConfigDefaults struct {
 
 // GetCategoryDisplay returns the effective category display mode, defaulting to "border".
 func (c *AppConfig) GetCategoryDisplay() CategoryDisplayMode {
-	if c.CategoryDisplay != nil {
-		return *c.CategoryDisplay
-	}
-	return CategoryDisplayBorder
+	return lo.FromPtrOr(c.CategoryDisplay, CategoryDisplayBorder)
 }
 
 // Environ returns the combined environment variables as a slice of strings.
@@ -172,21 +170,9 @@ func tryConfigDir(dir string) string {
 // GetConfigDesc returns a string slice describing the current configuration.
 func (c *AppConfig) GetConfigDesc() []string {
 	desc := []string{}
-	isDebug := false
-	if c.Debug != nil {
-		isDebug = *c.Debug
-	}
-	checkUpdates := false
-	if c.CheckUpdates != nil {
-		checkUpdates = *c.CheckUpdates
-	}
-	showSummary := true // default is enabled
-	if c.Summary != nil {
-		showSummary = *c.Summary
-	}
-	desc = append(desc, fmt.Sprintf("Debug: %t", isDebug))
-	desc = append(desc, fmt.Sprintf("CheckUpdates: %t", checkUpdates))
-	desc = append(desc, fmt.Sprintf("Summary: %t", showSummary))
+	desc = append(desc, fmt.Sprintf("Debug: %t", lo.FromPtrOr(c.Debug, false)))
+	desc = append(desc, fmt.Sprintf("CheckUpdates: %t", lo.FromPtrOr(c.CheckUpdates, false)))
+	desc = append(desc, fmt.Sprintf("Summary: %t", lo.FromPtrOr(c.Summary, true)))
 
 	if c.Env != nil {
 		desc = append(desc, "Environment Variables:")

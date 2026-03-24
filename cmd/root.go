@@ -8,6 +8,7 @@ import (
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
 	"github.com/chenasraf/sofmani/machine"
+	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 )
 
@@ -153,26 +154,26 @@ func buildCliConfig(cmd *cobra.Command, args []string) *appconfig.AppCliConfig {
 
 	// Handle debug flag
 	if cmd.Flags().Changed("debug") {
-		config.Debug = boolPtr(true)
+		config.Debug = lo.ToPtr(true)
 	}
 	if cmd.Flags().Changed("no-debug") {
-		config.Debug = boolPtr(false)
+		config.Debug = lo.ToPtr(false)
 	}
 
 	// Handle update flag
 	if cmd.Flags().Changed("update") {
-		config.CheckUpdates = boolPtr(true)
+		config.CheckUpdates = lo.ToPtr(true)
 	}
 	if cmd.Flags().Changed("no-update") {
-		config.CheckUpdates = boolPtr(false)
+		config.CheckUpdates = lo.ToPtr(false)
 	}
 
 	// Handle summary flag
 	if cmd.Flags().Changed("summary") {
-		config.Summary = boolPtr(true)
+		config.Summary = lo.ToPtr(true)
 	}
 	if cmd.Flags().Changed("no-summary") {
-		config.Summary = boolPtr(false)
+		config.Summary = lo.ToPtr(false)
 	}
 
 	// Handle log file flag
@@ -199,11 +200,6 @@ func buildCliConfig(cmd *cobra.Command, args []string) *appconfig.AppCliConfig {
 	}
 
 	return config
-}
-
-// boolPtr returns a pointer to a boolean value.
-func boolPtr(b bool) *bool {
-	return &b
 }
 
 // RunMain is set by main.go to run the main application logic.

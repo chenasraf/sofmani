@@ -22,19 +22,14 @@ func FilterInstaller(installer IInstaller, filters []string) bool {
 		return filter[1:], filter[0] == '!'
 	})
 
-	keep := len(positives) == 0
+	keep := len(positives) == 0 || lo.SomeBy(positives, func(f string) bool {
+		return isFilteredIn(installer, f)
+	})
 
-	for _, f := range positives {
-		if isFilteredIn(installer, f) {
-			keep = true
-			break
-		}
-	}
-	for _, f := range negatives {
-		if isFilteredIn(installer, f) {
-			keep = false
-			break
-		}
+	if keep && lo.SomeBy(negatives, func(f string) bool {
+		return isFilteredIn(installer, f)
+	}) {
+		return false
 	}
 
 	return keep

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"runtime"
 	"slices"
+
+	"github.com/samber/lo"
 )
 
 var osValue string = runtime.GOOS     // osValue stores the current operating system.
@@ -179,16 +181,11 @@ func (p *Platforms) GetShouldRunOnOS(curOS Platform) bool {
 	return true
 }
 
-// strPtr returns a pointer to a string.
-func strPtr(s string) *string {
-	return &s
-}
-
 // DockerOSMap is a PlatformMap that defines the Docker OS for each platform.
 var DockerOSMap = PlatformMap[string]{
-	MacOS:   strPtr("linux"),
-	Linux:   strPtr("linux"),
-	Windows: strPtr("windows"),
+	MacOS:   lo.ToPtr("linux"),
+	Linux:   lo.ToPtr("linux"),
+	Windows: lo.ToPtr("windows"),
 }
 
 // ParsePlatformSingleValue creates a new PlatformMap with the value for all platforms

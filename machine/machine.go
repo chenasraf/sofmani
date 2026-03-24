@@ -1,5 +1,7 @@
 package machine
 
+import "github.com/samber/lo"
+
 // Machines defines which machines a configuration applies to.
 type Machines struct {
 	// Only specifies a list of machine IDs or aliases where the configuration should apply.
@@ -28,20 +30,12 @@ func (m *Machines) GetShouldRunOnMachine(machineID string, aliases map[string]st
 
 // containsMachineID checks if the machine ID is in the list, resolving aliases first.
 func containsMachineID(list []string, machineID string, aliases map[string]string) bool {
-	for _, entry := range list {
-		// First, try to resolve as an alias
+	return lo.SomeBy(list, func(entry string) bool {
 		if aliases != nil {
 			if resolvedID, ok := aliases[entry]; ok {
-				if resolvedID == machineID {
-					return true
-				}
-				continue
+				return resolvedID == machineID
 			}
 		}
-		// Fall back to treating entry as a literal machine ID
-		if entry == machineID {
-			return true
-		}
-	}
-	return false
+		return entry == machineID
+	})
 }

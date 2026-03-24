@@ -5,6 +5,7 @@ import (
 
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 )
 
@@ -23,17 +24,17 @@ func TestDockerValidation(t *testing.T) {
 
 	// 🟢 Valid: just name and type
 	validData := &appconfig.InstallerData{
-		Name:    strPtr("ghcr.io/open-webui/open-webui:main"),
+		Name:    lo.ToPtr("ghcr.io/open-webui/open-webui:main"),
 		Type:    appconfig.InstallerTypeDocker,
-		BinName: strPtr("open-webui"),
+		BinName: lo.ToPtr("open-webui"),
 	}
 	assertNoValidationErrors(t, newTestDockerInstaller(validData).Validate())
 
 	// 🟢 Valid: with flags
 	withFlags := &appconfig.InstallerData{
-		Name:    strPtr("ghcr.io/open-webui/open-webui:main"),
+		Name:    lo.ToPtr("ghcr.io/open-webui/open-webui:main"),
 		Type:    appconfig.InstallerTypeDocker,
-		BinName: strPtr("open-webui"),
+		BinName: lo.ToPtr("open-webui"),
 		Opts: &map[string]any{
 			"flags": "-p 3300:8080 -v open-webui:/data",
 		},

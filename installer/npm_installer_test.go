@@ -5,6 +5,7 @@ import (
 
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
+	"github.com/samber/lo"
 )
 
 func newTestNpmInstaller(data *appconfig.InstallerData) *NpmInstaller {
@@ -23,7 +24,7 @@ func TestNpmValidation(t *testing.T) {
 
 	// 🟢 Valid npm installer
 	validData := &appconfig.InstallerData{
-		Name: strPtr("some-npm-package"),
+		Name: lo.ToPtr("some-npm-package"),
 		Type: appconfig.InstallerTypeNpm,
 	}
 	assertNoValidationErrors(t, newTestNpmInstaller(validData).Validate())
@@ -41,7 +42,7 @@ func TestNpmGetOpts(t *testing.T) {
 
 	// Test default opts (no options set)
 	defaultData := &appconfig.InstallerData{
-		Name: strPtr("prettier"),
+		Name: lo.ToPtr("prettier"),
 		Type: appconfig.InstallerTypeNpm,
 	}
 	installer := newTestNpmInstaller(defaultData)
@@ -58,7 +59,7 @@ func TestNpmGetOpts(t *testing.T) {
 
 	// Test with flags option
 	flagsData := &appconfig.InstallerData{
-		Name: strPtr("prettier"),
+		Name: lo.ToPtr("prettier"),
 		Type: appconfig.InstallerTypeNpm,
 		Opts: &map[string]any{
 			"flags": "--legacy-peer-deps",
@@ -72,7 +73,7 @@ func TestNpmGetOpts(t *testing.T) {
 
 	// Test with install_flags option
 	installFlagsData := &appconfig.InstallerData{
-		Name: strPtr("prettier"),
+		Name: lo.ToPtr("prettier"),
 		Type: appconfig.InstallerTypeNpm,
 		Opts: &map[string]any{
 			"install_flags": "--save-exact",
@@ -86,7 +87,7 @@ func TestNpmGetOpts(t *testing.T) {
 
 	// Test with update_flags option
 	updateFlagsData := &appconfig.InstallerData{
-		Name: strPtr("prettier"),
+		Name: lo.ToPtr("prettier"),
 		Type: appconfig.InstallerTypeNpm,
 		Opts: &map[string]any{
 			"update_flags": "--force",
@@ -100,7 +101,7 @@ func TestNpmGetOpts(t *testing.T) {
 
 	// Test with all flags options combined
 	allFlagsData := &appconfig.InstallerData{
-		Name: strPtr("prettier"),
+		Name: lo.ToPtr("prettier"),
 		Type: appconfig.InstallerTypeNpm,
 		Opts: &map[string]any{
 			"flags":         "--common",

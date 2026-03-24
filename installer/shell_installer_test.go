@@ -5,6 +5,7 @@ import (
 
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
+	"github.com/samber/lo"
 )
 
 func newTestShellInstaller(data *appconfig.InstallerData) *ShellInstaller {
@@ -20,7 +21,7 @@ func TestShellValidation(t *testing.T) {
 
 	// 🟢 Valid shell config
 	validData := &appconfig.InstallerData{
-		Name: strPtr("shell-valid"),
+		Name: lo.ToPtr("shell-valid"),
 		Type: appconfig.InstallerTypeShell,
 		Opts: &map[string]any{
 			"command":        "echo install",
@@ -31,7 +32,7 @@ func TestShellValidation(t *testing.T) {
 
 	// 🔴 Missing command
 	missingCommand := &appconfig.InstallerData{
-		Name: strPtr("shell-missing-command"),
+		Name: lo.ToPtr("shell-missing-command"),
 		Type: appconfig.InstallerTypeShell,
 		Opts: &map[string]any{
 			"update_command": "echo update",
@@ -41,7 +42,7 @@ func TestShellValidation(t *testing.T) {
 
 	// 🟢 Valid - missing update_command
 	missingUpdate := &appconfig.InstallerData{
-		Name: strPtr("shell-missing-update"),
+		Name: lo.ToPtr("shell-missing-update"),
 		Type: appconfig.InstallerTypeShell,
 		Opts: &map[string]any{
 			"command": "echo install",
@@ -51,7 +52,7 @@ func TestShellValidation(t *testing.T) {
 
 	// 🔴 Missing both
 	missingBoth := &appconfig.InstallerData{
-		Name: strPtr("shell-missing-both"),
+		Name: lo.ToPtr("shell-missing-both"),
 		Type: appconfig.InstallerTypeShell,
 		Opts: &map[string]any{},
 	}

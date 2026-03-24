@@ -70,11 +70,6 @@ func (m *MockInstaller) GetTemplateVars() *TemplateVars {
 	return m.templateVars
 }
 
-// strPtr returns a pointer to the given string.
-func strPtr(s string) *string {
-	return &s
-}
-
 // simulateBrewCheck simulates parsing output from `brew outdated --json`
 // along with handling the exit code semantics.
 

@@ -5,6 +5,7 @@ import (
 
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
+	"github.com/samber/lo"
 )
 
 func newTestCargoInstaller(data *appconfig.InstallerData) *CargoInstaller {
@@ -22,7 +23,7 @@ func TestCargoValidation(t *testing.T) {
 
 	// 🟢 Valid cargo installer
 	validData := &appconfig.InstallerData{
-		Name: strPtr("ripgrep"),
+		Name: lo.ToPtr("ripgrep"),
 		Type: appconfig.InstallerTypeCargo,
 	}
 	assertNoValidationErrors(t, newTestCargoInstaller(validData).Validate())
@@ -40,7 +41,7 @@ func TestCargoGetOpts(t *testing.T) {
 
 	// Test default opts (no options set)
 	defaultData := &appconfig.InstallerData{
-		Name: strPtr("ripgrep"),
+		Name: lo.ToPtr("ripgrep"),
 		Type: appconfig.InstallerTypeCargo,
 	}
 	installer := newTestCargoInstaller(defaultData)
@@ -57,7 +58,7 @@ func TestCargoGetOpts(t *testing.T) {
 
 	// Test with flags option
 	flagsData := &appconfig.InstallerData{
-		Name: strPtr("ripgrep"),
+		Name: lo.ToPtr("ripgrep"),
 		Type: appconfig.InstallerTypeCargo,
 		Opts: &map[string]any{
 			"flags": "--locked",
@@ -71,7 +72,7 @@ func TestCargoGetOpts(t *testing.T) {
 
 	// Test with install_flags option
 	installFlagsData := &appconfig.InstallerData{
-		Name: strPtr("ripgrep"),
+		Name: lo.ToPtr("ripgrep"),
 		Type: appconfig.InstallerTypeCargo,
 		Opts: &map[string]any{
 			"install_flags": "--features pcre2",
@@ -85,7 +86,7 @@ func TestCargoGetOpts(t *testing.T) {
 
 	// Test with update_flags option
 	updateFlagsData := &appconfig.InstallerData{
-		Name: strPtr("ripgrep"),
+		Name: lo.ToPtr("ripgrep"),
 		Type: appconfig.InstallerTypeCargo,
 		Opts: &map[string]any{
 			"update_flags": "--force",
@@ -99,7 +100,7 @@ func TestCargoGetOpts(t *testing.T) {
 
 	// Test with all flags options combined
 	allFlagsData := &appconfig.InstallerData{
-		Name: strPtr("ripgrep"),
+		Name: lo.ToPtr("ripgrep"),
 		Type: appconfig.InstallerTypeCargo,
 		Opts: &map[string]any{
 			"flags":         "--common",
@@ -125,7 +126,7 @@ func TestCargoGetBinName(t *testing.T) {
 
 	// Default: uses installer name
 	defaultData := &appconfig.InstallerData{
-		Name: strPtr("ripgrep"),
+		Name: lo.ToPtr("ripgrep"),
 		Type: appconfig.InstallerTypeCargo,
 	}
 	installer := newTestCargoInstaller(defaultData)
@@ -135,9 +136,9 @@ func TestCargoGetBinName(t *testing.T) {
 
 	// Override: uses bin_name
 	binNameData := &appconfig.InstallerData{
-		Name:    strPtr("ripgrep"),
+		Name:    lo.ToPtr("ripgrep"),
 		Type:    appconfig.InstallerTypeCargo,
-		BinName: strPtr("rg"),
+		BinName: lo.ToPtr("rg"),
 	}
 	installerWithBinName := newTestCargoInstaller(binNameData)
 	if installerWithBinName.GetBinName() != "rg" {
@@ -149,7 +150,7 @@ func TestCargoGetData(t *testing.T) {
 	logger.InitLogger(false)
 
 	data := &appconfig.InstallerData{
-		Name: strPtr("ripgrep"),
+		Name: lo.ToPtr("ripgrep"),
 		Type: appconfig.InstallerTypeCargo,
 	}
 	installer := newTestCargoInstaller(data)
