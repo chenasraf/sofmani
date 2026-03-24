@@ -10,10 +10,14 @@ install:
     steps:
       - name: fzf
         type: brew
+        platforms:
+          only: ['macos']
       - name: fzf
-        type: git
+        type: github-release
         platforms:
           only: ['linux']
-        post_install: ~/.fzf/install --all
         opts:
-          destination: ~/.fzf
+          repository: junegunn/fzf
+          strategy: tar
+          destination: ~/.local/bin
+          download_filename: fzf-{{ .Version }}-linux_{{ .Arch }}.tar.gz

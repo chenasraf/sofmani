@@ -6,4 +6,13 @@
 #       path: docs/recipes/tldr.yml
 install:
   - name: tldr
-    type: brew
+    type: group
+    steps:
+      - name: tldr
+        type: brew
+        platforms:
+          only: ['macos']
+      - name: tldr
+        type: npm
+        platforms:
+          only: ['linux']

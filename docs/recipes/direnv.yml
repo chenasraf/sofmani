@@ -13,8 +13,10 @@ install:
         platforms:
           only: ['macos']
       - name: direnv
-        type: shell
+        type: github-release
         platforms:
           only: ['linux']
         opts:
-          command: export bin_path=/usr/local/bin curl -sfL https://direnv.net/install.sh | bash
+          repository: direnv/direnv
+          destination: ~/.local/bin
+          download_filename: direnv.linux-{{ .Arch }}

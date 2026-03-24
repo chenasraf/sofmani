@@ -10,9 +10,14 @@ install:
     steps:
       - name: starship
         type: brew
+        platforms:
+          only: ['macos']
       - name: starship
-        type: shell
+        type: github-release
         platforms:
           only: ['linux']
         opts:
-          command: curl -sS https://starship.rs/install.sh | sh -s -- -y
+          repository: starship/starship
+          strategy: tar
+          destination: ~/.local/bin
+          download_filename: starship-{{ .ArchGnu }}-unknown-linux-musl.tar.gz
