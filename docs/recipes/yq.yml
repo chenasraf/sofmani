@@ -6,4 +6,17 @@
 #       path: docs/recipes/yq.yml
 install:
   - name: yq
-    type: brew
+    type: group
+    steps:
+      - name: yq
+        type: brew
+        platforms:
+          only: ['macos']
+      - name: yq
+        type: github-release
+        platforms:
+          only: ['linux']
+        opts:
+          repository: mikefarah/yq
+          destination: ~/.local/bin
+          download_filename: yq_linux_{{ .Arch }}

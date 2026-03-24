@@ -6,4 +6,17 @@
 #       path: docs/recipes/jq.yml
 install:
   - name: jq
-    type: brew
+    type: group
+    steps:
+      - name: jq
+        type: brew
+        platforms:
+          only: ['macos']
+      - name: jq
+        type: github-release
+        platforms:
+          only: ['linux']
+        opts:
+          repository: jqlang/jq
+          destination: ~/.local/bin
+          download_filename: jq-linux-{{ .Arch }}

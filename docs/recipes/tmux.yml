@@ -6,4 +6,13 @@
 #       path: docs/recipes/tmux.yml
 install:
   - name: tmux
-    type: brew
+    type: group
+    steps:
+      - name: tmux
+        type: brew
+        platforms:
+          only: ['macos']
+      - name: tmux
+        type: apt
+        platforms:
+          only: ['linux']

@@ -6,4 +6,19 @@
 #       path: docs/recipes/gh.yml
 install:
   - name: gh
-    type: brew
+    type: group
+    steps:
+      - name: gh
+        type: brew
+        platforms:
+          only: ['macos']
+      - name: gh
+        type: github-release
+        platforms:
+          only: ['linux']
+        opts:
+          repository: cli/cli
+          strategy: tar
+          destination: ~/.local/bin
+          download_filename: gh_{{ .Version }}_linux_{{ .Arch }}.tar.gz
+          archive_bin_name: gh_{{ .Version }}_linux_{{ .Arch }}/bin/gh

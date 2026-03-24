@@ -7,4 +7,15 @@
 install:
   - name: httpie
     bin_name: http
-    type: brew
+    type: group
+    steps:
+      - name: httpie
+        bin_name: http
+        type: brew
+        platforms:
+          only: ['macos']
+      - name: httpie
+        bin_name: http
+        type: pipx
+        platforms:
+          only: ['linux']
