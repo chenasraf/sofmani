@@ -6,6 +6,7 @@ provisioning for both personal and work computers. With a single config file, `s
 locating, installing, or updating software and configurations, making system setup quick and
 reproducible.
 
+[![Hypercommit](https://img.shields.io/badge/Hypercommit-DB2475)](https://hypercommit.com/sofmani)
 ![Release](https://img.shields.io/github/v/release/chenasraf/sofmani)
 ![Downloads](https://img.shields.io/github/downloads/chenasraf/sofmani/total)
 ![License](https://img.shields.io/github/license/chenasraf/sofmani)
