@@ -47,7 +47,9 @@ func (i *AptInstaller) Validate() []ValidationError {
 func (i *AptInstaller) Install() error {
 	name := *i.Info.Name
 	opts := i.GetOpts()
-	err := i.RunCmdPassThrough(string(i.PackageManager), "update")
+	err := RunRepoUpdateOnce(string(i.PackageManager)+"-update", func() error {
+		return i.RunCmdPassThrough(string(i.PackageManager), "update")
+	})
 	if err != nil {
 		return err
 	}
@@ -109,7 +111,9 @@ func (i *AptInstaller) CheckNeedsUpdate() (bool, error) {
 	if i.HasCustomUpdateCheck() {
 		return i.RunCustomUpdateCheck()
 	}
-	err := i.RunCmdPassThrough(string(i.Data.Type), "update")
+	err := RunRepoUpdateOnce(string(i.PackageManager)+"-update", func() error {
+		return i.RunCmdPassThrough(string(i.PackageManager), "update")
+	})
 	if err != nil {
 		return false, err
 	}

@@ -55,6 +55,7 @@ func (i *BrewInstaller) Validate() []ValidationError {
 func (i *BrewInstaller) Install() error {
 	name := i.GetFullName()
 	opts := i.GetOpts()
+	i.suppressBrewAutoUpdate()
 	cmd := "brew install"
 	if i.IsVerbose() {
 		cmd += " --verbose"
@@ -67,13 +68,16 @@ func (i *BrewInstaller) Install() error {
 	} else if opts.Flags != nil {
 		cmd += " " + *opts.Flags
 	}
-	return i.RunCmdAsFile(fmt.Sprintf("%s %s", cmd, name))
+	err := i.RunCmdAsFile(fmt.Sprintf("%s %s", cmd, name))
+	MarkRepoUpdated("brew")
+	return err
 }
 
 // Update implements IInstaller.
 func (i *BrewInstaller) Update() error {
 	name := i.GetFullName()
 	opts := i.GetOpts()
+	i.suppressBrewAutoUpdate()
 	cmd := "brew upgrade"
 	if i.IsVerbose() {
 		cmd += " --verbose"
@@ -86,7 +90,9 @@ func (i *BrewInstaller) Update() error {
 	} else if opts.Flags != nil {
 		cmd += " " + *opts.Flags
 	}
-	return i.RunCmdAsFile(fmt.Sprintf("%s %s", cmd, name))
+	err := i.RunCmdAsFile(fmt.Sprintf("%s %s", cmd, name))
+	MarkRepoUpdated("brew")
+	return err
 }
 
 // GetFullName returns the full name of the package, including the tap if specified.
@@ -98,12 +104,21 @@ func (i *BrewInstaller) GetFullName() string {
 	return name
 }
 
+// suppressBrewAutoUpdate sets HOMEBREW_NO_AUTO_UPDATE=1 if brew has already
+// auto-updated during this run, preventing redundant repo syncs.
+func (i *BrewInstaller) suppressBrewAutoUpdate() {
+	if IsRepoUpdated("brew") {
+		_ = os.Setenv("HOMEBREW_NO_AUTO_UPDATE", "1")
+	}
+}
+
 // CheckNeedsUpdate implements IInstaller.
 func (i *BrewInstaller) CheckNeedsUpdate() (bool, error) {
 	if i.HasCustomUpdateCheck() {
 		return i.RunCustomUpdateCheck()
 	}
 
+	i.suppressBrewAutoUpdate()
 	name := i.GetFullName()
 	cmd := exec.Command("brew", "outdated", "--json", name)
 
@@ -144,6 +159,7 @@ func (i *BrewInstaller) CheckNeedsUpdate() (bool, error) {
 		return false, fmt.Errorf("failed to parse brew output: %w", parseErr)
 	}
 
+	MarkRepoUpdated("brew")
 	return updateNeeded, nil
 }
 
