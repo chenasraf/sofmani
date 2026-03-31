@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.25.0](https://github.com/chenasraf/sofmani/compare/v1.24.1...v1.25.0) (2026-03-31)
+
+
+### Features
+
+* add repo_update control modes ([8db27e2](https://github.com/chenasraf/sofmani/commit/8db27e298c7a06a704dd41c222aa6fb4d2fa8b1f))
+* reduce redundant repo updates ([dcd46a8](https://github.com/chenasraf/sofmani/commit/dcd46a84998a217b146dc877adb306550781d266))
+
 ## [1.24.1](https://github.com/chenasraf/sofmani/compare/v1.24.0...v1.24.1) (2026-03-31)
 
 
