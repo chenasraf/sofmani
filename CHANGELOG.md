@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.24.1](https://github.com/chenasraf/sofmani/compare/v1.24.0...v1.24.1) (2026-03-31)
+
+
+### Bug Fixes
+
+* github installer bin name check ([d3055aa](https://github.com/chenasraf/sofmani/commit/d3055aab28a3a639db9a5a859f28d39c76b02338))
+
 ## [1.24.0](https://github.com/chenasraf/sofmani/compare/v1.23.0...v1.24.0) (2026-03-24)
 
 
