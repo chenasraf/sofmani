@@ -9,20 +9,33 @@ actions. Steps can be of **several types**, such as `brew`, `rsync`, `shell`, an
 - [Fields](#fields)
 - [Template Variables](#template-variables)
 - [Supported `type` of Installers](#supported-type-of-installers)
-  - [`shell`](#shell)
-  - [`group`](#group)
-  - [`git`](#git)
-  - [`github-release`](#github-release)
-  - [`manifest`](#manifest)
-  - [`rsync`](#rsync)
-  - [`brew`](#brew)
-  - [`npm`/`pnpm`/`yarn`](#npmpnpmyarn)
-  - [`apt`/`apk`](#aptapk)
-  - [`pacman`/`yay`](#pacmanyay)
-  - [`pipx`](#pipx)
-  - [`cargo`](#cargo)
-  - [`docker`](#docker)
+  - [shell](#shell)
+  - [group](#group)
+  - [git](#git)
+  - [github-release](#github-release)
+  - [manifest](#manifest)
+  - [rsync](#rsync)
+  - [brew](#brew)
+  - [npm / pnpm / yarn](#npm--pnpm--yarn)
+  - [apt / apk](#apt--apk)
+  - [pacman / yay](#pacman--yay)
+  - [pipx](#pipx)
+  - [cargo](#cargo)
+  - [docker](#docker)
 - [Installer Examples](#installer-examples)
+  - [group](#group-1)
+  - [Machine-specific installers](#machine-specific-installers)
+  - [manifest](#manifest-1)
+  - [git](#git-1)
+  - [github-release](#github-release-1)
+  - [shell](#shell-1)
+  - [rsync](#rsync-1)
+  - [brew](#brew-1)
+  - [npm/pnpm/yarn](#npmpnpmyarn)
+  - [apt](#apt)
+  - [pacman/yay](#pacmanyay)
+  - [cargo](#cargo-1)
+  - [docker](#docker-1)
 
 ## Categories
 
@@ -362,237 +375,280 @@ install:
 
 ## Supported `type` of Installers
 
-- **`shell`**
-  - **Description**: Executes arbitrary shell commands. Commands support
-    [template variables](#template-variables).
-  - **Options**:
-    - `opts.command`: The command to execute for installing.
-    - `opts.update_command`: The command to execute for updating.
+### `shell`
 
-- **`group`**
-  - **Description**: Executes a logical group of steps in sequence.
-    - Allows nesting multiple steps together.
-  - **Options**:
-    - `steps`: List of nested steps.
+Executes arbitrary shell commands. Commands support [template variables](#template-variables).
 
-- **`git`**
-  - **Description**: Clones a git repository to a local directory.
-    - If `name` is a full git URL (https or SSH), the repository is cloned directly.
-    - If it is a repository path, e.g. `chenasraf/sofmani`, GitHub is assumed.
-  - **Options**:
-    - `opts.destination`: The local directory to clone the repository to.
-    - `opts.ref`: The branch, tag, or commit to checkout after cloning.
-    - `opts.flags`: Additional flags to pass to git commands (fallback for install/update).
-    - `opts.install_flags`: Additional flags to pass only to `git clone`.
-    - `opts.update_flags`: Additional flags to pass only to `git pull`.
+**Options**:
 
-- **`github-release`**
-  - **Description**: Downloads a GitHub release asset. Optionally untar/unzip the downloaded file.
-  - **Options**:
-    - `opts.repository`: The repository to download from. Should be in the format:
-      `user/repository-name`
-    - `opts.destination`: The target directory to extract the files to.
-    - `opts.strategy`: The download strategy. Can be one of: `tar`, `zip`, `none` (default)
-      - `none` - the release file is not compressed, and should be copied directly
-      - `tar` - the release file is a tar file, and should be extracted
-      - `zip` - the release file is a zip file, and should be extracted
-    - `opts.download_filename`: The filename of the release asset to download.
+- `opts.command`: The command to execute for installing.
+- `opts.update_command`: The command to execute for updating.
 
-      This should either be a string, or a map of platforms to filenames.
+### `group`
 
-      You can use Go template syntax to insert dynamic values into the filename:
-      - `{{ .Tag }}` - the full tag name, e.g. `v1.0.0`
-      - `{{ .Version }}` - the version without the leading "v", e.g. `1.0.0`
-      - `{{ .Arch }}` - the system architecture in Go format, e.g. `amd64`, `arm64`
-      - `{{ .ArchAlias }}` - the architecture in common alias format, e.g. `x86_64`, `arm64`
-      - `{{ .ArchGnu }}` - the architecture in GNU/Linux format, e.g. `x86_64`, `aarch64`
-      - `{{ .OS }}` - the current operating system, e.g. `macos`, `linux`, `windows`
-      - `{{ .DeviceID }}` - the unique machine identifier (truncated SHA-256 hash)
-      - `{{ .DeviceIDAlias }}` - the friendly alias for the current machine, if defined in
-        `machine_aliases`
+Executes a logical group of steps in sequence. Allows nesting multiple steps together.
 
-      **Legacy syntax (deprecated):** The old `{tag}`, `{version}`, `{arch}`, `{arch_alias}`,
-      `{arch_gnu}`, `{os}`, `{device_id}`, and `{device_id_alias}` tokens are still supported but
-      deprecated. A deprecation warning will be logged at DEBUG level when they are used.
+**Options**:
 
-      Examples:
+- `steps`: List of nested steps.
 
-      ```yaml
-      # Using Go template syntax (recommended)
-      download_filename: myapp_{{ .Tag }}_linux_{{ .ArchAlias }}.tar.gz # outputs: myapp_v1.0.0_linux_x86_64.tar.gz
-      download_filename: myapp_{{ .Version }}_{{ .OS }}.tar.gz # outputs: myapp_1.0.0_linux.tar.gz
+### `git`
 
-      # Platform-specific filenames
-      download_filename:
-        macos: myapp_{{ .Tag }}_darwin_{{ .ArchAlias }}.tar.gz
-        linux: myapp_{{ .Tag }}_linux_{{ .ArchAlias }}.tar.gz
-        windows: myapp_{{ .Tag }}_windows_{{ .ArchAlias }}.zip
+Clones a git repository to a local directory.
 
-      # Legacy syntax (deprecated, still works)
-      download_filename: myapp_{tag}_linux.tar.gz # outputs: myapp_v1.0.0_linux.tar.gz
-      ```
+- If `name` is a full git URL (https or SSH), the repository is cloned directly.
+- If it is a repository path, e.g. `chenasraf/sofmani`, GitHub is assumed.
 
-    - `opts.archive_bin_name`: The name of the binary file inside the archive (tar/zip). Use this
-      when the filename inside the archive differs from the desired output `bin_name`. If not set,
-      falls back to `bin_name` (or the installer name).
+**Options**:
 
-      ```yaml
-      - name: cospend-cli
-        bin_name: cospend
-        type: github-release
+- `opts.destination`: The local directory to clone the repository to.
+- `opts.ref`: The branch, tag, or commit to checkout after cloning.
+- `opts.flags`: Additional flags to pass to git commands (fallback for install/update).
+- `opts.install_flags`: Additional flags to pass only to `git clone`.
+- `opts.update_flags`: Additional flags to pass only to `git pull`.
+
+### `github-release`
+
+Downloads a GitHub release asset. Optionally untar/unzip the downloaded file.
+
+**Options**:
+
+- `opts.repository`: The repository to download from. Should be in the format:
+  `user/repository-name`
+- `opts.destination`: The target directory to extract the files to.
+- `opts.strategy`: The download strategy. Can be one of: `tar`, `zip`, `none` (default)
+  - `none` - the release file is not compressed, and should be copied directly
+  - `tar` - the release file is a tar file, and should be extracted
+  - `zip` - the release file is a zip file, and should be extracted
+- `opts.download_filename`: The filename of the release asset to download.
+
+  This should either be a string, or a map of platforms to filenames.
+
+  You can use Go template syntax to insert dynamic values into the filename:
+  - `{{ .Tag }}` - the full tag name, e.g. `v1.0.0`
+  - `{{ .Version }}` - the version without the leading "v", e.g. `1.0.0`
+  - `{{ .Arch }}` - the system architecture in Go format, e.g. `amd64`, `arm64`
+  - `{{ .ArchAlias }}` - the architecture in common alias format, e.g. `x86_64`, `arm64`
+  - `{{ .ArchGnu }}` - the architecture in GNU/Linux format, e.g. `x86_64`, `aarch64`
+  - `{{ .OS }}` - the current operating system, e.g. `macos`, `linux`, `windows`
+  - `{{ .DeviceID }}` - the unique machine identifier (truncated SHA-256 hash)
+  - `{{ .DeviceIDAlias }}` - the friendly alias for the current machine, if defined in
+    `machine_aliases`
+
+  **Legacy syntax (deprecated):** The old `{tag}`, `{version}`, `{arch}`, `{arch_alias}`,
+  `{arch_gnu}`, `{os}`, `{device_id}`, and `{device_id_alias}` tokens are still supported but
+  deprecated. A deprecation warning will be logged at DEBUG level when they are used.
+
+  Examples:
+
+  ```yaml
+  # Using Go template syntax (recommended)
+  download_filename: myapp_{{ .Tag }}_linux_{{ .ArchAlias }}.tar.gz # outputs: myapp_v1.0.0_linux_x86_64.tar.gz
+  download_filename: myapp_{{ .Version }}_{{ .OS }}.tar.gz # outputs: myapp_1.0.0_linux.tar.gz
+
+  # Platform-specific filenames
+  download_filename:
+    macos: myapp_{{ .Tag }}_darwin_{{ .ArchAlias }}.tar.gz
+    linux: myapp_{{ .Tag }}_linux_{{ .ArchAlias }}.tar.gz
+    windows: myapp_{{ .Tag }}_windows_{{ .ArchAlias }}.zip
+
+  # Legacy syntax (deprecated, still works)
+  download_filename: myapp_{tag}_linux.tar.gz # outputs: myapp_v1.0.0_linux.tar.gz
+  ```
+
+- `opts.archive_bin_name`: The name of the binary file inside the archive (tar/zip). Use this when
+  the filename inside the archive differs from the desired output `bin_name`. If not set, falls back
+  to `bin_name` (or the installer name).
+
+  ```yaml
+  - name: cospend-cli
+    bin_name: cospend
+    type: github-release
+    opts:
+      repository: chenasraf/cospend-cli
+      destination: ~/.local/bin
+      strategy: tar
+      download_filename: cospend-cli-linux-{{ .Arch }}.tar.gz
+      archive_bin_name: cospend-cli # file inside the tar is "cospend-cli", output will be "cospend"
+  ```
+
+- `opts.github_token`: GitHub personal access token for authenticated API requests. Authenticated
+  requests have a much higher rate limit (5,000/hour vs 60/hour for unauthenticated).
+
+  Supports environment variable expansion, so you don't need to hard-code credentials:
+
+  ```yaml
+  # Using environment variables (recommended)
+  github_token: $GITHUB_TOKEN
+  github_token: ${GITHUB_TOKEN}
+
+  # Can also be set as a default for all github-release installers
+  defaults:
+    type:
+      github-release:
         opts:
-          repository: chenasraf/cospend-cli
-          destination: ~/.local/bin
-          strategy: tar
-          download_filename: cospend-cli-linux-{{ .Arch }}.tar.gz
-          archive_bin_name: cospend-cli # file inside the tar is "cospend-cli", output will be "cospend"
-      ```
+          github_token: $GITHUB_TOKEN
+  ```
 
-    - `opts.github_token`: GitHub personal access token for authenticated API requests.
-      Authenticated requests have a much higher rate limit (5,000/hour vs 60/hour for
-      unauthenticated).
+### `manifest`
 
-      Supports environment variable expansion, so you don't need to hard-code credentials:
+Installs an entire manifest from a local or remote file.
 
-      ```yaml
-      # Using environment variables (recommended)
-      github_token: $GITHUB_TOKEN
-      github_token: ${GITHUB_TOKEN}
+- Every entry in the `install` array will be run, similar to how `steps` are run for `group`
+  installers.
+- `debug` and `check_updates` will be inherited by the loaded config.
+- `env` and `defaults` will be merged into the loaded config, overriding any existing values.
+- Remote manifests are fetched directly via HTTP (no git clone required).
 
-      # Can also be set as a default for all github-release installers
-      defaults:
-        type:
-          github-release:
-            opts:
-              github_token: $GITHUB_TOKEN
-      ```
+**Options**:
 
-- **`manifest`**
-  - **Description**: Installs an entire manifest from a local or remote file.
-    - Every entry in the `install` array will be run, similar to how `steps` are run for `group`
-      installers.
-    - `debug` and `check_updates` will be inherited by the loaded config.
-    - `env` and `defaults` will be merged into the loaded config, overriding any existing values.
-    - Remote manifests are fetched directly via HTTP (no git clone required).
-  - **Options**:
-    - `opts.source`: The source of the manifest file. Supports:
-      - Local file paths (e.g., `~/.dotfiles/manifest.yml`)
-      - Git repository URLs (SSH or HTTPS) - GitHub, GitLab, Bitbucket, and self-hosted instances
-      - Raw HTTP URLs (e.g., `https://raw.githubusercontent.com/user/repo/master/manifest.yml`)
-    - `opts.path`: The path to the manifest file within the repository. Required for git URLs,
-      optional for local files (will be appended to source). Ignored for raw HTTP URLs.
-    - `opts.ref`: The branch, tag, or commit to use if `opts.source` is a git URL. Defaults to
-      `master`. Ignored for local files and raw HTTP URLs.
+- `opts.source`: The source of the manifest file. Supports:
+  - Local file paths (e.g., `~/.dotfiles/manifest.yml`)
+  - Git repository URLs (SSH or HTTPS) - GitHub, GitLab, Bitbucket, and self-hosted instances
+  - Raw HTTP URLs (e.g., `https://raw.githubusercontent.com/user/repo/master/manifest.yml`)
+- `opts.path`: The path to the manifest file within the repository. Required for git URLs, optional
+  for local files (will be appended to source). Ignored for raw HTTP URLs.
+- `opts.ref`: The branch, tag, or commit to use if `opts.source` is a git URL. Defaults to `master`.
+  Ignored for local files and raw HTTP URLs.
 
-- **`rsync`**
-  - **Description**: Copy files from `source` to `destination` using rsync.
-  - **Options**:
-    - `opts.source`: Source directory/file.
-    - `opts.destination`: Destination directory/file.
-    - `opts.flags`: Additional rsync flags (e.g., `--delete`, `--exclude`).
+### `rsync`
 
-- **`brew`**
-  - **Description**: Installs packages using Homebrew.
-  - **Repo update**: Brew auto-updates its index on each command. By default, sofmani lets the first
-    brew command auto-update normally and suppresses it for subsequent ones (`once` mode). Configure
-    via the top-level [`repo_update`](./configuration-reference.md#global-options) option.
+Copy files from `source` to `destination` using rsync.
 
-  - **Options**:
-    - `opts.tap`: Name of the tap to install the package from.
-    - `opts.cask`: Install as a cask instead of a formula.
-    - `opts.flags`: Additional flags to pass to brew commands (fallback for install/update).
-    - `opts.install_flags`: Additional flags to pass only to `brew install`.
-    - `opts.update_flags`: Additional flags to pass only to `brew upgrade`.
+**Options**:
 
-- **`npm`/`pnpm`/`yarn`**
-  - **Description**: Installs packages using npm/pnpm/yarn.
-    - Use `type: npm` for `npm install`, `type: pnpm` for `pnpm install`, and `type: yarn` for
-      `yarn install`.
-  - **Options**:
-    - `opts.flags`: Additional flags to pass to commands (fallback for install/update).
-    - `opts.install_flags`: Additional flags to pass only during install.
-    - `opts.update_flags`: Additional flags to pass only during update.
+- `opts.source`: Source directory/file.
+- `opts.destination`: Destination directory/file.
+- `opts.flags`: Additional rsync flags (e.g., `--delete`, `--exclude`).
 
-- **`apt`/`apk`**
-  - **Description**: Installs packages using apt install or apt add.
-    - Use `type: apt` for `apt install`, and `type: apk` for `apk add`.
-  - **Repo update**: Runs `apt update` or `apk update` before installing. By default, the update
-    runs at most once per sofmani run (`once` mode). Configure via the top-level
-    [`repo_update`](./configuration-reference.md#global-options) option.
-  - **Options**:
-    - `opts.flags`: Additional flags to pass to commands (fallback for install/update).
-    - `opts.install_flags`: Additional flags to pass only during install.
-    - `opts.update_flags`: Additional flags to pass only during update.
+### `brew`
 
-- **`pacman`/`yay`**
-  - **Description**: Installs packages using pacman or yay (Arch Linux).
-    - Use `type: pacman` for official Arch repository packages.
-    - Use `type: yay` for AUR (Arch User Repository) packages.
-    - Both use `--noconfirm` for non-interactive installation.
-  - **Options**:
-    - `opts.needed`: Skip reinstalling up-to-date packages (`--needed` flag).
-    - `opts.flags`: Additional flags to pass to commands (fallback for install/update).
-    - `opts.install_flags`: Additional flags to pass only during install.
-    - `opts.update_flags`: Additional flags to pass only during update.
+Installs packages using Homebrew.
 
-- **`pipx`**
-  - **Description**: Installs packages using pipx.
-  - **Options**:
-    - `opts.flags`: Additional flags to pass to commands (fallback for install/update).
-    - `opts.install_flags`: Additional flags to pass only to `pipx install`.
-    - `opts.update_flags`: Additional flags to pass only to `pipx upgrade`.
+**Repo update**: Brew auto-updates its index on each command. By default, sofmani lets the first
+brew command auto-update normally and suppresses it for subsequent ones (`once` mode). Configure via
+the top-level [`repo_update`](./configuration-reference.md#global-options) option.
 
-- **`cargo`**
-  - **Description**: Installs packages using Rust's cargo.
-    - Uses `cargo install` for both installation and updates.
-    - `cargo install` will automatically skip rebuilding if the package is already up-to-date.
-  - **Options**:
-    - `opts.flags`: Additional flags to pass to commands (fallback for install/update).
-    - `opts.install_flags`: Additional flags to pass only during install.
-    - `opts.update_flags`: Additional flags to pass only during update.
+**Options**:
 
-- **`docker`**
-  - **Description**: Pulls and runs Docker containers using `docker run`. Also supports update
-    checks by comparing image digests.
-    - The image is pulled from the registry (e.g., Docker Hub or GHCR) and started with the provided
-      options.
-    - If the container already exists, it will be started instead of run again.
-    - Updates are detected by comparing the image digest before and after a pull.
-    - The container is always run with `--restart always -d`, unless overridden in a custom shell.
+- `opts.tap`: Name of the tap to install the package from.
+- `opts.cask`: Install as a cask instead of a formula.
+- `opts.flags`: Additional flags to pass to brew commands (fallback for install/update).
+- `opts.install_flags`: Additional flags to pass only to `brew install`.
+- `opts.update_flags`: Additional flags to pass only to `brew upgrade`.
 
-  - **Required**:
-    - `name`: The full Docker image name, including tag (e.g.,
-      `ghcr.io/open-webui/open-webui:main`).
-    - `bin_name`: The container name to assign to the running instance (used in install and update
-      checks).
+### `npm` / `pnpm` / `yarn`
 
-  - **Options**:
-    - `opts.flags`: A string of flags to pass to `docker run` (e.g., ports, volumes, extra args).
-      These are appended after the default flags and before the image name.
-      - Example:
+Installs packages using npm/pnpm/yarn.
 
-        ```yaml
-        opts:
-          flags: >
-            -p 3300:8080 -v data-volume:/app/data --add-host=host.docker.internal:host-gateway
-        ```
+- Use `type: npm` for `npm install`, `type: pnpm` for `pnpm install`, and `type: yarn` for
+  `yarn install`.
 
-    - `opts.platform`: Override the platform used when checking the image manifest for updates.
-      Accepts a per-OS map with values in `os/arch` format (e.g., `linux/amd64`).
+**Options**:
 
-      This is useful if you're running on a platform like `darwin/arm64`, but want to compare
-      digests for a different image target (e.g., `linux/amd64`).
-      - Example:
+- `opts.flags`: Additional flags to pass to commands (fallback for install/update).
+- `opts.install_flags`: Additional flags to pass only during install.
+- `opts.update_flags`: Additional flags to pass only during update.
 
-        ```yaml
-        opts:
-          platform:
-            macos: linux/amd64
-            linux: linux/amd64
-        ```
+### `apt` / `apk`
 
-    - `opts.skip_if_unavailable`: Whether to skip the installation/update if the Docker daemon is
-      not running. Defaults to false (so it will fail the installer)
+Installs packages using apt install or apk add.
+
+- Use `type: apt` for `apt install`, and `type: apk` for `apk add`.
+
+**Repo update**: Runs `apt update` or `apk update` before installing. By default, the update runs at
+most once per sofmani run (`once` mode). Configure via the top-level
+[`repo_update`](./configuration-reference.md#global-options) option.
+
+**Options**:
+
+- `opts.flags`: Additional flags to pass to commands (fallback for install/update).
+- `opts.install_flags`: Additional flags to pass only during install.
+- `opts.update_flags`: Additional flags to pass only during update.
+
+### `pacman` / `yay`
+
+Installs packages using pacman or yay (Arch Linux).
+
+- Use `type: pacman` for official Arch repository packages.
+- Use `type: yay` for AUR (Arch User Repository) packages.
+- Both use `--noconfirm` for non-interactive installation.
+
+**Options**:
+
+- `opts.needed`: Skip reinstalling up-to-date packages (`--needed` flag).
+- `opts.flags`: Additional flags to pass to commands (fallback for install/update).
+- `opts.install_flags`: Additional flags to pass only during install.
+- `opts.update_flags`: Additional flags to pass only during update.
+
+### `pipx`
+
+Installs packages using pipx.
+
+**Options**:
+
+- `opts.flags`: Additional flags to pass to commands (fallback for install/update).
+- `opts.install_flags`: Additional flags to pass only to `pipx install`.
+- `opts.update_flags`: Additional flags to pass only to `pipx upgrade`.
+
+### `cargo`
+
+Installs packages using Rust's cargo. Uses `cargo install` for both installation and updates.
+`cargo install` will automatically skip rebuilding if the package is already up-to-date.
+
+**Options**:
+
+- `opts.flags`: Additional flags to pass to commands (fallback for install/update).
+- `opts.install_flags`: Additional flags to pass only during install.
+- `opts.update_flags`: Additional flags to pass only during update.
+
+### `docker`
+
+Pulls and runs Docker containers using `docker run`. Also supports update checks by comparing image
+digests.
+
+- The image is pulled from the registry (e.g., Docker Hub or GHCR) and started with the provided
+  options.
+- If the container already exists, it will be started instead of run again.
+- Updates are detected by comparing the image digest before and after a pull.
+- The container is always run with `--restart always -d`, unless overridden in a custom shell.
+
+**Required**:
+
+- `name`: The full Docker image name, including tag (e.g., `ghcr.io/open-webui/open-webui:main`).
+- `bin_name`: The container name to assign to the running instance (used in install and update
+  checks).
+
+**Options**:
+
+- `opts.flags`: A string of flags to pass to `docker run` (e.g., ports, volumes, extra args). These
+  are appended after the default flags and before the image name.
+
+  Example:
+
+  ```yaml
+  opts:
+    flags: >
+      -p 3300:8080 -v data-volume:/app/data --add-host=host.docker.internal:host-gateway
+  ```
+
+- `opts.platform`: Override the platform used when checking the image manifest for updates. Accepts
+  a per-OS map with values in `os/arch` format (e.g., `linux/amd64`).
+
+  This is useful if you're running on a platform like `darwin/arm64`, but want to compare digests
+  for a different image target (e.g., `linux/amd64`).
+
+  Example:
+
+  ```yaml
+  opts:
+    platform:
+      macos: linux/amd64
+      linux: linux/amd64
+  ```
+
+- `opts.skip_if_unavailable`: Whether to skip the installation/update if the Docker daemon is not
+  running. Defaults to false (so it will fail the installer)
 
 ## Installer Examples
 
