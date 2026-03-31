@@ -245,22 +245,22 @@ These fields are shared by all installer types. Some fields may vary in behavior
   - **Default**: `false` (not set)
   - **Verbose flags per installer type**:
 
-    | Type              | Verbose flag    |
-    | ----------------- | --------------- |
-    | `rsync`           | `-v`            |
-    | `brew`            | `--verbose`     |
-    | `git`             | `--verbose`     |
+    | Type                | Verbose flag |
+    | ------------------- | ------------ |
+    | `rsync`             | `-v`         |
+    | `brew`              | `--verbose`  |
+    | `git`               | `--verbose`  |
     | `npm`/`pnpm`/`yarn` | `--verbose`  |
-    | `pipx`            | `--verbose`     |
-    | `cargo`           | `--verbose`     |
-    | `pacman`/`yay`    | `--verbose`     |
-    | `apk`             | `--verbose`     |
-    | `apt`             | _(no-op)_       |
-    | `docker`          | _(no-op)_       |
-    | `shell`           | _(no-op)_       |
-    | `github-release`  | _(no-op)_       |
-    | `manifest`        | _(no-op)_       |
-    | `group`           | _(no-op)_       |
+    | `pipx`              | `--verbose`  |
+    | `cargo`             | `--verbose`  |
+    | `pacman`/`yay`      | `--verbose`  |
+    | `apk`               | `--verbose`  |
+    | `apt`               | _(no-op)_    |
+    | `docker`            | _(no-op)_    |
+    | `shell`             | _(no-op)_    |
+    | `github-release`    | _(no-op)_    |
+    | `manifest`          | _(no-op)_    |
+    | `group`             | _(no-op)_    |
 
   - **Examples**:
 
