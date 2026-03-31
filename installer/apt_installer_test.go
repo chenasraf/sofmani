@@ -8,7 +8,7 @@ import (
 	"github.com/samber/lo"
 )
 
-func newAptInstaller(data *appconfig.InstallerData) *AptInstaller {
+func newTestAptInstaller(data *appconfig.InstallerData) *AptInstaller {
 	return &AptInstaller{
 		InstallerBase: InstallerBase{
 			Data: data,
@@ -20,7 +20,7 @@ func newAptInstaller(data *appconfig.InstallerData) *AptInstaller {
 
 func TestAptValidation(t *testing.T) {
 	logger.InitLogger(false)
-	aptInstaller := newAptInstaller(
+	aptInstaller := newTestAptInstaller(
 		&appconfig.InstallerData{
 			Name: lo.ToPtr("test-apt"),
 			Type: appconfig.InstallerTypeApt,
@@ -37,7 +37,7 @@ func TestAptGetOpts(t *testing.T) {
 		Name: lo.ToPtr("vim"),
 		Type: appconfig.InstallerTypeApt,
 	}
-	installer := newAptInstaller(defaultData)
+	installer := newTestAptInstaller(defaultData)
 	opts := installer.GetOpts()
 	if opts.Flags != nil {
 		t.Errorf("expected Flags to be nil")
@@ -57,7 +57,7 @@ func TestAptGetOpts(t *testing.T) {
 			"flags": "-y --no-install-recommends",
 		},
 	}
-	installerWithFlags := newAptInstaller(flagsData)
+	installerWithFlags := newTestAptInstaller(flagsData)
 	optsWithFlags := installerWithFlags.GetOpts()
 	if optsWithFlags.Flags == nil || *optsWithFlags.Flags != "-y --no-install-recommends" {
 		t.Errorf("expected Flags to be '-y --no-install-recommends'")
@@ -71,7 +71,7 @@ func TestAptGetOpts(t *testing.T) {
 			"install_flags": "--no-install-recommends",
 		},
 	}
-	installerWithInstallFlags := newAptInstaller(installFlagsData)
+	installerWithInstallFlags := newTestAptInstaller(installFlagsData)
 	optsWithInstallFlags := installerWithInstallFlags.GetOpts()
 	if optsWithInstallFlags.InstallFlags == nil || *optsWithInstallFlags.InstallFlags != "--no-install-recommends" {
 		t.Errorf("expected InstallFlags to be '--no-install-recommends'")
@@ -85,7 +85,7 @@ func TestAptGetOpts(t *testing.T) {
 			"update_flags": "--only-upgrade",
 		},
 	}
-	installerWithUpdateFlags := newAptInstaller(updateFlagsData)
+	installerWithUpdateFlags := newTestAptInstaller(updateFlagsData)
 	optsWithUpdateFlags := installerWithUpdateFlags.GetOpts()
 	if optsWithUpdateFlags.UpdateFlags == nil || *optsWithUpdateFlags.UpdateFlags != "--only-upgrade" {
 		t.Errorf("expected UpdateFlags to be '--only-upgrade'")
@@ -101,7 +101,7 @@ func TestAptGetOpts(t *testing.T) {
 			"update_flags":  "--update-specific",
 		},
 	}
-	installerWithAllFlags := newAptInstaller(allFlagsData)
+	installerWithAllFlags := newTestAptInstaller(allFlagsData)
 	optsWithAllFlags := installerWithAllFlags.GetOpts()
 	if optsWithAllFlags.Flags == nil || *optsWithAllFlags.Flags != "--common" {
 		t.Errorf("expected Flags to be '--common'")

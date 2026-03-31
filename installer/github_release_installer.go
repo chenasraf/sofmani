@@ -272,8 +272,8 @@ func (i *GitHubReleaseInstaller) CheckIsInstalled() (bool, error) {
 	if i.HasCustomInstallCheck() {
 		return i.RunCustomInstallCheck()
 	}
-	logger.Debug("Checking if %s is installed on %s", *i.Info.Name, filepath.Join(i.GetInstallDir(), *i.Info.Name))
-	return utils.PathExists(filepath.Join(i.GetInstallDir(), *i.Info.Name))
+	logger.Debug("Checking if %s is installed on %s", *i.Info.Name, filepath.Join(i.GetInstallDir(), i.GetBinName()))
+	return utils.PathExists(filepath.Join(i.GetInstallDir(), i.GetBinName()))
 }
 
 // CheckNeedsUpdate implements IInstaller.
