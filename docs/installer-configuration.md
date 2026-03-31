@@ -493,6 +493,9 @@ install:
 
 - **`brew`**
   - **Description**: Installs packages using Homebrew.
+  - **Repo update**: Brew auto-updates its index on each command. By default, sofmani lets the first
+    brew command auto-update normally and suppresses it for subsequent ones (`once` mode). Configure
+    via the top-level [`repo_update`](./configuration-reference.md#global-options) option.
 
   - **Options**:
     - `opts.tap`: Name of the tap to install the package from.
@@ -513,6 +516,9 @@ install:
 - **`apt`/`apk`**
   - **Description**: Installs packages using apt install or apt add.
     - Use `type: apt` for `apt install`, and `type: apk` for `apk add`.
+  - **Repo update**: Runs `apt update` or `apk update` before installing. By default, the update
+    runs at most once per sofmani run (`once` mode). Configure via the top-level
+    [`repo_update`](./configuration-reference.md#global-options) option.
   - **Options**:
     - `opts.flags`: Additional flags to pass to commands (fallback for install/update).
     - `opts.install_flags`: Additional flags to pass only during install.

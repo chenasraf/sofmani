@@ -25,6 +25,18 @@ const (
 	CategoryDisplayMinimal CategoryDisplayMode = "minimal"
 )
 
+// RepoUpdateMode controls how repository index updates are handled for a package manager.
+type RepoUpdateMode string
+
+const (
+	// RepoUpdateOnce runs the repository update at most once per sofmani run (default).
+	RepoUpdateOnce RepoUpdateMode = "once"
+	// RepoUpdateAlways runs the repository update before every install/update check.
+	RepoUpdateAlways RepoUpdateMode = "always"
+	// RepoUpdateNever skips the repository update entirely.
+	RepoUpdateNever RepoUpdateMode = "never"
+)
+
 // AppConfig represents the main application configuration.
 type AppConfig struct {
 	// Debug enables or disables debug mode.
@@ -35,6 +47,9 @@ type AppConfig struct {
 	Summary *bool `json:"summary"        yaml:"summary"`
 	// CategoryDisplay controls how category headers are rendered.
 	CategoryDisplay *CategoryDisplayMode `json:"category_display" yaml:"category_display"`
+	// RepoUpdate controls repository index update behavior per installer type.
+	// Supported types: brew, apt, apk. Values: "once" (default), "always", "never".
+	RepoUpdate *map[InstallerType]RepoUpdateMode `json:"repo_update"    yaml:"repo_update"`
 	// Install is a list of installers to run.
 	Install []InstallerData `json:"install"        yaml:"install"`
 	// Defaults provides default configurations for installer types.
@@ -47,6 +62,17 @@ type AppConfig struct {
 	MachineAliases *map[string]string `json:"machine_aliases" yaml:"machine_aliases"`
 	// Filter is a list of installer names to filter by.
 	Filter []string
+}
+
+// GetRepoUpdateMode returns the repo update mode for the given installer type,
+// defaulting to RepoUpdateOnce.
+func (c *AppConfig) GetRepoUpdateMode(t InstallerType) RepoUpdateMode {
+	if c.RepoUpdate != nil {
+		if mode, ok := (*c.RepoUpdate)[t]; ok {
+			return mode
+		}
+	}
+	return RepoUpdateOnce
 }
 
 // AppCliConfig represents the command-line interface configuration.

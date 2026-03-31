@@ -23,6 +23,22 @@ Here is a breakdown of all configuration options:
   - Enable or disable checking for updates before running operations.
   - Default: `false`.
 
+- **`repo_update`** (Object)
+  - Controls how repository index updates (e.g. `apt update`, `brew update`) are handled per
+    installer type. Keys are installer types, values are one of:
+    - `once` — Run the repo update at most once per sofmani run (default).
+    - `always` — Run the repo update before every install/update operation.
+    - `never` — Skip the repo update entirely.
+  - Supported types: `brew`, `apt`, `apk`.
+  - Default: `once` for all supported types.
+  - Example:
+    ```yaml
+    repo_update:
+      brew: once
+      apt: always
+      apk: never
+    ```
+
 - **`summary`** (Boolean)
   - Enable or disable the installation summary at the end.
   - The summary shows newly installed and upgraded software in a hierarchical format.
@@ -73,6 +89,9 @@ debug: false
 check_updates: true
 summary: true
 category_display: border
+repo_update:
+  brew: once
+  apt: once
 defaults:
   type:
     brew:

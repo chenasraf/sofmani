@@ -86,6 +86,9 @@ example configuration to demonstrate most of its options.
 ```yaml
 debug: true # Global debug mode (optional).
 check_updates: true # Enable update checking (optional).
+repo_update: # Control repo index updates per type (optional).
+  brew: once # Run brew update once per run (default).
+  apt: once # Run apt update once per run (default).
 defaults: # Define default behaviors for installer types.
   type:
     brew:
@@ -172,6 +175,7 @@ For a full breakdown with all the supported options, see
 | ------------------ | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `debug`            | Boolean | Enable or disable debug mode. Default: `false`.                                                                                                                        |
 | `check_updates`    | Boolean | Enable or disable checking for updates before running operations. Default: `false`.                                                                                    |
+| `repo_update`      | Object  | Controls repo index updates per installer type (e.g. `apt update`, `brew update`). Values: `once` (default), `always`, `never`. Supported types: `brew`, `apt`, `apk`. |
 | `summary`          | Boolean | Enable or disable the installation summary at the end. Default: `true`.                                                                                                |
 | `category_display` | String  | Controls how category headers are rendered. Values: `border` (default), `border-compact`, `minimal`.                                                                   |
 | `defaults`         | Object  | Defaults to apply to all installer types, such as specifying supported platforms or commonly used flags.                                                               |

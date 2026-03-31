@@ -55,7 +55,7 @@ func (i *BrewInstaller) Validate() []ValidationError {
 func (i *BrewInstaller) Install() error {
 	name := i.GetFullName()
 	opts := i.GetOpts()
-	i.suppressBrewAutoUpdate()
+	i.handleBrewRepoUpdate()
 	cmd := "brew install"
 	if i.IsVerbose() {
 		cmd += " --verbose"
@@ -69,7 +69,7 @@ func (i *BrewInstaller) Install() error {
 		cmd += " " + *opts.Flags
 	}
 	err := i.RunCmdAsFile(fmt.Sprintf("%s %s", cmd, name))
-	MarkRepoUpdated("brew")
+	i.markBrewRepoUpdated()
 	return err
 }
 
@@ -77,7 +77,7 @@ func (i *BrewInstaller) Install() error {
 func (i *BrewInstaller) Update() error {
 	name := i.GetFullName()
 	opts := i.GetOpts()
-	i.suppressBrewAutoUpdate()
+	i.handleBrewRepoUpdate()
 	cmd := "brew upgrade"
 	if i.IsVerbose() {
 		cmd += " --verbose"
@@ -91,7 +91,7 @@ func (i *BrewInstaller) Update() error {
 		cmd += " " + *opts.Flags
 	}
 	err := i.RunCmdAsFile(fmt.Sprintf("%s %s", cmd, name))
-	MarkRepoUpdated("brew")
+	i.markBrewRepoUpdated()
 	return err
 }
 
@@ -104,11 +104,28 @@ func (i *BrewInstaller) GetFullName() string {
 	return name
 }
 
-// suppressBrewAutoUpdate sets HOMEBREW_NO_AUTO_UPDATE=1 if brew has already
-// auto-updated during this run, preventing redundant repo syncs.
-func (i *BrewInstaller) suppressBrewAutoUpdate() {
-	if IsRepoUpdated("brew") {
+// handleBrewRepoUpdate manages brew's auto-update behavior according to the configured mode.
+// For "once" (default): lets the first brew command auto-update, then suppresses subsequent ones.
+// For "always": does nothing (brew auto-updates every time).
+// For "never": always suppresses auto-update.
+func (i *BrewInstaller) handleBrewRepoUpdate() {
+	mode := i.Config.GetRepoUpdateMode(appconfig.InstallerTypeBrew)
+	switch mode {
+	case appconfig.RepoUpdateNever:
 		_ = os.Setenv("HOMEBREW_NO_AUTO_UPDATE", "1")
+	case appconfig.RepoUpdateAlways:
+		// Let brew auto-update every time
+	default: // once
+		if IsRepoUpdated("brew") {
+			_ = os.Setenv("HOMEBREW_NO_AUTO_UPDATE", "1")
+		}
+	}
+}
+
+// markBrewRepoUpdated marks brew's repo as updated (for "once" mode tracking).
+func (i *BrewInstaller) markBrewRepoUpdated() {
+	if i.Config.GetRepoUpdateMode(appconfig.InstallerTypeBrew) == appconfig.RepoUpdateOnce {
+		MarkRepoUpdated("brew")
 	}
 }
 
@@ -118,7 +135,7 @@ func (i *BrewInstaller) CheckNeedsUpdate() (bool, error) {
 		return i.RunCustomUpdateCheck()
 	}
 
-	i.suppressBrewAutoUpdate()
+	i.handleBrewRepoUpdate()
 	name := i.GetFullName()
 	cmd := exec.Command("brew", "outdated", "--json", name)
 
@@ -159,7 +176,7 @@ func (i *BrewInstaller) CheckNeedsUpdate() (bool, error) {
 		return false, fmt.Errorf("failed to parse brew output: %w", parseErr)
 	}
 
-	MarkRepoUpdated("brew")
+	i.markBrewRepoUpdated()
 	return updateNeeded, nil
 }
 

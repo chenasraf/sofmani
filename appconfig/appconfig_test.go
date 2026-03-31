@@ -125,6 +125,53 @@ install:
 	assert.False(t, *config.CheckUpdates)
 }
 
+func TestGetRepoUpdateMode(t *testing.T) {
+	t.Run("defaults to once when not configured", func(t *testing.T) {
+		config := AppConfig{}
+		assert.Equal(t, RepoUpdateOnce, config.GetRepoUpdateMode(InstallerTypeBrew))
+		assert.Equal(t, RepoUpdateOnce, config.GetRepoUpdateMode(InstallerTypeApt))
+	})
+
+	t.Run("returns configured mode", func(t *testing.T) {
+		repoUpdate := map[InstallerType]RepoUpdateMode{
+			InstallerTypeBrew: RepoUpdateNever,
+			InstallerTypeApt:  RepoUpdateAlways,
+		}
+		config := AppConfig{RepoUpdate: &repoUpdate}
+		assert.Equal(t, RepoUpdateNever, config.GetRepoUpdateMode(InstallerTypeBrew))
+		assert.Equal(t, RepoUpdateAlways, config.GetRepoUpdateMode(InstallerTypeApt))
+	})
+
+	t.Run("defaults to once for unconfigured type", func(t *testing.T) {
+		repoUpdate := map[InstallerType]RepoUpdateMode{
+			InstallerTypeBrew: RepoUpdateNever,
+		}
+		config := AppConfig{RepoUpdate: &repoUpdate}
+		assert.Equal(t, RepoUpdateOnce, config.GetRepoUpdateMode(InstallerTypeApt))
+	})
+
+	t.Run("parses from yaml", func(t *testing.T) {
+		file, err := os.CreateTemp("", "config.*.yaml")
+		assert.NoError(t, err)
+		defer func() { assert.NoError(t, os.Remove(file.Name())) }()
+
+		_, err = file.WriteString(`
+repo_update:
+  brew: never
+  apt: always
+  apk: once
+`)
+		assert.NoError(t, err)
+		assert.NoError(t, file.Close())
+
+		config, err := ParseConfigFrom(file.Name())
+		assert.NoError(t, err)
+		assert.Equal(t, RepoUpdateNever, config.GetRepoUpdateMode(InstallerTypeBrew))
+		assert.Equal(t, RepoUpdateAlways, config.GetRepoUpdateMode(InstallerTypeApt))
+		assert.Equal(t, RepoUpdateOnce, config.GetRepoUpdateMode(InstallerTypeApk))
+	})
+}
+
 func TestFindConfigFile(t *testing.T) {
 	// Create a temporary config file
 	dir := t.TempDir()

@@ -43,13 +43,26 @@ func (i *AptInstaller) Validate() []ValidationError {
 	return errors
 }
 
+// runRepoUpdate runs the package manager's repo update according to the configured mode.
+func (i *AptInstaller) runRepoUpdate() error {
+	mode := i.Config.GetRepoUpdateMode(i.Info.Type)
+	switch mode {
+	case appconfig.RepoUpdateNever:
+		return nil
+	case appconfig.RepoUpdateAlways:
+		return i.RunCmdPassThrough(string(i.PackageManager), "update")
+	default: // once
+		return RunRepoUpdateOnce(string(i.PackageManager)+"-update", func() error {
+			return i.RunCmdPassThrough(string(i.PackageManager), "update")
+		})
+	}
+}
+
 // Install implements IInstaller.
 func (i *AptInstaller) Install() error {
 	name := *i.Info.Name
 	opts := i.GetOpts()
-	err := RunRepoUpdateOnce(string(i.PackageManager)+"-update", func() error {
-		return i.RunCmdPassThrough(string(i.PackageManager), "update")
-	})
+	err := i.runRepoUpdate()
 	if err != nil {
 		return err
 	}
@@ -111,9 +124,7 @@ func (i *AptInstaller) CheckNeedsUpdate() (bool, error) {
 	if i.HasCustomUpdateCheck() {
 		return i.RunCustomUpdateCheck()
 	}
-	err := RunRepoUpdateOnce(string(i.PackageManager)+"-update", func() error {
-		return i.RunCmdPassThrough(string(i.PackageManager), "update")
-	})
+	err := i.runRepoUpdate()
 	if err != nil {
 		return false, err
 	}
