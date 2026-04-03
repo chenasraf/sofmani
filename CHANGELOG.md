@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.26.0](https://github.com/chenasraf/sofmani/compare/v1.25.0...v1.26.0) (2026-04-03)
+
+
+### Features
+
+* add frequency option to limit how often installers run ([7dce7e3](https://github.com/chenasraf/sofmani/commit/7dce7e3c615039821300577743267572c17e5b3b))
+
 ## [1.25.0](https://github.com/chenasraf/sofmani/compare/v1.24.1...v1.25.0) (2026-03-31)
 
 
