@@ -293,6 +293,44 @@ These fields are shared by all installer types. Some fields may vary in behavior
           verbose: true
     ```
 
+- **`frequency`**
+  - **Type**: String (optional)
+  - **Description**: Limits how often the installer runs. After a successful install or update, the
+    next run will be skipped until the specified duration has elapsed. The timestamp of the last
+    successful run is stored in the sofmani cache directory.
+  - **Format**: A prettified duration string. Multiple components can be combined. Supported units:
+    - `s` — seconds (e.g., `60s`)
+    - `m` — minutes (e.g., `30m`)
+    - `h` — hours (e.g., `12h`)
+    - `d` — days (e.g., `1d`)
+    - `w` — weeks (e.g., `1w`)
+    - Combined: `1d12h`, `1w2d`
+  - **Default**: Not set (installer runs every time).
+  - **Note**: Use the `--ignore-frequency` CLI flag to bypass frequency checks for all installers.
+  - **Examples**:
+
+    ```yaml
+    # Only check for updates once a day
+    - name: neovim
+      type: brew
+      frequency: 1d
+
+    # Only run once a week
+    - name: sync-dotfiles
+      type: rsync
+      frequency: 1w
+      opts:
+        source: ~/.dotfiles/.config
+        destination: ~/.config
+
+    # Run at most every 12 hours
+    - name: my-tool
+      type: shell
+      frequency: 12h
+      opts:
+        command: ./install.sh
+    ```
+
 - **`skip_summary`**
   - **Type**: Boolean or Object (optional)
   - **Description**: Exclude this installer from the installation summary. Useful for installers

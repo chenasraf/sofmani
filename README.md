@@ -146,6 +146,7 @@ The following flags are supported to customize behavior:
 | `-s`, `--summary`    | Enable installation summary (default).                |
 | `-S`, `--no-summary` | Disable installation summary.                         |
 | `-f`, `--filter`     | Filter by installer name (can be used multiple times) |
+| `--ignore-frequency` | Ignore frequency limits and run all installers.       |
 | `-h`, `--help`       | Display help information and exit.                    |
 | `-v`, `--version`    | Display version information and exit.                 |
 
@@ -222,6 +223,7 @@ See [Installer Configuration](./docs/installer-configuration.md#categories) for 
 | `env_shell`        | Object (optional)     | Shell to use for command executions. See `env_shell` subfields below.                                                                                                                                                                                                                                                                                                              |
 | `env_shell.macos`  | String (optional)     | Shell to use for macOS command executions. If not specified, the default shell will be used.                                                                                                                                                                                                                                                                                       |
 | `env_shell.linux`  | String (optional)     | Shell to use for Linux command executions. If not specified, the default shell will be used.                                                                                                                                                                                                                                                                                       |
+| `frequency`        | String (optional)     | Limits how often the installer runs. After a successful install/update, the next run is skipped until the duration elapses. Supports units: `s`, `m`, `h`, `d`, `w` (e.g., `1d`, `1w`, `12h`). Use `--ignore-frequency` to bypass.                                                                                                                                                 |
 | `skip_summary`     | Boolean or Object     | Exclude this installer from the summary. Set to `true` to skip both install/update summaries, or use `{install: true}` / `{update: true}` for granular control. Useful for installers that always run.                                                                                                                                                                             |
 
 ### Supported `type` of Installers

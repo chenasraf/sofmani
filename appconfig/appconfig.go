@@ -62,6 +62,8 @@ type AppConfig struct {
 	MachineAliases *map[string]string `json:"machine_aliases" yaml:"machine_aliases"`
 	// Filter is a list of installer names to filter by.
 	Filter []string
+	// IgnoreFrequency overrides frequency checks, running all installers regardless.
+	IgnoreFrequency bool
 }
 
 // GetRepoUpdateMode returns the repo update mode for the given installer type,
@@ -93,6 +95,8 @@ type AppCliConfig struct {
 	ShowLogFile bool
 	// ShowMachineID indicates that only the machine ID should be shown.
 	ShowMachineID bool
+	// IgnoreFrequency overrides frequency checks, running all installers regardless.
+	IgnoreFrequency bool
 }
 
 // AppConfigDefaults provides default configurations for installer types.
@@ -131,6 +135,7 @@ func ParseConfig(overrides *AppCliConfig) (*AppConfig, error) {
 			appConfig.Summary = overrides.Summary
 		}
 		appConfig.Filter = overrides.Filter
+		appConfig.IgnoreFrequency = overrides.IgnoreFrequency
 		return appConfig, nil
 	}
 	return nil, fmt.Errorf("unsupported config file extension %s (filename: %s)", ext, file)

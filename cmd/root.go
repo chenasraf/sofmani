@@ -14,15 +14,16 @@ import (
 
 var (
 	// Flag variables
-	debug     bool
-	noDebug   bool
-	update    bool
-	noUpdate  bool
-	summary   bool
-	noSummary bool
-	filter    []string
-	logFile   string
-	machineID bool
+	debug           bool
+	noDebug         bool
+	update          bool
+	noUpdate        bool
+	summary         bool
+	noSummary       bool
+	filter          []string
+	logFile         string
+	machineID       bool
+	ignoreFrequency bool
 
 	// The parsed CLI config
 	cliConfig *appconfig.AppCliConfig
@@ -129,6 +130,9 @@ func init() {
 
 	// Machine ID flag
 	rootCmd.Flags().BoolVarP(&machineID, "machine-id", "m", false, "Show machine ID and exit")
+
+	// Ignore frequency flag
+	rootCmd.Flags().BoolVar(&ignoreFrequency, "ignore-frequency", false, "Ignore frequency limits and run all installers")
 }
 
 // SetVersion sets the version for the root command.
@@ -142,14 +146,15 @@ func SetVersion(version string) {
 // buildCliConfig creates an AppCliConfig from the parsed Cobra flags.
 func buildCliConfig(cmd *cobra.Command, args []string) *appconfig.AppCliConfig {
 	config := &appconfig.AppCliConfig{
-		ConfigFile:    "",
-		Debug:         nil,
-		CheckUpdates:  nil,
-		Summary:       nil,
-		Filter:        filter,
-		LogFile:       nil,
-		ShowLogFile:   false,
-		ShowMachineID: machineID,
+		ConfigFile:      "",
+		Debug:           nil,
+		CheckUpdates:    nil,
+		Summary:         nil,
+		Filter:          filter,
+		LogFile:         nil,
+		ShowLogFile:     false,
+		ShowMachineID:   machineID,
+		IgnoreFrequency: ignoreFrequency,
 	}
 
 	// Handle debug flag

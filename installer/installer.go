@@ -263,6 +263,18 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) (*summary.I
 		return result, nil
 	}
 
+	// Check frequency limits (unless --ignore-frequency is set)
+	if !config.IgnoreFrequency && info.Frequency != nil && *info.Frequency != "" {
+		shouldRun, err := checkFrequency(name, *info.Frequency)
+		if err != nil {
+			logger.Warn("Failed to check frequency for %s: %v", logger.H(name), err)
+		} else if !shouldRun {
+			logger.Debug("%s: skipping due to frequency %s", logger.H(name), *info.Frequency)
+			result.Action = summary.ActionSkipped
+			return result, nil
+		}
+	}
+
 	logger.Debug("Checking %s: %s", logger.H(string(info.Type)), logger.H(name))
 	installed, err := installer.CheckIsInstalled()
 	if err != nil {
@@ -328,6 +340,14 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) (*summary.I
 			}
 		}
 		result.Action = summary.ActionInstalled
+	}
+
+	// Write frequency timestamp on successful install/update
+	if info.Frequency != nil && *info.Frequency != "" &&
+		(result.Action == summary.ActionInstalled || result.Action == summary.ActionUpgraded) {
+		if err := writeFrequencyTimestamp(name); err != nil {
+			logger.Warn("Failed to write frequency timestamp for %s: %v", logger.H(name), err)
+		}
 	}
 
 	// Collect child results for group/manifest installers

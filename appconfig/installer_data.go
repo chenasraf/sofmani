@@ -89,6 +89,10 @@ type InstallerData struct {
 	SkipSummary *SkipSummary `json:"skip_summary"      yaml:"skip_summary"`
 	// Verbose enables verbose output for the installer's native commands.
 	Verbose *bool `json:"verbose"           yaml:"verbose"`
+	// Frequency is a prettified duration (e.g. "1d", "1w", "3m") that limits how often
+	// the installer runs. After a successful install/update, the next run will be skipped
+	// until the frequency period has elapsed.
+	Frequency *string `json:"frequency"          yaml:"frequency"`
 }
 
 // InstallerType represents the type of an installer.
