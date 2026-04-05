@@ -1,6 +1,7 @@
 package installer
 
 import (
+	"archive/zip"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/chenasraf/sofmani/appconfig"
@@ -44,6 +46,28 @@ type GitHubReleaseOpts struct {
 	// Use this when the filename inside the archive differs from the desired output bin_name.
 	// If not set, falls back to bin_name (or the installer name).
 	ArchiveBinName *string
+	// ExtractTo, when set, switches the installer to "tree mode": the full archive contents
+	// are extracted to this directory, preserving sibling files (lib/, share/, etc.) that
+	// many toolchains rely on at runtime. Requires strategy 'tar' or 'zip'. When tree mode
+	// is active, Destination and ArchiveBinName are ignored.
+	ExtractTo *string
+	// StripComponents drops this many leading path components from each archive entry, the
+	// same way `tar --strip-components=N` does. Useful because release tarballs typically
+	// wrap their contents in a single versioned directory. Only meaningful with ExtractTo.
+	StripComponents *int
+	// BinLinks lists binaries to expose from inside ExtractTo. On unix, each entry becomes
+	// a symlink at Target pointing to Source; on Windows, the file is copied instead (since
+	// symlinks require elevated privileges). Only meaningful with ExtractTo.
+	BinLinks []GitHubReleaseBinLink
+}
+
+// GitHubReleaseBinLink describes a single binary exposed from a tree-mode install.
+type GitHubReleaseBinLink struct {
+	// Source is the path to the binary inside the extracted tree. If relative, it is
+	// resolved against ExtractTo; absolute paths are also accepted.
+	Source string
+	// Target is the absolute path where the symlink (or copied file, on Windows) is placed.
+	Target string
 }
 
 // GitHubReleaseInstallStrategy represents the installation strategy for a GitHub release.
@@ -64,8 +88,12 @@ func (i *GitHubReleaseInstaller) Validate() []ValidationError {
 	if opts.Repository == nil || len(*opts.Repository) == 0 {
 		errors = append(errors, ValidationError{FieldName: "repository", Message: validationIsRequired(), InstallerName: *info.Name})
 	}
-	if opts.Destination == nil || len(*opts.Destination) == 0 {
-		errors = append(errors, ValidationError{FieldName: "destination", Message: validationIsRequired(), InstallerName: *info.Name})
+	// In tree mode (extract_to set), destination is not required — bin_links handle
+	// surfacing binaries on $PATH instead.
+	if opts.ExtractTo == nil {
+		if opts.Destination == nil || len(*opts.Destination) == 0 {
+			errors = append(errors, ValidationError{FieldName: "destination", Message: validationIsRequired(), InstallerName: *info.Name})
+		}
 	}
 	if opts.DownloadFilename == nil || len(*opts.DownloadFilename.Resolve()) == 0 {
 		errors = append(errors, ValidationError{FieldName: "download_filename", Message: validationIsRequired(), InstallerName: *info.Name})
@@ -77,12 +105,45 @@ func (i *GitHubReleaseInstaller) Validate() []ValidationError {
 			errors = append(errors, ValidationError{FieldName: "strategy", Message: validationInvalidFormat(), InstallerName: *info.Name})
 		}
 	}
+	if opts.ExtractTo != nil {
+		// Tree mode requires an archive strategy — a single downloaded file has no tree to
+		// extract. We check explicitly rather than relying on the Install-time error so
+		// misconfigurations surface during validation.
+		strategy := GitHubReleaseInstallStrategyNone
+		if opts.Strategy != nil {
+			strategy = *opts.Strategy
+		}
+		if strategy != GitHubReleaseInstallStrategyTar && strategy != GitHubReleaseInstallStrategyZip {
+			errors = append(errors, ValidationError{FieldName: "strategy", Message: "extract_to requires strategy 'tar' or 'zip'", InstallerName: *info.Name})
+		}
+		if opts.StripComponents != nil && *opts.StripComponents < 0 {
+			errors = append(errors, ValidationError{FieldName: "strip_components", Message: validationInvalidFormat(), InstallerName: *info.Name})
+		}
+		for idx, link := range opts.BinLinks {
+			if link.Source == "" {
+				errors = append(errors, ValidationError{FieldName: fmt.Sprintf("bin_links[%d].source", idx), Message: validationIsRequired(), InstallerName: *info.Name})
+			} else if !filepath.IsAbs(link.Source) {
+				// Relative sources are joined onto extract_to at install time; reject any
+				// that try to escape the extracted tree with leading "..".
+				cleaned := filepath.Clean(link.Source)
+				if cleaned == ".." || strings.HasPrefix(cleaned, ".."+string(filepath.Separator)) {
+					errors = append(errors, ValidationError{FieldName: fmt.Sprintf("bin_links[%d].source", idx), Message: validationInvalidFormat(), InstallerName: *info.Name})
+				}
+			}
+			if link.Target == "" {
+				errors = append(errors, ValidationError{FieldName: fmt.Sprintf("bin_links[%d].target", idx), Message: validationIsRequired(), InstallerName: *info.Name})
+			}
+		}
+	}
 	return errors
 }
 
 // Install implements IInstaller.
 func (i *GitHubReleaseInstaller) Install() error {
 	opts := i.GetOpts()
+	if opts.ExtractTo != nil {
+		return i.installTree()
+	}
 	data := i.GetData()
 	name := *data.Name
 	tmpDir, err := os.MkdirTemp("", "sofmani")
@@ -272,6 +333,24 @@ func (i *GitHubReleaseInstaller) CheckIsInstalled() (bool, error) {
 	if i.HasCustomInstallCheck() {
 		return i.RunCustomInstallCheck()
 	}
+	opts := i.GetOpts()
+	if opts.ExtractTo != nil {
+		// Tree mode: the install is present iff the extracted tree exists AND every
+		// declared bin_link target exists. Removing a symlink from ~/.local/bin should
+		// trigger reinstall so the user's expected entry points come back.
+		logger.Debug("Checking if %s is installed at %s (tree mode)", *i.Info.Name, *opts.ExtractTo)
+		exists, err := utils.PathExists(*opts.ExtractTo)
+		if err != nil || !exists {
+			return false, err
+		}
+		for _, link := range opts.BinLinks {
+			exists, err := utils.PathExists(link.Target)
+			if err != nil || !exists {
+				return false, err
+			}
+		}
+		return true, nil
+	}
 	logger.Debug("Checking if %s is installed on %s", *i.Info.Name, filepath.Join(i.GetInstallDir(), i.GetBinName()))
 	return utils.PathExists(filepath.Join(i.GetInstallDir(), i.GetBinName()))
 }
@@ -418,8 +497,67 @@ func (i *GitHubReleaseInstaller) GetOpts() *GitHubReleaseOpts {
 		if archiveBinName, ok := (*info.Opts)["archive_bin_name"].(string); ok {
 			opts.ArchiveBinName = &archiveBinName
 		}
+		if extractTo, ok := (*info.Opts)["extract_to"].(string); ok {
+			extractTo = utils.GetRealPath(i.GetData().Environ(), extractTo)
+			opts.ExtractTo = &extractTo
+		}
+		if raw, ok := (*info.Opts)["strip_components"]; ok {
+			switch v := raw.(type) {
+			case int:
+				opts.StripComponents = &v
+			case int64:
+				n := int(v)
+				opts.StripComponents = &n
+			case float64:
+				n := int(v)
+				opts.StripComponents = &n
+			}
+		}
+		if raw, ok := (*info.Opts)["bin_links"]; ok {
+			if list, ok := raw.([]any); ok {
+				for _, entry := range list {
+					link, ok := parseBinLinkEntry(entry, i.GetData().Environ())
+					if ok {
+						opts.BinLinks = append(opts.BinLinks, link)
+					}
+				}
+			}
+		}
 	}
 	return opts
+}
+
+// parseBinLinkEntry converts a single YAML bin_links entry (a map) into a GitHubReleaseBinLink.
+// It accepts both map[string]any (yaml.v3) and map[any]any (yaml.v2) shapes defensively.
+func parseBinLinkEntry(entry any, env []string) (GitHubReleaseBinLink, bool) {
+	link := GitHubReleaseBinLink{}
+	get := func(key string) (string, bool) {
+		switch m := entry.(type) {
+		case map[string]any:
+			if v, ok := m[key].(string); ok {
+				return v, true
+			}
+		case map[any]any:
+			if v, ok := m[key].(string); ok {
+				return v, true
+			}
+		}
+		return "", false
+	}
+	if s, ok := get("source"); ok {
+		// Only expand env / ~ if absolute; relative sources are resolved against ExtractTo later.
+		if filepath.IsAbs(s) || strings.HasPrefix(s, "~") || strings.Contains(s, "$") {
+			s = utils.GetRealPath(env, s)
+		}
+		link.Source = s
+	}
+	if t, ok := get("target"); ok {
+		link.Target = utils.GetRealPath(env, t)
+	}
+	if link.Source == "" && link.Target == "" {
+		return link, false
+	}
+	return link, true
 }
 
 func (i *GitHubReleaseInstaller) GetLatestTag() (string, error) {
@@ -489,9 +627,342 @@ func (i *GitHubReleaseInstaller) GetDestination() string {
 }
 
 // GetInstallDir returns the installation directory for the release asset.
-// For GitHub releases, this is the same as the destination directory.
+// In tree mode it returns extract_to; otherwise it falls back to destination.
 func (i *GitHubReleaseInstaller) GetInstallDir() string {
+	if opts := i.GetOpts(); opts.ExtractTo != nil {
+		return *opts.ExtractTo
+	}
 	return i.GetDestination()
+}
+
+// installTree handles "tree mode" installs where the full archive contents are extracted
+// into opts.ExtractTo and individual binaries are exposed via opts.BinLinks. The extracted
+// tree is swapped into place atomically so an interrupted or failed install cannot leave
+// a half-written directory behind, and a successful update fully replaces the previous
+// version (no stale files from an old release linger).
+func (i *GitHubReleaseInstaller) installTree() error {
+	opts := i.GetOpts()
+	data := i.GetData()
+	name := *data.Name
+
+	strategy := GitHubReleaseInstallStrategyNone
+	if opts.Strategy != nil {
+		strategy = *opts.Strategy
+	}
+	if strategy != GitHubReleaseInstallStrategyTar && strategy != GitHubReleaseInstallStrategyZip {
+		return fmt.Errorf("extract_to requires strategy 'tar' or 'zip', got %q", strategy)
+	}
+
+	tmpDir, err := os.MkdirTemp("", "sofmani")
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if rerr := os.RemoveAll(tmpDir); rerr != nil {
+			logger.Warn("failed to remove temp dir %s: %v", tmpDir, rerr)
+		}
+	}()
+
+	tmpFile, tag, err := i.downloadRelease(tmpDir, name)
+	if err != nil {
+		return err
+	}
+
+	extractTo := *opts.ExtractTo
+	stripComponents := 0
+	if opts.StripComponents != nil {
+		stripComponents = *opts.StripComponents
+	}
+
+	// Extract into a staging sibling so the old tree stays intact until we're ready to swap.
+	staging := extractTo + ".sofmani-new"
+	if err := os.RemoveAll(staging); err != nil {
+		return fmt.Errorf("failed to clean staging dir %s: %w", staging, err)
+	}
+	if err := os.MkdirAll(staging, 0755); err != nil {
+		return fmt.Errorf("failed to create staging dir %s: %w", staging, err)
+	}
+
+	switch strategy {
+	case GitHubReleaseInstallStrategyTar:
+		args := []string{"-xf", tmpFile, "-C", staging}
+		if stripComponents > 0 {
+			args = append(args, fmt.Sprintf("--strip-components=%d", stripComponents))
+		}
+		logger.Debug("Extracting tar to staging: tar %v", args)
+		success, runErr := i.RunCmdGetSuccess("tar", args...)
+		if runErr != nil || !success {
+			_ = os.RemoveAll(staging)
+			if runErr == nil {
+				runErr = fmt.Errorf("tar exited with non-zero status")
+			}
+			return fmt.Errorf("failed to extract tar file: %w", runErr)
+		}
+	case GitHubReleaseInstallStrategyZip:
+		logger.Debug("Extracting zip to staging: %s (strip=%d)", staging, stripComponents)
+		if err := extractZipWithStrip(tmpFile, staging, stripComponents); err != nil {
+			_ = os.RemoveAll(staging)
+			return fmt.Errorf("failed to extract zip file: %w", err)
+		}
+	}
+
+	// Atomically replace the old tree with the new one. We move the old tree aside first
+	// so we can roll back if the rename fails halfway.
+	backup := ""
+	if _, err := os.Stat(extractTo); err == nil {
+		backup = extractTo + ".sofmani-old"
+		if err := os.RemoveAll(backup); err != nil {
+			_ = os.RemoveAll(staging)
+			return fmt.Errorf("failed to clean backup dir %s: %w", backup, err)
+		}
+		if err := os.Rename(extractTo, backup); err != nil {
+			_ = os.RemoveAll(staging)
+			return fmt.Errorf("failed to move existing tree aside: %w", err)
+		}
+	} else if !os.IsNotExist(err) {
+		_ = os.RemoveAll(staging)
+		return fmt.Errorf("failed to stat extract_to %s: %w", extractTo, err)
+	} else {
+		if err := os.MkdirAll(filepath.Dir(extractTo), 0755); err != nil {
+			_ = os.RemoveAll(staging)
+			return fmt.Errorf("failed to create parent of extract_to: %w", err)
+		}
+	}
+
+	if err := os.Rename(staging, extractTo); err != nil {
+		if backup != "" {
+			// Roll back to the previous tree so the user isn't left with nothing.
+			if rerr := os.Rename(backup, extractTo); rerr != nil {
+				logger.Warn("failed to restore previous tree from %s: %v", backup, rerr)
+			}
+		}
+		_ = os.RemoveAll(staging)
+		return fmt.Errorf("failed to move staged tree into place: %w", err)
+	}
+	if backup != "" {
+		if rerr := os.RemoveAll(backup); rerr != nil {
+			logger.Warn("failed to remove old tree backup %s: %v", backup, rerr)
+		}
+	}
+	logger.Debug("Extracted tree to %s", extractTo)
+
+	for _, link := range opts.BinLinks {
+		sourcePath := link.Source
+		if !filepath.IsAbs(sourcePath) {
+			sourcePath = filepath.Join(extractTo, sourcePath)
+		}
+		if err := installBinLink(sourcePath, link.Target); err != nil {
+			return fmt.Errorf("failed to install bin link %s -> %s: %w", sourcePath, link.Target, err)
+		}
+		logger.Debug("Installed bin link %s -> %s", sourcePath, link.Target)
+	}
+
+	if err := i.UpdateCache(tag); err != nil {
+		return err
+	}
+	logger.Debug("Tree install complete: %s", extractTo)
+	return nil
+}
+
+// downloadRelease downloads the configured release asset to tmpDir and returns the on-disk
+// path plus the resolved tag. It encapsulates the tag lookup, template application, HTTP
+// fetch, and file write so both single-file and tree-mode installs can share it.
+func (i *GitHubReleaseInstaller) downloadRelease(tmpDir, name string) (string, string, error) {
+	opts := i.GetOpts()
+
+	tag, err := i.GetLatestTag()
+	if err != nil {
+		return "", "", err
+	}
+
+	filename := i.GetFilename()
+	if filename == "" {
+		return "", "", fmt.Errorf("no download filename provided")
+	}
+	var machineAliases map[string]string
+	if i.Config != nil && i.Config.MachineAliases != nil {
+		machineAliases = *i.Config.MachineAliases
+	}
+	templateVars := NewTemplateVars(tag, machineAliases)
+	filename, err = ApplyTemplate(filename, templateVars, name)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to apply template to filename: %w", err)
+	}
+
+	tmpFile := filepath.Join(tmpDir, name+".download")
+	out, err := os.Create(tmpFile)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to create temporary file: %w", err)
+	}
+	defer func() {
+		if cerr := out.Close(); cerr != nil {
+			logger.Warn("failed to close tmpOut file: %v", cerr)
+		}
+	}()
+
+	downloadUrl := fmt.Sprintf("https://github.com/%s/releases/download/%s/%s", *opts.Repository, tag, filename)
+	logger.Debug("Downloading file: %s", filename)
+	logger.Debug("Download URL: %s", downloadUrl)
+	logger.Debug("Temp file: %s", tmpFile)
+
+	req, err := http.NewRequest("GET", downloadUrl, nil)
+	if err != nil {
+		return "", "", err
+	}
+	if opts.GithubToken != nil && *opts.GithubToken != "" {
+		logger.Debug("Using GitHub token for authentication")
+		req.Header.Set("Authorization", "Bearer "+*opts.GithubToken)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", "", err
+	}
+	defer func() {
+		if cerr := resp.Body.Close(); cerr != nil {
+			logger.Warn("failed to close response body: %v", cerr)
+		}
+	}()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return "", "", fmt.Errorf("failed to download release asset: %s returned status %d", downloadUrl, resp.StatusCode)
+	}
+
+	n, err := io.Copy(out, resp.Body)
+	if err != nil {
+		return "", "", err
+	}
+	if n == 0 {
+		return "", "", fmt.Errorf("no data was written to the file")
+	}
+	logger.Debug("Downloaded %d bytes to temp file", n)
+	return tmpFile, tag, nil
+}
+
+// extractZipWithStrip extracts a zip archive into dest, dropping the first `strip` leading
+// path components from each entry (mirroring `tar --strip-components=N`). We implement this
+// in-process via archive/zip rather than shelling out to `unzip` because unzip has no
+// native equivalent of strip-components and because archive/zip works on every platform
+// sofmani supports (including Windows, where `unzip` is not always available).
+func extractZipWithStrip(zipPath, dest string, strip int) error {
+	r, err := zip.OpenReader(zipPath)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if cerr := r.Close(); cerr != nil {
+			logger.Warn("failed to close zip reader: %v", cerr)
+		}
+	}()
+
+	destClean := filepath.Clean(dest)
+	for _, f := range r.File {
+		parts := strings.Split(filepath.ToSlash(f.Name), "/")
+		// Drop trailing empty segment from "dir/" style entries so strip counts real dirs.
+		if len(parts) > 0 && parts[len(parts)-1] == "" {
+			parts = parts[:len(parts)-1]
+		}
+		if len(parts) == 0 {
+			continue
+		}
+		if len(parts) <= strip {
+			// This entry lives entirely inside the stripped prefix — skip it.
+			continue
+		}
+		rel := filepath.Join(parts[strip:]...)
+		target := filepath.Join(destClean, rel)
+
+		// Defend against zip-slip: the resolved target must stay inside dest.
+		if target != destClean && !strings.HasPrefix(target, destClean+string(os.PathSeparator)) {
+			return fmt.Errorf("invalid file path in zip: %s", f.Name)
+		}
+
+		if f.FileInfo().IsDir() {
+			if err := os.MkdirAll(target, 0755); err != nil {
+				return err
+			}
+			continue
+		}
+		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+			return err
+		}
+		if err := writeZipFile(f, target); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// writeZipFile extracts a single zip entry to target, preserving its mode bits so that
+// executable bits on unix-style archives survive the round-trip.
+func writeZipFile(f *zip.File, target string) error {
+	rc, err := f.Open()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if cerr := rc.Close(); cerr != nil {
+			logger.Warn("failed to close zip entry %s: %v", f.Name, cerr)
+		}
+	}()
+	mode := f.Mode().Perm()
+	if mode == 0 {
+		mode = 0644
+	}
+	out, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
+	if err != nil {
+		return err
+	}
+	if _, err := io.Copy(out, rc); err != nil {
+		_ = out.Close()
+		return err
+	}
+	return out.Close()
+}
+
+// installBinLink exposes a single binary from inside the extracted tree at `target`. On
+// unix this is a symlink (so the binary keeps resolving its siblings via its real
+// location); on Windows we fall back to copying the file because creating symlinks
+// requires elevated privileges or developer mode.
+func installBinLink(source, target string) error {
+	if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+		return err
+	}
+	// Remove whatever is currently at target (file, broken symlink, or old symlink) so we
+	// can replace it cleanly. Use Lstat so we don't follow the symlink.
+	if _, err := os.Lstat(target); err == nil {
+		if err := os.Remove(target); err != nil {
+			return err
+		}
+	} else if !os.IsNotExist(err) {
+		return err
+	}
+	if runtime.GOOS == "windows" {
+		return copyFile(source, target)
+	}
+	return os.Symlink(source, target)
+}
+
+// copyFile is the Windows fallback for installBinLink.
+func copyFile(src, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = in.Close() }()
+	info, err := in.Stat()
+	if err != nil {
+		return err
+	}
+	out, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, info.Mode().Perm())
+	if err != nil {
+		return err
+	}
+	if _, err := io.Copy(out, in); err != nil {
+		_ = out.Close()
+		return err
+	}
+	return out.Close()
 }
 
 // NewGitHubReleaseInstaller creates a new GitHubReleaseInstaller.

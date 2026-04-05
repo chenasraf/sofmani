@@ -510,6 +510,44 @@ Downloads a GitHub release asset. Optionally untar/unzip the downloaded file.
       archive_bin_name: cospend-cli # file inside the tar is "cospend-cli", output will be "cospend"
   ```
 
+- `opts.extract_to`: Enables **tree mode**. When set, the full archive contents are extracted into
+  this directory, preserving sibling files (`lib/`, `share/`, `libexec/`, etc.). Use this for
+  toolchains that ship as a pre-built directory tree where the binary resolves paths relative to its
+  own location (Neovim, Go, Node, Flutter, Zig, many language servers). In tree mode, `destination`
+  and `archive_bin_name` are ignored; use `bin_links` to expose binaries on your `$PATH`. Requires
+  `strategy` to be `tar` or `zip`.
+
+- `opts.strip_components`: Drops this many leading path components from each archive entry,
+  equivalent to `tar --strip-components=N`. Release tarballs almost always wrap their contents in a
+  single versioned directory (e.g. `nvim-linux-x86_64/`), so `strip_components: 1` is the common
+  value. Only meaningful with `extract_to`.
+
+- `opts.bin_links`: A list of binaries to expose from inside the extracted tree. Each entry has a
+  `source` (relative to `extract_to`, or an absolute path) and a required `target` (absolute path
+  where the symlink is placed). On unix, each entry becomes a symlink, which is essential so the
+  binary resolves its sibling files via its real location. On Windows, where creating symlinks
+  requires elevated privileges, the file is copied instead. Only meaningful with `extract_to`.
+
+  Example — installing Neovim as a full tree with `nvim` on `$PATH`:
+
+  ```yaml
+  - name: neovim
+    type: github-release
+    platforms: { only: ['linux'] }
+    opts:
+      repository: neovim/neovim
+      strategy: tar
+      download_filename: nvim-linux-{{ .Arch }}.tar.gz
+      extract_to: ~/.local/share/neovim
+      strip_components: 1
+      bin_links:
+        - source: bin/nvim
+          target: ~/.local/bin/nvim
+  ```
+
+  On update, the extracted tree is replaced atomically (extracted to a sibling staging directory and
+  renamed into place), so files removed in a new release do not linger from the old version.
+
 - `opts.github_token`: GitHub personal access token for authenticated API requests. Authenticated
   requests have a much higher rate limit (5,000/hour vs 60/hour for unauthenticated).
 

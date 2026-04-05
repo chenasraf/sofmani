@@ -9,16 +9,56 @@ install:
     bin_name: nvim
     type: group
     steps:
+      # macOS: use Homebrew — it already handles the full tree under its prefix.
       - name: neovim
         bin_name: nvim
         type: brew
         platforms:
           only: ['macos']
+
+      # Linux: install the official release tarball as a full directory tree.
+      # Neovim resolves $VIMRUNTIME relative to the nvim binary, so bin/nvim must
+      # stay adjacent to its lib/ and share/ siblings — plain `destination` would
+      # leave nvim unable to find its runtime files. Tree mode extracts the whole
+      # archive under extract_to and symlinks the binary onto $PATH.
       - name: nvim
         type: github-release
         platforms:
           only: ['linux']
         opts:
           repository: neovim/neovim
-          destination: ~/.local/bin
-          download_filename: nvim-linux-{{ .ArchAlias }}.appimage
+          strategy: tar
+          download_filename: nvim-linux-{{ .ArchAlias }}.tar.gz
+          extract_to: ~/.local/share/neovim
+          strip_components: 1 # drop the nvim-linux-<arch>/ wrapper directory
+          bin_links:
+            - source: bin/nvim
+              target: ~/.local/bin/nvim
+
+      # Windows: extract the tree, then drop a .cmd shim on PATH that forwards
+      # to the real nvim.exe at its extracted location. We can't use bin_links
+      # here — on Windows the fallback is to copy the file, and a copied
+      # nvim.exe can no longer find its sibling share/ and lib/ directories.
+      # A shim script sidesteps that: the shim lives on PATH, but the actual
+      # exe runs from its real location, so runtime sibling resolution works.
+      - name: nvim
+        type: github-release
+        platforms:
+          only: ['windows']
+        opts:
+          repository: neovim/neovim
+          strategy: zip
+          download_filename: nvim-win64.zip
+          extract_to: ~/AppData/Local/neovim
+          strip_components: 1 # drop the nvim-win64/ wrapper directory
+        # post_install / post_update run as a batch script, so env vars like
+        # %USERPROFILE% are expanded at install time and get baked into the
+        # generated shim as absolute paths. %%* is the batch-file escape for a
+        # literal %*, which the shim itself will use at runtime to forward its
+        # arguments to nvim.exe.
+        post_install: |
+          if not exist "%USERPROFILE%\.local\bin" mkdir "%USERPROFILE%\.local\bin"
+          > "%USERPROFILE%\.local\bin\nvim.cmd" echo @"%USERPROFILE%\AppData\Local\neovim\bin\nvim.exe" %%*
+        post_update: |
+          if not exist "%USERPROFILE%\.local\bin" mkdir "%USERPROFILE%\.local\bin"
+          > "%USERPROFILE%\.local\bin\nvim.cmd" echo @"%USERPROFILE%\AppData\Local\neovim\bin\nvim.exe" %%*
