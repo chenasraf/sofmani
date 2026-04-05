@@ -342,9 +342,13 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) (*summary.I
 		result.Action = summary.ActionInstalled
 	}
 
-	// Write frequency timestamp on successful install/update
+	// Write frequency timestamp on any successful completion (install, update, or up-to-date check).
+	// This ensures the next check is deferred until the frequency period has elapsed, even if no
+	// update was available this time.
 	if info.Frequency != nil && *info.Frequency != "" &&
-		(result.Action == summary.ActionInstalled || result.Action == summary.ActionUpgraded) {
+		(result.Action == summary.ActionInstalled ||
+			result.Action == summary.ActionUpgraded ||
+			result.Action == summary.ActionUpToDate) {
 		if err := writeFrequencyTimestamp(name); err != nil {
 			logger.Warn("Failed to write frequency timestamp for %s: %v", logger.H(name), err)
 		}
