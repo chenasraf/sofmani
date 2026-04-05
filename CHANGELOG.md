@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.28.0](https://github.com/chenasraf/sofmani/compare/v1.27.0...v1.28.0) (2026-04-05)
+
+
+### Features
+
+* add github-release custom strategy ([900fa96](https://github.com/chenasraf/sofmani/commit/900fa9681c9db32089258d2a43a714cf834bcab1))
+* add github-release gzip strategy ([ea79fa9](https://github.com/chenasraf/sofmani/commit/ea79fa91a1491e8f5ecbac9a5e66e47b13c7581a))
+
 ## [1.27.0](https://github.com/chenasraf/sofmani/compare/v1.26.0...v1.27.0) (2026-04-05)
 
 
