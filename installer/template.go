@@ -28,6 +28,22 @@ type TemplateVars struct {
 	DeviceID string
 	// DeviceIDAlias is the friendly alias for the current machine, if one is defined in machine_aliases.
 	DeviceIDAlias string
+	// DownloadFile is the absolute path to the downloaded asset. Only populated for
+	// github-release custom extract commands.
+	DownloadFile string
+	// ExtractDir is the temp directory where a custom extract command should place
+	// extracted files. Only populated for github-release custom extract commands.
+	ExtractDir string
+	// Destination is the final destination directory. Only populated for github-release
+	// custom extract commands.
+	Destination string
+	// BinName is the expected output binary name. Only populated for github-release
+	// custom extract commands.
+	BinName string
+	// ArchiveBinName is the filename sofmani will copy from ExtractDir to Destination
+	// after the custom extract command finishes. Only populated for github-release
+	// custom extract commands.
+	ArchiveBinName string
 }
 
 // legacyTokens maps old-style tokens to their TemplateVars field names.

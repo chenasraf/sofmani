@@ -102,6 +102,47 @@ func TestGitHubReleaseValidation(t *testing.T) {
 		},
 	}
 	assertNoValidationErrors(t, newTestGitHubReleaseInstaller(gzipStrategy).Validate())
+
+	// 🟢 Valid custom strategy with extract_command
+	customStrategy := &appconfig.InstallerData{
+		Name: lo.ToPtr("ghr-custom"),
+		Type: appconfig.InstallerTypeGitHubRelease,
+		Opts: &map[string]any{
+			"repository":        "owner/repo",
+			"destination":       "/some/path",
+			"download_filename": "file.weird",
+			"strategy":          "custom",
+			"extract_command":   "7z x {{ .DownloadFile }} -o{{ .ExtractDir }}",
+		},
+	}
+	assertNoValidationErrors(t, newTestGitHubReleaseInstaller(customStrategy).Validate())
+
+	// 🔴 custom strategy without extract_command
+	customMissingCmd := &appconfig.InstallerData{
+		Name: lo.ToPtr("ghr-custom-missing"),
+		Type: appconfig.InstallerTypeGitHubRelease,
+		Opts: &map[string]any{
+			"repository":        "owner/repo",
+			"destination":       "/some/path",
+			"download_filename": "file.weird",
+			"strategy":          "custom",
+		},
+	}
+	assertValidationError(t, newTestGitHubReleaseInstaller(customMissingCmd).Validate(), "extract_command")
+
+	// 🔴 extract_command without strategy: custom
+	extractCmdWrongStrategy := &appconfig.InstallerData{
+		Name: lo.ToPtr("ghr-custom-wrong-strategy"),
+		Type: appconfig.InstallerTypeGitHubRelease,
+		Opts: &map[string]any{
+			"repository":        "owner/repo",
+			"destination":       "/some/path",
+			"download_filename": "file.tar.gz",
+			"strategy":          "tar",
+			"extract_command":   "echo nope",
+		},
+	}
+	assertValidationError(t, newTestGitHubReleaseInstaller(extractCmdWrongStrategy).Validate(), "extract_command")
 }
 
 func TestGitHubReleaseGetOpts(t *testing.T) {
@@ -194,6 +235,89 @@ func TestGitHubReleaseGetOpts(t *testing.T) {
 		opts := installer.GetOpts()
 
 		assert.Equal(t, GitHubReleaseInstallStrategyGzip, *opts.Strategy)
+	})
+
+	t.Run("handles custom strategy with extract_command", func(t *testing.T) {
+		data := &appconfig.InstallerData{
+			Name: lo.ToPtr("test-release"),
+			Type: appconfig.InstallerTypeGitHubRelease,
+			Opts: &map[string]any{
+				"strategy":        "custom",
+				"extract_command": "cp {{ .DownloadFile }} {{ .ExtractDir }}/{{ .ArchiveBinName }}",
+			},
+		}
+		installer := newTestGitHubReleaseInstaller(data)
+		opts := installer.GetOpts()
+
+		assert.Equal(t, GitHubReleaseInstallStrategyCustom, *opts.Strategy)
+		assert.NotNil(t, opts.ExtractCommand)
+		assert.Contains(t, *opts.ExtractCommand, "{{ .DownloadFile }}")
+	})
+}
+
+func TestGitHubReleaseCustomExtract(t *testing.T) {
+	logger.InitLogger(false)
+	if runtime.GOOS == "windows" {
+		t.Skip("custom extract test uses a POSIX shell command")
+	}
+
+	// Prepare a fake "downloaded" asset on disk and an extract dir.
+	tmpDir := t.TempDir()
+	downloadFile := filepath.Join(tmpDir, "asset.weird")
+	payload := []byte("binary payload from sofmani custom extract test")
+	assert.NoError(t, os.WriteFile(downloadFile, payload, 0644))
+
+	extractDir := filepath.Join(tmpDir, "extract")
+	assert.NoError(t, os.Mkdir(extractDir, 0755))
+
+	data := &appconfig.InstallerData{
+		Name: lo.ToPtr("custom-tool"),
+		Type: appconfig.InstallerTypeGitHubRelease,
+		Opts: &map[string]any{
+			// The user's command references template variables directly instead of env vars.
+			// Here we pretend the "weird" asset really just needs to be copied.
+			"extract_command": "cp {{ .DownloadFile }} {{ .ExtractDir }}/{{ .ArchiveBinName }}",
+		},
+	}
+	installer := newTestGitHubReleaseInstaller(data)
+
+	vars := NewTemplateVars("v1.2.3", nil)
+	vars.DownloadFile = downloadFile
+	vars.ExtractDir = extractDir
+	vars.Destination = filepath.Join(tmpDir, "dest")
+	vars.BinName = "custom-tool"
+	vars.ArchiveBinName = "custom-tool"
+
+	err := installer.runCustomExtract("cp {{ .DownloadFile }} {{ .ExtractDir }}/{{ .ArchiveBinName }}", vars)
+	assert.NoError(t, err)
+
+	// The command should have produced extractDir/custom-tool with the original payload.
+	got, err := os.ReadFile(filepath.Join(extractDir, "custom-tool"))
+	assert.NoError(t, err)
+	assert.Equal(t, payload, got)
+}
+
+func TestGitHubReleaseCustomExtractFailures(t *testing.T) {
+	logger.InitLogger(false)
+	if runtime.GOOS == "windows" {
+		t.Skip("uses a POSIX shell command")
+	}
+
+	data := &appconfig.InstallerData{
+		Name: lo.ToPtr("custom-tool"),
+		Type: appconfig.InstallerTypeGitHubRelease,
+	}
+	installer := newTestGitHubReleaseInstaller(data)
+	vars := NewTemplateVars("v0.0.0", nil)
+
+	t.Run("non-zero exit is surfaced", func(t *testing.T) {
+		err := installer.runCustomExtract("exit 42", vars)
+		assert.Error(t, err)
+	})
+
+	t.Run("invalid template is surfaced", func(t *testing.T) {
+		err := installer.runCustomExtract("echo {{ .NopeField", vars)
+		assert.Error(t, err)
 	})
 }
 

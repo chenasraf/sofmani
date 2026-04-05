@@ -245,7 +245,8 @@ For a full list with all the supported options, see [the docs](./docs/installer-
     repository path, e.g. `chenasraf/sofmani`, GitHub is assumed.
 
 - **`github-release`**
-  - Downloads a GitHub release asset. Optionally untar, unzip, or gunzip the downloaded file.
+  - Downloads a GitHub release asset. Optionally untar, unzip, gunzip, or run a custom
+    shell hook to extract the downloaded file.
 
 - **`manifest`**
   - Installs an entire manifest from a local or remote file.

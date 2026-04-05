@@ -60,6 +60,17 @@ type GitHubReleaseOpts struct {
 	// a symlink at Target pointing to Source; on Windows, the file is copied instead (since
 	// symlinks require elevated privileges). Only meaningful with ExtractTo.
 	BinLinks []GitHubReleaseBinLink
+	// ExtractCommand is a user-provided shell command that performs the extraction when
+	// Strategy is "custom". The command is run through Go template substitution with these
+	// extra variables available (in addition to the usual .OS, .Arch, .Tag, ...):
+	//   {{ .DownloadFile }}   - absolute path to the downloaded asset
+	//   {{ .ExtractDir }}     - temp directory where the command should place extracted files
+	//   {{ .Destination }}    - final destination directory
+	//   {{ .BinName }}        - expected binary name (matches GetBinName())
+	//   {{ .ArchiveBinName }} - the filename sofmani will copy from ExtractDir to Destination
+	// After the command finishes, sofmani copies ExtractDir/ArchiveBinName to
+	// Destination/BinName, the same way the tar and zip strategies do.
+	ExtractCommand *string
 }
 
 // GitHubReleaseBinLink describes a single binary exposed from a tree-mode install.
@@ -76,10 +87,11 @@ type GitHubReleaseInstallStrategy string
 
 // Constants for GitHub release installation strategies.
 const (
-	GitHubReleaseInstallStrategyNone GitHubReleaseInstallStrategy = "none" // GitHubReleaseInstallStrategyNone means no special handling, just download the file.
-	GitHubReleaseInstallStrategyTar  GitHubReleaseInstallStrategy = "tar"  // GitHubReleaseInstallStrategyTar means extract a tar archive.
-	GitHubReleaseInstallStrategyZip  GitHubReleaseInstallStrategy = "zip"  // GitHubReleaseInstallStrategyZip means extract a zip archive.
-	GitHubReleaseInstallStrategyGzip GitHubReleaseInstallStrategy = "gzip" // GitHubReleaseInstallStrategyGzip means decompress a single gzip-compressed file (not a tar archive).
+	GitHubReleaseInstallStrategyNone   GitHubReleaseInstallStrategy = "none"   // GitHubReleaseInstallStrategyNone means no special handling, just download the file.
+	GitHubReleaseInstallStrategyTar    GitHubReleaseInstallStrategy = "tar"    // GitHubReleaseInstallStrategyTar means extract a tar archive.
+	GitHubReleaseInstallStrategyZip    GitHubReleaseInstallStrategy = "zip"    // GitHubReleaseInstallStrategyZip means extract a zip archive.
+	GitHubReleaseInstallStrategyGzip   GitHubReleaseInstallStrategy = "gzip"   // GitHubReleaseInstallStrategyGzip means decompress a single gzip-compressed file (not a tar archive).
+	GitHubReleaseInstallStrategyCustom GitHubReleaseInstallStrategy = "custom" // GitHubReleaseInstallStrategyCustom runs a user-provided shell command to extract the asset.
 )
 
 // Validate validates the installer configuration.
@@ -107,11 +119,21 @@ func (i *GitHubReleaseInstaller) Validate() []ValidationError {
 		case GitHubReleaseInstallStrategyNone,
 			GitHubReleaseInstallStrategyTar,
 			GitHubReleaseInstallStrategyZip,
-			GitHubReleaseInstallStrategyGzip:
+			GitHubReleaseInstallStrategyGzip,
+			GitHubReleaseInstallStrategyCustom:
 			// valid
 		default:
 			errors = append(errors, ValidationError{FieldName: "strategy", Message: validationInvalidFormat(), InstallerName: *info.Name})
 		}
+	}
+	// extract_command only makes sense with strategy: custom, and strategy: custom requires it.
+	strategyIsCustom := opts.Strategy != nil && *opts.Strategy == GitHubReleaseInstallStrategyCustom
+	hasExtractCommand := opts.ExtractCommand != nil && *opts.ExtractCommand != ""
+	if strategyIsCustom && !hasExtractCommand {
+		errors = append(errors, ValidationError{FieldName: "extract_command", Message: validationIsRequired(), InstallerName: *info.Name})
+	}
+	if hasExtractCommand && !strategyIsCustom {
+		errors = append(errors, ValidationError{FieldName: "extract_command", Message: "extract_command requires strategy: custom", InstallerName: *info.Name})
 	}
 	if opts.ExtractTo != nil {
 		// Tree mode requires an archive strategy — a single downloaded file has no tree to
@@ -305,6 +327,28 @@ func (i *GitHubReleaseInstaller) Install() error {
 		}
 		success = true
 		err = nil
+	case GitHubReleaseInstallStrategyCustom:
+		logger.Debug("Strategy 'custom': running user extract_command against %s", tmpOut.Name())
+		if opts.ExtractCommand == nil || *opts.ExtractCommand == "" {
+			return fmt.Errorf("strategy 'custom' requires opts.extract_command")
+		}
+		extractVars := *templateVars
+		extractVars.DownloadFile = tmpOut.Name()
+		extractVars.ExtractDir = tmpDir
+		extractVars.Destination = *opts.Destination
+		extractVars.BinName = i.GetBinName()
+		extractVars.ArchiveBinName = i.GetArchiveBinName()
+		if err = i.runCustomExtract(*opts.ExtractCommand, &extractVars); err != nil {
+			return fmt.Errorf("custom extract failed: %w", err)
+		}
+		logger.Debug("Strategy 'custom': copying binary '%s' to destination", i.GetArchiveBinName())
+		success, err = i.CopyExtractedFile(out, tmpDir)
+		if !success {
+			return fmt.Errorf("failed to copy extracted file: %w", err)
+		}
+		if err != nil {
+			return err
+		}
 	default:
 		logger.Debug("Strategy 'none': copying downloaded file directly to destination")
 		// Seek back to beginning of temp file before copying
@@ -412,6 +456,29 @@ func (i *GitHubReleaseInstaller) GetArchiveBinName() string {
 		return *opts.ArchiveBinName
 	}
 	return i.GetBinName()
+}
+
+// runCustomExtract runs a user-provided extract command through the platform's
+// default shell. The command is first rendered with ApplyTemplate so users can
+// reference {{ .DownloadFile }}, {{ .ExtractDir }}, {{ .Destination }},
+// {{ .BinName }}, {{ .ArchiveBinName }}, and all the usual template variables
+// (.OS, .Arch, .Tag, ...).
+func (i *GitHubReleaseInstaller) runCustomExtract(command string, vars *TemplateVars) error {
+	rendered, err := ApplyTemplate(command, vars, *i.Info.Name)
+	if err != nil {
+		return fmt.Errorf("failed to render extract_command template: %w", err)
+	}
+	logger.Debug("Custom extract command: %s", rendered)
+	shell := utils.GetOSShell(i.GetData().EnvShell)
+	args := utils.GetOSShellArgs(rendered)
+	success, err := i.RunCmdGetSuccessPassThrough(shell, args...)
+	if err != nil {
+		return err
+	}
+	if !success {
+		return fmt.Errorf("extract_command exited non-zero")
+	}
+	return nil
 }
 
 // decompressGzip reads a gzip-compressed stream from src and writes the
@@ -596,6 +663,9 @@ func (i *GitHubReleaseInstaller) GetOpts() *GitHubReleaseOpts {
 		}
 		if archiveBinName, ok := (*info.Opts)["archive_bin_name"].(string); ok {
 			opts.ArchiveBinName = &archiveBinName
+		}
+		if extractCommand, ok := (*info.Opts)["extract_command"].(string); ok {
+			opts.ExtractCommand = &extractCommand
 		}
 		if extractTo, ok := (*info.Opts)["extract_to"].(string); ok {
 			extractTo = utils.GetRealPath(i.GetData().Environ(), extractTo)

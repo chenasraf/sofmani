@@ -304,9 +304,13 @@
                   "destination": { "type": "string" },
                   "strategy": {
                     "type": "string",
-                    "enum": ["tar", "zip", "gzip", "gz", "none"],
+                    "enum": ["tar", "zip", "gzip", "gz", "none", "custom"],
                     "default": "none",
-                    "description": "How to handle the downloaded asset. 'none' copies it directly; 'tar' and 'zip' extract an archive; 'gzip' (alias 'gz') decompresses a single gzip-compressed file (not a tarball)."
+                    "description": "How to handle the downloaded asset. 'none' copies it directly; 'tar' and 'zip' extract an archive; 'gzip' (alias 'gz') decompresses a single gzip-compressed file (not a tarball); 'custom' runs opts.extract_command as a user-supplied hook."
+                  },
+                  "extract_command": {
+                    "type": "string",
+                    "description": "Shell command to run when strategy is 'custom'. Supports Go template variables — in addition to the usual {{ .OS }}, {{ .Arch }}, {{ .Tag }}, etc., the following extract-specific variables are available: {{ .DownloadFile }}, {{ .ExtractDir }}, {{ .Destination }}, {{ .BinName }}, {{ .ArchiveBinName }}. After the command finishes, sofmani copies {{ .ExtractDir }}/{{ .ArchiveBinName }} to {{ .Destination }}/{{ .BinName }}."
                   },
                   "download_filename": {
                     "description": "Asset filename, or a per-platform map. Supports Go template variables.",

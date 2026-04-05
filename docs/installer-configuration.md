@@ -385,6 +385,11 @@ Available variables:
 | `{{ .DeviceIDAlias }}` | Friendly alias for the current machine, if defined in `machine_aliases`              | `work-laptop`               |
 | `{{ .Tag }}`           | Full tag name (only available in `github-release` `download_filename`)               | `v1.0.0`                    |
 | `{{ .Version }}`       | Version without leading "v" (only available in `github-release` `download_filename`) | `1.0.0`                     |
+| `{{ .DownloadFile }}`  | Absolute path to the downloaded asset (only in `github-release` `extract_command`)   | `/tmp/sofmani.../app.download` |
+| `{{ .ExtractDir }}`    | Temp directory to extract into (only in `github-release` `extract_command`)          | `/tmp/sofmani...`           |
+| `{{ .Destination }}`   | Final destination directory (only in `github-release` `extract_command`)             | `~/.local/bin`              |
+| `{{ .BinName }}`       | Expected output binary name (only in `github-release` `extract_command`)             | `my-tool`                   |
+| `{{ .ArchiveBinName }}`| Filename sofmani copies from `ExtractDir` → `Destination` (only in `extract_command`)| `my-tool`                   |
 
 In addition, `DEVICE_ID` and `DEVICE_ID_ALIAS` are injected as **environment variables** into all
 command executions, so they can also be referenced as `$DEVICE_ID` and `$DEVICE_ID_ALIAS` in shell
@@ -454,7 +459,8 @@ Downloads a GitHub release asset. Optionally untar/unzip the downloaded file.
 - `opts.repository`: The repository to download from. Should be in the format:
   `user/repository-name`
 - `opts.destination`: The target directory to extract the files to.
-- `opts.strategy`: The download strategy. Can be one of: `tar`, `zip`, `gzip`, `none` (default)
+- `opts.strategy`: The download strategy. Can be one of: `tar`, `zip`, `gzip`, `custom`, `none`
+  (default)
   - `none` - the release file is not compressed, and should be copied directly
   - `tar` - the release file is a tar file, and should be extracted
   - `zip` - the release file is a zip file, and should be extracted
@@ -472,6 +478,54 @@ Downloads a GitHub release asset. Optionally untar/unzip the downloaded file.
         strategy: gzip
         download_filename: tree-sitter-{{ .OS }}-{{ .ArchAlias }}.gz
     ```
+
+  - `custom` - run a user-provided shell hook (`opts.extract_command`) to extract the
+    downloaded asset yourself. After the command finishes, sofmani copies
+    `{{ .ExtractDir }}/{{ .ArchiveBinName }}` to `{{ .Destination }}/{{ .BinName }}` and
+    sets the executable bit — exactly like the `tar` and `zip` strategies do. Use this
+    for unusual archive formats (7-Zip, xz, self-extracting installers, ...).
+
+- `opts.extract_command`: The shell command to run when `strategy: custom`. It goes through
+  the same Go template substitution as other sofmani shell hooks, with extra variables
+  specific to the extract context:
+
+  | Variable               | Description                                                             |
+  | ---------------------- | ----------------------------------------------------------------------- |
+  | `{{ .DownloadFile }}`  | Absolute path to the downloaded asset                                   |
+  | `{{ .ExtractDir }}`    | Temp directory — your command should place extracted files here        |
+  | `{{ .Destination }}`   | Final destination directory (from `opts.destination`)                   |
+  | `{{ .BinName }}`       | The expected output binary name (`bin_name` or installer name)          |
+  | `{{ .ArchiveBinName }}`| Filename sofmani will copy from `ExtractDir` → `Destination` afterwards |
+
+  All the usual template variables (`{{ .OS }}`, `{{ .Arch }}`, `{{ .Tag }}`, ...) are also
+  available. `extract_command` is required when `strategy: custom`, and is not allowed
+  with any other strategy.
+
+  Example — extracting a `.tar.xz` asset by shelling out to `tar`:
+
+  ```yaml
+  - name: my-tool
+    type: github-release
+    opts:
+      repository: example/my-tool
+      destination: ~/.local/bin
+      strategy: custom
+      download_filename: my-tool-{{ .Version }}-{{ .OS }}.tar.xz
+      extract_command: tar -xJf {{ .DownloadFile }} -C {{ .ExtractDir }}
+  ```
+
+  Example — extracting a 7-Zip asset:
+
+  ```yaml
+  - name: weird-tool
+    type: github-release
+    opts:
+      repository: example/weird-tool
+      destination: ~/.local/bin
+      strategy: custom
+      download_filename: weird-tool-{{ .Version }}.7z
+      extract_command: 7z x {{ .DownloadFile }} -o{{ .ExtractDir }}
+  ```
 - `opts.download_filename`: The filename of the release asset to download.
 
   This should either be a string, or a map of platforms to filenames.
