@@ -40,6 +40,8 @@ reproducible.
 - Group software installations into logical "steps" with sophisticated orchestration.
 - **Category headers** to visually organize your installers list.
 - **Template variables** for dynamic values (architecture, OS, device ID) in commands and filenames.
+- **JSON Schema** for editor autocompletion and validation of your config files. See
+  [JSON Schema docs](./docs/json-schema.md).
 
 ---
 

@@ -1,0 +1,471 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/chenasraf/sofmani/master/schema/sofmani.schema.json",
+  "title": "sofmani configuration",
+  "description": "Schema for sofmani (Software Manifest) configuration files. See https://github.com/chenasraf/sofmani for documentation.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Reference to the JSON schema for this configuration file."
+    },
+    "debug": {
+      "type": "boolean",
+      "description": "Enable or disable debug mode.",
+      "default": false
+    },
+    "check_updates": {
+      "type": "boolean",
+      "description": "Enable or disable checking for updates before running operations.",
+      "default": false
+    },
+    "summary": {
+      "type": "boolean",
+      "description": "Enable or disable the installation summary at the end.",
+      "default": true
+    },
+    "category_display": {
+      "description": "Controls how category headers are rendered.",
+      "type": "string",
+      "enum": ["border", "border-compact", "minimal"],
+      "default": "border"
+    },
+    "repo_update": {
+      "type": "object",
+      "description": "Controls repository index updates per installer type.",
+      "additionalProperties": false,
+      "properties": {
+        "brew": { "$ref": "#/definitions/repoUpdateMode" },
+        "apt": { "$ref": "#/definitions/repoUpdateMode" },
+        "apk": { "$ref": "#/definitions/repoUpdateMode" }
+      }
+    },
+    "defaults": {
+      "type": "object",
+      "description": "Default configurations to apply to all installers of a given type.",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "object",
+          "description": "Map of installer type to default installer data.",
+          "additionalProperties": { "$ref": "#/definitions/installer" }
+        }
+      }
+    },
+    "env": {
+      "$ref": "#/definitions/envMap",
+      "description": "Environment variables set for all installers."
+    },
+    "platform_env": {
+      "$ref": "#/definitions/platformEnvMap",
+      "description": "Platform-specific environment variables set for all installers."
+    },
+    "machine_aliases": {
+      "type": "object",
+      "description": "Map of friendly names to machine IDs. Use 'sofmani --machine-id' to get your machine's ID.",
+      "additionalProperties": { "type": "string" }
+    },
+    "install": {
+      "type": "array",
+      "description": "List of installers / steps to run, in order.",
+      "items": { "$ref": "#/definitions/installStep" }
+    }
+  },
+  "definitions": {
+    "repoUpdateMode": {
+      "type": "string",
+      "enum": ["once", "always", "never"],
+      "description": "How often the repository index should be updated during a sofmani run."
+    },
+    "platform": {
+      "type": "string",
+      "enum": ["macos", "linux", "windows"]
+    },
+    "envMap": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "platformEnvMap": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "macos": { "$ref": "#/definitions/envMap" },
+        "linux": { "$ref": "#/definitions/envMap" },
+        "windows": { "$ref": "#/definitions/envMap" }
+      }
+    },
+    "platforms": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Platform-specific execution controls.",
+      "properties": {
+        "only": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/platform" },
+          "description": "Platforms where the step should execute. Supersedes 'except'."
+        },
+        "except": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/platform" },
+          "description": "Platforms where the step should NOT execute."
+        }
+      }
+    },
+    "machines": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Machine-specific execution controls.",
+      "properties": {
+        "only": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Machine IDs or aliases where the step should execute. Supersedes 'except'."
+        },
+        "except": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Machine IDs or aliases where the step should NOT execute."
+        }
+      }
+    },
+    "envShell": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Shell to use for command executions per platform. Windows always uses cmd.",
+      "properties": {
+        "macos": { "type": "string" },
+        "linux": { "type": "string" }
+      }
+    },
+    "skipSummary": {
+      "description": "Exclude this installer from the summary. Set to true to skip both install and update summaries, or use an object for granular control.",
+      "oneOf": [
+        { "type": "boolean" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "install": { "type": "boolean" },
+            "update": { "type": "boolean" }
+          }
+        }
+      ]
+    },
+    "enabled": {
+      "description": "Enable or disable the step. Accepts a boolean, a boolean string ('true'/'false'), or a shell command whose exit code decides the result.",
+      "oneOf": [{ "type": "boolean" }, { "type": "string" }]
+    },
+    "shellScript": {
+      "description": "A shell command or script. Accepts a string, or a boolean shorthand where 'true' runs the unix 'true' builtin (always succeeds) and 'false' runs 'false' (always fails).",
+      "oneOf": [{ "type": "string" }, { "type": "boolean" }]
+    },
+    "frequency": {
+      "type": "string",
+      "description": "Duration string limiting how often the installer runs (e.g. '60s', '30m', '12h', '1d', '1w', '1d12h'). Supported units: s, m, h, d, w.",
+      "pattern": "^(\\d+[smhdw])+$"
+    },
+    "installerType": {
+      "type": "string",
+      "enum": [
+        "group",
+        "shell",
+        "docker",
+        "brew",
+        "apt",
+        "apk",
+        "git",
+        "github-release",
+        "rsync",
+        "npm",
+        "pnpm",
+        "yarn",
+        "pipx",
+        "manifest",
+        "pacman",
+        "yay",
+        "cargo"
+      ]
+    },
+    "installStep": {
+      "description": "An entry in the top-level 'install' list. Must be either a category header (has 'category') or an installer (has 'name' and 'type').",
+      "allOf": [
+        { "$ref": "#/definitions/installer" },
+        {
+          "if": { "not": { "required": ["category"] } },
+          "then": { "required": ["name", "type"] }
+        }
+      ]
+    },
+    "installer": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Installer data. Used both for steps in 'install' and for 'defaults.type' overrides (where 'name' and 'type' may be omitted).",
+      "properties": {
+        "category": {
+          "type": "string",
+          "description": "Category header text. When set, this entry is a category header only (no installation)."
+        },
+        "desc": {
+          "type": "string",
+          "description": "Optional description shown below a category header."
+        },
+        "name": {
+          "type": "string",
+          "description": "Identifier for the step. Typically also used to check for the app's existence unless overridden by bin_name."
+        },
+        "type": { "$ref": "#/definitions/installerType" },
+        "enabled": { "$ref": "#/definitions/enabled" },
+        "tags": {
+          "type": "string",
+          "description": "Space-separated list of tags used for filtering."
+        },
+        "platforms": { "$ref": "#/definitions/platforms" },
+        "machines": { "$ref": "#/definitions/machines" },
+        "env": { "$ref": "#/definitions/envMap" },
+        "platform_env": { "$ref": "#/definitions/platformEnvMap" },
+        "steps": {
+          "type": "array",
+          "description": "Sub-installers for 'group' type.",
+          "items": { "$ref": "#/definitions/installStep" }
+        },
+        "opts": {
+          "type": "object",
+          "description": "Step-specific options. Content depends on the installer 'type'."
+        },
+        "bin_name": {
+          "type": "string",
+          "description": "Binary name for the installed software, used instead of 'name' when checking for existence."
+        },
+        "check_has_update": {
+          "$ref": "#/definitions/shellScript",
+          "description": "Shell command to check if an update is available. Exit 0 means an update is available. Use `true` as a shortcut for 'always has update'."
+        },
+        "check_installed": {
+          "$ref": "#/definitions/shellScript",
+          "description": "Shell command to check if the software is already installed. Exit 0 means installed. Use `true` as a shortcut for 'always installed'."
+        },
+        "pre_install": { "$ref": "#/definitions/shellScript", "description": "Shell script to run before install." },
+        "post_install": { "$ref": "#/definitions/shellScript", "description": "Shell script to run after install." },
+        "pre_update": { "$ref": "#/definitions/shellScript", "description": "Shell script to run before update." },
+        "post_update": { "$ref": "#/definitions/shellScript", "description": "Shell script to run after update." },
+        "env_shell": { "$ref": "#/definitions/envShell" },
+        "skip_summary": { "$ref": "#/definitions/skipSummary" },
+        "verbose": {
+          "type": "boolean",
+          "description": "Pass verbose flags to the underlying installer tool.",
+          "default": false
+        },
+        "frequency": { "$ref": "#/definitions/frequency" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "shell" } }, "required": ["type"] },
+          "then": {
+            "properties": {
+              "opts": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "command": { "type": "string", "description": "Shell command to run for install." },
+                  "update_command": { "type": "string", "description": "Shell command to run for update." }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "git" } }, "required": ["type"] },
+          "then": {
+            "properties": {
+              "opts": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "destination": { "type": "string" },
+                  "ref": { "type": "string" },
+                  "flags": { "type": "string" },
+                  "install_flags": { "type": "string" },
+                  "update_flags": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "github-release" } }, "required": ["type"] },
+          "then": {
+            "properties": {
+              "opts": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "repository": { "type": "string", "description": "user/repository-name" },
+                  "destination": { "type": "string" },
+                  "strategy": {
+                    "type": "string",
+                    "enum": ["tar", "zip", "none"],
+                    "default": "none"
+                  },
+                  "download_filename": {
+                    "description": "Asset filename, or a per-platform map. Supports Go template variables.",
+                    "oneOf": [
+                      { "type": "string" },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "macos": { "type": "string" },
+                          "linux": { "type": "string" },
+                          "windows": { "type": "string" }
+                        }
+                      }
+                    ]
+                  },
+                  "archive_bin_name": { "type": "string" },
+                  "extract_to": { "type": "string", "description": "Enables tree mode: extract entire archive to this directory." },
+                  "strip_components": { "type": "integer", "minimum": 0 },
+                  "bin_links": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["target"],
+                      "properties": {
+                        "source": { "type": "string" },
+                        "target": { "type": "string" }
+                      }
+                    }
+                  },
+                  "github_token": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "manifest" } }, "required": ["type"] },
+          "then": {
+            "properties": {
+              "opts": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "source": { "type": "string" },
+                  "path": { "type": "string" },
+                  "ref": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "rsync" } }, "required": ["type"] },
+          "then": {
+            "properties": {
+              "opts": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "source": { "type": "string" },
+                  "destination": { "type": "string" },
+                  "flags": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "brew" } }, "required": ["type"] },
+          "then": {
+            "properties": {
+              "opts": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "tap": { "type": "string" },
+                  "cask": { "type": "boolean" },
+                  "flags": { "type": "string" },
+                  "install_flags": { "type": "string" },
+                  "update_flags": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": { "enum": ["npm", "pnpm", "yarn", "apt", "apk", "pipx", "cargo"] }
+            },
+            "required": ["type"]
+          },
+          "then": {
+            "properties": {
+              "opts": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "flags": { "type": "string" },
+                  "install_flags": { "type": "string" },
+                  "update_flags": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "enum": ["pacman", "yay"] } },
+            "required": ["type"]
+          },
+          "then": {
+            "properties": {
+              "opts": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "needed": { "type": "boolean" },
+                  "flags": { "type": "string" },
+                  "install_flags": { "type": "string" },
+                  "update_flags": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "docker" } }, "required": ["type"] },
+          "then": {
+            "properties": {
+              "opts": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "flags": { "type": "string" },
+                  "platform": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "macos": { "type": "string" },
+                      "linux": { "type": "string" },
+                      "windows": { "type": "string" }
+                    }
+                  },
+                  "skip_if_unavailable": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "group" } }, "required": ["type"] },
+          "then": {
+            "not": { "required": ["opts"] },
+            "description": "The 'group' type uses 'steps', not 'opts'."
+          }
+        }
+      ]
+    }
+  }
+}
