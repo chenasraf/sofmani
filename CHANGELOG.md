@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.27.0](https://github.com/chenasraf/sofmani/compare/v1.26.0...v1.27.0) (2026-04-05)
+
+
+### Features
+
+* support json schema ([f734c0a](https://github.com/chenasraf/sofmani/commit/f734c0a69bd21b2ea973655e493d2c56f1a95828))
+* tree-mode for github release installers ([0f7eb5d](https://github.com/chenasraf/sofmani/commit/0f7eb5d5d6f5dc21743d41b5c3859c14582a0b47))
+
+
+### Bug Fixes
+
+* frequency timestamp even when up to date ([b44ba86](https://github.com/chenasraf/sofmani/commit/b44ba864dbb627efad597f8748f113b19655e30a))
+
 ## [1.26.0](https://github.com/chenasraf/sofmani/compare/v1.25.0...v1.26.0) (2026-04-03)
 
 
