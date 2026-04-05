@@ -3,6 +3,7 @@ package installer
 import (
 	"archive/zip"
 	"bytes"
+	"compress/gzip"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -88,6 +89,19 @@ func TestGitHubReleaseValidation(t *testing.T) {
 		},
 	}
 	assertValidationError(t, newTestGitHubReleaseInstaller(invalidStrategy).Validate(), "strategy")
+
+	// 🟢 Valid gzip strategy
+	gzipStrategy := &appconfig.InstallerData{
+		Name: lo.ToPtr("ghr-gzip"),
+		Type: appconfig.InstallerTypeGitHubRelease,
+		Opts: &map[string]any{
+			"repository":        "owner/repo",
+			"destination":       "/some/path",
+			"download_filename": "file.gz",
+			"strategy":          "gzip",
+		},
+	}
+	assertNoValidationErrors(t, newTestGitHubReleaseInstaller(gzipStrategy).Validate())
 }
 
 func TestGitHubReleaseGetOpts(t *testing.T) {
@@ -152,6 +166,93 @@ func TestGitHubReleaseGetOpts(t *testing.T) {
 		opts := installer.GetOpts()
 
 		assert.Equal(t, GitHubReleaseInstallStrategyNone, *opts.Strategy)
+	})
+
+	t.Run("handles gzip strategy", func(t *testing.T) {
+		data := &appconfig.InstallerData{
+			Name: lo.ToPtr("test-release"),
+			Type: appconfig.InstallerTypeGitHubRelease,
+			Opts: &map[string]any{
+				"strategy": "gzip",
+			},
+		}
+		installer := newTestGitHubReleaseInstaller(data)
+		opts := installer.GetOpts()
+
+		assert.Equal(t, GitHubReleaseInstallStrategyGzip, *opts.Strategy)
+	})
+
+	t.Run("accepts gz as alias for gzip", func(t *testing.T) {
+		data := &appconfig.InstallerData{
+			Name: lo.ToPtr("test-release"),
+			Type: appconfig.InstallerTypeGitHubRelease,
+			Opts: &map[string]any{
+				"strategy": "gz",
+			},
+		}
+		installer := newTestGitHubReleaseInstaller(data)
+		opts := installer.GetOpts()
+
+		assert.Equal(t, GitHubReleaseInstallStrategyGzip, *opts.Strategy)
+	})
+}
+
+func TestDecompressGzip(t *testing.T) {
+	logger.InitLogger(false)
+
+	t.Run("decompresses a valid gzip stream", func(t *testing.T) {
+		// Build a .gz fixture in-memory containing a fake binary payload.
+		payload := []byte("#!/bin/sh\necho hello from tree-sitter\n")
+		var gzBuf bytes.Buffer
+		gw := gzip.NewWriter(&gzBuf)
+		_, err := gw.Write(payload)
+		assert.NoError(t, err)
+		assert.NoError(t, gw.Close())
+
+		var out bytes.Buffer
+		err = decompressGzip(&gzBuf, &out)
+		assert.NoError(t, err)
+		assert.Equal(t, payload, out.Bytes())
+	})
+
+	t.Run("rejects non-gzip input", func(t *testing.T) {
+		src := bytes.NewReader([]byte("this is not gzipped"))
+		var out bytes.Buffer
+		err := decompressGzip(src, &out)
+		assert.Error(t, err)
+	})
+
+	t.Run("works end-to-end on a temp .gz file", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		gzPath := filepath.Join(tmpDir, "payload.gz")
+		outPath := filepath.Join(tmpDir, "payload")
+
+		payload := []byte("hello, sofmani gzip strategy")
+
+		gzFile, err := os.Create(gzPath)
+		assert.NoError(t, err)
+		gw := gzip.NewWriter(gzFile)
+		_, err = gw.Write(payload)
+		assert.NoError(t, err)
+		assert.NoError(t, gw.Close())
+		assert.NoError(t, gzFile.Close())
+
+		// Sanity: the fixture is a gzip file but NOT a tar.gz.
+		assert.True(t, isGzipFile(gzPath))
+		assert.False(t, isTarGzFile(gzPath))
+
+		src, err := os.Open(gzPath)
+		assert.NoError(t, err)
+		defer func() { _ = src.Close() }()
+		dst, err := os.Create(outPath)
+		assert.NoError(t, err)
+		defer func() { _ = dst.Close() }()
+
+		assert.NoError(t, decompressGzip(src, dst))
+
+		got, err := os.ReadFile(outPath)
+		assert.NoError(t, err)
+		assert.Equal(t, payload, got)
 	})
 }
 

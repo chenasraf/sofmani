@@ -304,8 +304,9 @@
                   "destination": { "type": "string" },
                   "strategy": {
                     "type": "string",
-                    "enum": ["tar", "zip", "none"],
-                    "default": "none"
+                    "enum": ["tar", "zip", "gzip", "gz", "none"],
+                    "default": "none",
+                    "description": "How to handle the downloaded asset. 'none' copies it directly; 'tar' and 'zip' extract an archive; 'gzip' (alias 'gz') decompresses a single gzip-compressed file (not a tarball)."
                   },
                   "download_filename": {
                     "description": "Asset filename, or a per-platform map. Supports Go template variables.",

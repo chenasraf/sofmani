@@ -454,10 +454,24 @@ Downloads a GitHub release asset. Optionally untar/unzip the downloaded file.
 - `opts.repository`: The repository to download from. Should be in the format:
   `user/repository-name`
 - `opts.destination`: The target directory to extract the files to.
-- `opts.strategy`: The download strategy. Can be one of: `tar`, `zip`, `none` (default)
+- `opts.strategy`: The download strategy. Can be one of: `tar`, `zip`, `gzip`, `none` (default)
   - `none` - the release file is not compressed, and should be copied directly
   - `tar` - the release file is a tar file, and should be extracted
   - `zip` - the release file is a zip file, and should be extracted
+  - `gzip` (alias: `gz`) - the release file is a single gzip-compressed file (not a tar
+    archive). It is decompressed with Go's `compress/gzip` and written to
+    `destination/bin_name` with the executable bit set. Use this for projects like
+    `tree-sitter` that publish each binary as a plain `.gz` file:
+
+    ```yaml
+    - name: tree-sitter
+      type: github-release
+      opts:
+        repository: tree-sitter/tree-sitter
+        destination: ~/.local/bin
+        strategy: gzip
+        download_filename: tree-sitter-{{ .OS }}-{{ .ArchAlias }}.gz
+    ```
 - `opts.download_filename`: The filename of the release asset to download.
 
   This should either be a string, or a map of platforms to filenames.

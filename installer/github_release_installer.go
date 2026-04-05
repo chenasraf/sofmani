@@ -2,6 +2,7 @@ package installer
 
 import (
 	"archive/zip"
+	"compress/gzip"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -37,7 +38,7 @@ type GitHubReleaseOpts struct {
 	// Supports Go template syntax with variables: {{ .Tag }}, {{ .Version }}, {{ .Arch }}, {{ .ArchAlias }}, {{ .ArchGnu }}, {{ .OS }}.
 	// Legacy placeholders {tag}, {version}, {arch}, {arch_alias}, {arch_gnu}, {os} are deprecated but still supported.
 	DownloadFilename *platform.PlatformMap[string]
-	// Strategy is the installation strategy to use (none, tar, zip).
+	// Strategy is the installation strategy to use (none, tar, zip, gzip).
 	Strategy *GitHubReleaseInstallStrategy
 	// GithubToken is the GitHub personal access token for authenticated API requests.
 	// Supports environment variable expansion (e.g., "$GITHUB_TOKEN" or "${GITHUB_TOKEN}").
@@ -78,6 +79,7 @@ const (
 	GitHubReleaseInstallStrategyNone GitHubReleaseInstallStrategy = "none" // GitHubReleaseInstallStrategyNone means no special handling, just download the file.
 	GitHubReleaseInstallStrategyTar  GitHubReleaseInstallStrategy = "tar"  // GitHubReleaseInstallStrategyTar means extract a tar archive.
 	GitHubReleaseInstallStrategyZip  GitHubReleaseInstallStrategy = "zip"  // GitHubReleaseInstallStrategyZip means extract a zip archive.
+	GitHubReleaseInstallStrategyGzip GitHubReleaseInstallStrategy = "gzip" // GitHubReleaseInstallStrategyGzip means decompress a single gzip-compressed file (not a tar archive).
 )
 
 // Validate validates the installer configuration.
@@ -101,7 +103,13 @@ func (i *GitHubReleaseInstaller) Validate() []ValidationError {
 		errors = append(errors, ValidationError{FieldName: fmt.Sprintf("download_filename.%s", platform.GetPlatform()), Message: validationIsRequired(), InstallerName: *info.Name})
 	}
 	if opts.Strategy != nil {
-		if *opts.Strategy != GitHubReleaseInstallStrategyNone && *opts.Strategy != GitHubReleaseInstallStrategyTar && *opts.Strategy != GitHubReleaseInstallStrategyZip {
+		switch *opts.Strategy {
+		case GitHubReleaseInstallStrategyNone,
+			GitHubReleaseInstallStrategyTar,
+			GitHubReleaseInstallStrategyZip,
+			GitHubReleaseInstallStrategyGzip:
+			// valid
+		default:
 			errors = append(errors, ValidationError{FieldName: "strategy", Message: validationInvalidFormat(), InstallerName: *info.Name})
 		}
 	}
@@ -257,7 +265,7 @@ func (i *GitHubReleaseInstaller) Install() error {
 		logger.Debug("Strategy 'tar': extracting archive to %s", tmpDir)
 		success, err = i.RunCmdGetSuccess("tar", "-xvf", tmpOut.Name(), "-C", tmpDir)
 		if !success {
-			return fmt.Errorf("failed to extract tar file: %w", err)
+			return wrapExtractError("tar", tmpOut.Name(), err)
 		}
 		if err != nil {
 			return err
@@ -274,7 +282,7 @@ func (i *GitHubReleaseInstaller) Install() error {
 		logger.Debug("Strategy 'zip': extracting archive to %s", tmpDir)
 		success, err = i.RunCmdGetSuccess("unzip", tmpOut.Name(), "-d", tmpDir)
 		if !success {
-			return fmt.Errorf("failed to extract zip file: %w", err)
+			return wrapExtractError("zip", tmpOut.Name(), err)
 		}
 		if err != nil {
 			return err
@@ -287,6 +295,16 @@ func (i *GitHubReleaseInstaller) Install() error {
 		if err != nil {
 			return err
 		}
+	case GitHubReleaseInstallStrategyGzip:
+		logger.Debug("Strategy 'gzip': decompressing downloaded file to %s", outPath)
+		if _, err = tmpOut.Seek(0, 0); err != nil {
+			return fmt.Errorf("failed to seek temp file: %w", err)
+		}
+		if err = decompressGzip(tmpOut, out); err != nil {
+			return fmt.Errorf("failed to decompress gzip file: %w", err)
+		}
+		success = true
+		err = nil
 	default:
 		logger.Debug("Strategy 'none': copying downloaded file directly to destination")
 		// Seek back to beginning of temp file before copying
@@ -396,6 +414,84 @@ func (i *GitHubReleaseInstaller) GetArchiveBinName() string {
 	return i.GetBinName()
 }
 
+// decompressGzip reads a gzip-compressed stream from src and writes the
+// decompressed bytes to dst. It is used by the "gzip" github-release strategy
+// for single-file gzipped assets (i.e. not tarballs).
+func decompressGzip(src io.Reader, dst io.Writer) error {
+	gr, err := gzip.NewReader(src)
+	if err != nil {
+		return fmt.Errorf("not a valid gzip stream: %w", err)
+	}
+	defer func() {
+		if cerr := gr.Close(); cerr != nil {
+			logger.Warn("failed to close gzip reader: %v", cerr)
+		}
+	}()
+	n, err := io.Copy(dst, gr)
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return fmt.Errorf("no data was written to the output file")
+	}
+	return nil
+}
+
+// wrapExtractError produces a helpful error for a failed tar/zip extraction.
+// If the underlying archive tool exited non-zero but returned no Go error, we
+// sniff the file's magic bytes to detect the "single gzipped binary shipped
+// as .gz" case (common on GitHub releases) and tell the user to try the
+// "gzip" strategy instead.
+func wrapExtractError(kind string, path string, cause error) error {
+	hint := ""
+	if kind == "tar" && isGzipFile(path) && !isTarGzFile(path) {
+		hint = " (file looks like a plain gzip-compressed binary, not a tarball — try strategy: gzip)"
+	}
+	if cause == nil {
+		return fmt.Errorf("failed to extract %s file: archive tool exited non-zero%s", kind, hint)
+	}
+	return fmt.Errorf("failed to extract %s file%s: %w", kind, hint, cause)
+}
+
+// isGzipFile returns true if the file at path starts with the gzip magic
+// bytes (0x1f, 0x8b).
+func isGzipFile(path string) bool {
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer func() { _ = f.Close() }()
+	var header [2]byte
+	n, err := io.ReadFull(f, header[:])
+	if err != nil || n < 2 {
+		return false
+	}
+	return header[0] == 0x1f && header[1] == 0x8b
+}
+
+// isTarGzFile returns true if the file at path is a gzip stream whose
+// decompressed content begins with a tar header (checked via the "ustar"
+// magic at offset 257). A plain gzipped binary will fail this check.
+func isTarGzFile(path string) bool {
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer func() { _ = f.Close() }()
+	gr, err := gzip.NewReader(f)
+	if err != nil {
+		return false
+	}
+	defer func() { _ = gr.Close() }()
+	buf := make([]byte, 512)
+	n, err := io.ReadFull(gr, buf)
+	if err != nil && n < 512 {
+		return false
+	}
+	// "ustar" magic lives at offset 257 in a tar header block.
+	return string(buf[257:262]) == "ustar"
+}
+
 // CopyExtractedFile copies the extracted file from a temporary directory to the final destination.
 func (i *GitHubReleaseInstaller) CopyExtractedFile(out *os.File, tmpDir string) (bool, error) {
 	binFile, err := os.Create(out.Name())
@@ -488,6 +584,10 @@ func (i *GitHubReleaseInstaller) GetOpts() *GitHubReleaseOpts {
 		}
 		if strategy, ok := (*info.Opts)["strategy"].(string); ok {
 			strat := GitHubReleaseInstallStrategy(strings.ToLower(strategy))
+			// Accept "gz" as a friendly alias for "gzip".
+			if strat == "gz" {
+				strat = GitHubReleaseInstallStrategyGzip
+			}
 			opts.Strategy = &strat
 		}
 		if token, ok := (*info.Opts)["github_token"].(string); ok {
