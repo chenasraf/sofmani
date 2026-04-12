@@ -109,9 +109,9 @@ func (i *GitHubReleaseInstaller) Validate() []ValidationError {
 			errors = append(errors, ValidationError{FieldName: "destination", Message: validationIsRequired(), InstallerName: *info.Name})
 		}
 	}
-	if opts.DownloadFilename == nil || len(*opts.DownloadFilename.Resolve()) == 0 {
+	if opts.DownloadFilename == nil {
 		errors = append(errors, ValidationError{FieldName: "download_filename", Message: validationIsRequired(), InstallerName: *info.Name})
-	} else if (*opts.DownloadFilename).Resolve() == nil || len(*(*opts.DownloadFilename).Resolve()) == 0 {
+	} else if info.Platforms.GetShouldRunOnOS(platform.GetPlatform()) && (opts.DownloadFilename.Resolve() == nil || len(*opts.DownloadFilename.Resolve()) == 0) {
 		errors = append(errors, ValidationError{FieldName: fmt.Sprintf("download_filename.%s", platform.GetPlatform()), Message: validationIsRequired(), InstallerName: *info.Name})
 	}
 	if opts.Strategy != nil {
@@ -205,7 +205,7 @@ func (i *GitHubReleaseInstaller) Install() error {
 
 	filename := i.GetFilename()
 	if filename == "" {
-		return fmt.Errorf("no download filename provided")
+		return fmt.Errorf("no download filename matched for the current platform (%s/%s)", runtime.GOOS, runtime.GOARCH)
 	}
 	var machineAliases map[string]string
 	if i.Config.MachineAliases != nil {
@@ -778,7 +778,10 @@ func (i *GitHubReleaseInstaller) GetLatestTag() (string, error) {
 func (i *GitHubReleaseInstaller) GetFilename() string {
 	opts := i.GetOpts()
 	if opts.DownloadFilename != nil {
-		return *opts.DownloadFilename.Resolve()
+		resolved := opts.DownloadFilename.Resolve()
+		if resolved != nil {
+			return *resolved
+		}
 	}
 	return ""
 }

@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"compress/gzip"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -75,7 +76,40 @@ func TestGitHubReleaseValidation(t *testing.T) {
 			},
 		},
 	}
-	assertValidationError(t, newTestGitHubReleaseInstaller(emptyPlatformFilename).Validate(), "download_filename")
+	assertValidationError(t, newTestGitHubReleaseInstaller(emptyPlatformFilename).Validate(), fmt.Sprintf("download_filename.%s", platform.GetPlatform()))
+
+	// 🟢 download_filename only defined for another platform, but installer is restricted to that platform — should pass
+	otherPlatform := platform.PlatformLinux
+	if platform.GetPlatform() == platform.PlatformLinux {
+		otherPlatform = platform.PlatformMacos
+	}
+	otherPlatformOnly := &appconfig.InstallerData{
+		Name:      lo.ToPtr("ghr-other-platform-only"),
+		Type:      appconfig.InstallerTypeGitHubRelease,
+		Platforms: &platform.Platforms{Only: &[]platform.Platform{otherPlatform}},
+		Opts: &map[string]any{
+			"repository":  "owner/repo",
+			"destination": "/some/path",
+			"download_filename": map[string]*string{
+				string(otherPlatform): lo.ToPtr("file.tar.gz"),
+			},
+		},
+	}
+	assertNoValidationErrors(t, newTestGitHubReleaseInstaller(otherPlatformOnly).Validate())
+
+	// 🔴 download_filename missing for current platform when installer runs on current platform
+	missingCurrentPlatform := &appconfig.InstallerData{
+		Name: lo.ToPtr("ghr-missing-current-platform"),
+		Type: appconfig.InstallerTypeGitHubRelease,
+		Opts: &map[string]any{
+			"repository":  "owner/repo",
+			"destination": "/some/path",
+			"download_filename": map[string]*string{
+				string(otherPlatform): lo.ToPtr("file.tar.gz"),
+			},
+		},
+	}
+	assertValidationError(t, newTestGitHubReleaseInstaller(missingCurrentPlatform).Validate(), fmt.Sprintf("download_filename.%s", platform.GetPlatform()))
 
 	// 🔴 Invalid strategy
 	invalidStrategy := &appconfig.InstallerData{

@@ -224,7 +224,7 @@ func (c *AppConfig) GetConfigDesc() []string {
 	filterBuilder.WriteString("Filter: ")
 	if len(c.Filter) > 0 {
 		for _, f := range c.Filter {
-			filterBuilder.WriteString(fmt.Sprintf("\n  %s", f))
+			fmt.Fprintf(&filterBuilder, "\n  %s", f)
 		}
 	} else {
 		filterBuilder.WriteString("None")
