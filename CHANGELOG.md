@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.28.1](https://github.com/chenasraf/sofmani/compare/v1.28.0...v1.28.1) (2026-04-12)
+
+
+### Bug Fixes
+
+* validate download filename for github release installer when it should run on current platform ([d31490d](https://github.com/chenasraf/sofmani/commit/d31490dbc9c1c496473f3eb1652899d182b29c66))
+
 ## [1.28.0](https://github.com/chenasraf/sofmani/compare/v1.27.0...v1.28.0) (2026-04-05)
 
 
