@@ -193,6 +193,11 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) (*summary.I
 		Type: string(info.Type),
 	}
 
+	// Group installers fully delegate work to their children; the group's own
+	// install/update/check lifecycle is a no-op wrapper, so suppress the
+	// per-step Info logs and let the children speak for themselves.
+	isDelegating := info.Type == appconfig.InstallerTypeGroup
+
 	// Set skip summary flags if configured
 	if info.SkipSummary != nil {
 		result.SkipSummaryInstall = info.SkipSummary.Install
@@ -284,13 +289,17 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) (*summary.I
 		logger.Debug("%s: %s is already installed", logger.H(string(info.Type)), logger.H(name))
 
 		if *config.CheckUpdates {
-			logger.Info("Checking updates for %s: %s", logger.H(string(info.Type)), logger.H(name))
+			if !isDelegating {
+				logger.Info("Checking updates for %s: %s", logger.H(string(info.Type)), logger.H(name))
+			}
 			needsUpdate, err := installer.CheckNeedsUpdate()
 			if err != nil {
 				return nil, err
 			}
 			if needsUpdate {
-				logger.Info("Updating %s", logger.H(name))
+				if !isDelegating {
+					logger.Info("Updating %s", logger.H(name))
+				}
 				if info.PreUpdate != nil {
 					logger.Debug("Running pre-update command for %s", logger.H(name))
 					err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetData().EnvShell), utils.GetOSShellArgs(applyTmpl(*info.PreUpdate))...)
@@ -312,14 +321,18 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) (*summary.I
 				}
 				result.Action = summary.ActionUpgraded
 			} else {
-				logger.Info("%s: %s is up-to-date", logger.H(string(info.Type)), logger.H(name))
+				if !isDelegating {
+					logger.Info("%s: %s is up-to-date", logger.H(string(info.Type)), logger.H(name))
+				}
 				result.Action = summary.ActionUpToDate
 			}
 		} else {
 			result.Action = summary.ActionUpToDate
 		}
 	} else {
-		logger.Info("Installing %s: %s", logger.H(string(installer.GetData().Type)), logger.H(name))
+		if !isDelegating {
+			logger.Info("Installing %s: %s", logger.H(string(installer.GetData().Type)), logger.H(name))
+		}
 		if info.PreInstall != nil {
 			logger.Debug("Running pre-install command for %s: %s", logger.H(string(info.Type)), logger.H(name))
 			err := utils.RunCmdPassThrough(env, utils.GetOSShell(installer.GetData().EnvShell), utils.GetOSShellArgs(applyTmpl(*info.PreInstall))...)
