@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.28.2](https://github.com/chenasraf/sofmani/compare/v1.28.1...v1.28.2) (2026-05-15)
+
+
+### Bug Fixes
+
+* **logs:** remove unnecessary group logs ([f5b077e](https://github.com/chenasraf/sofmani/commit/f5b077ef898404b674b74b59a93579691cc3cbd7))
+
 ## [1.28.1](https://github.com/chenasraf/sofmani/compare/v1.28.0...v1.28.1) (2026-04-12)
 
 
