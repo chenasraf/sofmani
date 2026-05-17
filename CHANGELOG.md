@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.29.0](https://github.com/chenasraf/sofmani/compare/v1.28.2...v1.29.0) (2026-05-17)
+
+
+### Features
+
+* **installer/github-release:** accept platform map and templates for archive_bin_name ([bb83d2d](https://github.com/chenasraf/sofmani/commit/bb83d2d3b92f374c557c1a621a82149edb356c43))
+
 ## [1.28.2](https://github.com/chenasraf/sofmani/compare/v1.28.1...v1.28.2) (2026-05-15)
 
 
