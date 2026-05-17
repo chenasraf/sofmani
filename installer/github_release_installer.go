@@ -45,8 +45,10 @@ type GitHubReleaseOpts struct {
 	GithubToken *string
 	// ArchiveBinName is the name of the binary file inside the archive (tar/zip).
 	// Use this when the filename inside the archive differs from the desired output bin_name.
+	// Accepts either a string or a per-platform map. Supports Go template syntax with the
+	// usual variables ({{ .Tag }}, {{ .Version }}, {{ .Arch }}, {{ .OS }}, ...).
 	// If not set, falls back to bin_name (or the installer name).
-	ArchiveBinName *string
+	ArchiveBinName *platform.PlatformMap[string]
 	// ExtractTo, when set, switches the installer to "tree mode": the full archive contents
 	// are extracted to this directory, preserving sibling files (lib/, share/, etc.) that
 	// many toolchains rely on at runtime. Requires strategy 'tar' or 'zip'. When tree mode
@@ -292,8 +294,8 @@ func (i *GitHubReleaseInstaller) Install() error {
 		if err != nil {
 			return err
 		}
-		logger.Debug("Strategy 'tar': copying binary '%s' to destination", i.GetArchiveBinName())
-		success, err = i.CopyExtractedFile(out, tmpDir)
+		logger.Debug("Strategy 'tar': copying binary '%s' to destination", i.GetArchiveBinName(templateVars))
+		success, err = i.CopyExtractedFile(out, tmpDir, templateVars)
 		if !success {
 			return fmt.Errorf("failed to copy extracted file: %w", err)
 		}
@@ -309,8 +311,8 @@ func (i *GitHubReleaseInstaller) Install() error {
 		if err != nil {
 			return err
 		}
-		logger.Debug("Strategy 'zip': copying binary '%s' to destination", i.GetArchiveBinName())
-		success, err = i.CopyExtractedFile(out, tmpDir)
+		logger.Debug("Strategy 'zip': copying binary '%s' to destination", i.GetArchiveBinName(templateVars))
+		success, err = i.CopyExtractedFile(out, tmpDir, templateVars)
 		if !success {
 			return fmt.Errorf("failed to copy extracted file: %w", err)
 		}
@@ -337,12 +339,12 @@ func (i *GitHubReleaseInstaller) Install() error {
 		extractVars.ExtractDir = tmpDir
 		extractVars.Destination = *opts.Destination
 		extractVars.BinName = i.GetBinName()
-		extractVars.ArchiveBinName = i.GetArchiveBinName()
+		extractVars.ArchiveBinName = i.GetArchiveBinName(templateVars)
 		if err = i.runCustomExtract(*opts.ExtractCommand, &extractVars); err != nil {
 			return fmt.Errorf("custom extract failed: %w", err)
 		}
-		logger.Debug("Strategy 'custom': copying binary '%s' to destination", i.GetArchiveBinName())
-		success, err = i.CopyExtractedFile(out, tmpDir)
+		logger.Debug("Strategy 'custom': copying binary '%s' to destination", i.GetArchiveBinName(templateVars))
+		success, err = i.CopyExtractedFile(out, tmpDir, templateVars)
 		if !success {
 			return fmt.Errorf("failed to copy extracted file: %w", err)
 		}
@@ -449,13 +451,30 @@ func (i *GitHubReleaseInstaller) GetBinName() string {
 }
 
 // GetArchiveBinName returns the name of the binary file inside the archive.
-// It uses ArchiveBinName from opts if provided, otherwise falls back to GetBinName().
-func (i *GitHubReleaseInstaller) GetArchiveBinName() string {
+// It uses ArchiveBinName from opts if provided (resolved for the current platform when
+// a per-platform map was supplied), otherwise falls back to GetBinName(). When vars is
+// non-nil, the resolved value is rendered through ApplyTemplate so template tokens like
+// {{ .Tag }} or {{ .Arch }} are substituted.
+func (i *GitHubReleaseInstaller) GetArchiveBinName(vars *TemplateVars) string {
 	opts := i.GetOpts()
+	value := ""
 	if opts.ArchiveBinName != nil {
-		return *opts.ArchiveBinName
+		if resolved := opts.ArchiveBinName.Resolve(); resolved != nil {
+			value = *resolved
+		}
 	}
-	return i.GetBinName()
+	if value == "" {
+		value = i.GetBinName()
+	}
+	if vars == nil {
+		return value
+	}
+	rendered, err := ApplyTemplate(value, vars, *i.Info.Name)
+	if err != nil {
+		logger.Warn("failed to render archive_bin_name template: %v", err)
+		return value
+	}
+	return rendered
 }
 
 // runCustomExtract runs a user-provided extract command through the platform's
@@ -560,7 +579,8 @@ func isTarGzFile(path string) bool {
 }
 
 // CopyExtractedFile copies the extracted file from a temporary directory to the final destination.
-func (i *GitHubReleaseInstaller) CopyExtractedFile(out *os.File, tmpDir string) (bool, error) {
+// vars is used to render template tokens inside archive_bin_name; pass nil to skip templating.
+func (i *GitHubReleaseInstaller) CopyExtractedFile(out *os.File, tmpDir string, vars *TemplateVars) (bool, error) {
 	binFile, err := os.Create(out.Name())
 	if err != nil {
 		return false, fmt.Errorf("failed to create output file: %w", err)
@@ -570,7 +590,7 @@ func (i *GitHubReleaseInstaller) CopyExtractedFile(out *os.File, tmpDir string) 
 			logger.Warn("failed to close binFile %s: %v", binFile.Name(), cerr)
 		}
 	}()
-	tmpBinFile, err := os.Open(filepath.Join(tmpDir, i.GetArchiveBinName()))
+	tmpBinFile, err := os.Open(filepath.Join(tmpDir, i.GetArchiveBinName(vars)))
 	if err != nil {
 		return false, fmt.Errorf("failed to open temporary file: %w", err)
 	}
@@ -661,8 +681,8 @@ func (i *GitHubReleaseInstaller) GetOpts() *GitHubReleaseOpts {
 			token = utils.GetRealPath(i.GetData().Environ(), token)
 			opts.GithubToken = &token
 		}
-		if archiveBinName, ok := (*info.Opts)["archive_bin_name"].(string); ok {
-			opts.ArchiveBinName = &archiveBinName
+		if raw, ok := (*info.Opts)["archive_bin_name"]; ok {
+			opts.ArchiveBinName = platform.NewPlatformMap[string](raw)
 		}
 		if extractCommand, ok := (*info.Opts)["extract_command"].(string); ok {
 			opts.ExtractCommand = &extractCommand

@@ -327,7 +327,21 @@
                       }
                     ]
                   },
-                  "archive_bin_name": { "type": "string" },
+                  "archive_bin_name": {
+                    "description": "Name of the binary file inside the archive. Supports a single string or a per-platform map. Supports Go template variables.",
+                    "oneOf": [
+                      { "type": "string" },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "macos": { "type": "string" },
+                          "linux": { "type": "string" },
+                          "windows": { "type": "string" }
+                        }
+                      }
+                    ]
+                  },
                   "extract_to": { "type": "string", "description": "Enables tree mode: extract entire archive to this directory." },
                   "strip_components": { "type": "integer", "minimum": 0 },
                   "bin_links": {

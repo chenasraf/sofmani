@@ -563,8 +563,10 @@ Downloads a GitHub release asset. Optionally untar/unzip the downloaded file.
   ```
 
 - `opts.archive_bin_name`: The name of the binary file inside the archive (tar/zip). Use this when
-  the filename inside the archive differs from the desired output `bin_name`. If not set, falls back
-  to `bin_name` (or the installer name).
+  the filename inside the archive differs from the desired output `bin_name`. Accepts either a
+  string or a per-platform map (`macos` / `linux` / `windows`). Supports Go template variables
+  (`{{ .Tag }}`, `{{ .Version }}`, `{{ .Arch }}`, `{{ .OS }}`, ...). If not set, falls back to
+  `bin_name` (or the installer name).
 
   ```yaml
   - name: cospend-cli
@@ -576,6 +578,37 @@ Downloads a GitHub release asset. Optionally untar/unzip the downloaded file.
       strategy: tar
       download_filename: cospend-cli-linux-{{ .Arch }}.tar.gz
       archive_bin_name: cospend-cli # file inside the tar is "cospend-cli", output will be "cospend"
+  ```
+
+  Template tokens are rendered before the file is copied, so you can reference the version or
+  architecture-specific subdirectories inside the archive:
+
+  ```yaml
+  - name: gh
+    type: github-release
+    opts:
+      repository: cli/cli
+      destination: ~/.local/bin
+      strategy: tar
+      download_filename: gh_{{ .Version }}_linux_{{ .Arch }}.tar.gz
+      archive_bin_name: gh_{{ .Version }}_linux_{{ .Arch }}/bin/gh
+  ```
+
+  Or use a per-platform map when the layout differs between operating systems:
+
+  ```yaml
+  - name: mytool
+    type: github-release
+    opts:
+      repository: owner/mytool
+      destination: ~/.local/bin
+      strategy: tar
+      download_filename:
+        macos: mytool-{{ .Version }}-darwin-{{ .Arch }}.tar.gz
+        linux: mytool-{{ .Version }}-linux-{{ .Arch }}.tar.gz
+      archive_bin_name:
+        macos: mytool-{{ .Version }}-darwin-{{ .Arch }}/bin/mytool
+        linux: mytool-{{ .Version }}-linux-{{ .Arch }}/bin/mytool
   ```
 
 - `opts.extract_to`: Enables **tree mode**. When set, the full archive contents are extracted into

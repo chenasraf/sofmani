@@ -452,7 +452,7 @@ func TestGitHubReleaseGetArchiveBinName(t *testing.T) {
 			},
 		}
 		installer := newTestGitHubReleaseInstaller(data)
-		assert.Equal(t, "cospend-cli", installer.GetArchiveBinName())
+		assert.Equal(t, "cospend-cli", installer.GetArchiveBinName(nil))
 		assert.Equal(t, "cospend", installer.GetBinName())
 	})
 
@@ -464,7 +464,7 @@ func TestGitHubReleaseGetArchiveBinName(t *testing.T) {
 			BinName: &binName,
 		}
 		installer := newTestGitHubReleaseInstaller(data)
-		assert.Equal(t, "custom-bin", installer.GetArchiveBinName())
+		assert.Equal(t, "custom-bin", installer.GetArchiveBinName(nil))
 	})
 
 	t.Run("falls back to name when neither set", func(t *testing.T) {
@@ -473,7 +473,36 @@ func TestGitHubReleaseGetArchiveBinName(t *testing.T) {
 			Type: appconfig.InstallerTypeGitHubRelease,
 		}
 		installer := newTestGitHubReleaseInstaller(data)
-		assert.Equal(t, "my-app", installer.GetArchiveBinName())
+		assert.Equal(t, "my-app", installer.GetArchiveBinName(nil))
+	})
+
+	t.Run("renders template tokens in archive_bin_name", func(t *testing.T) {
+		data := &appconfig.InstallerData{
+			Name: lo.ToPtr("gh"),
+			Type: appconfig.InstallerTypeGitHubRelease,
+			Opts: &map[string]any{
+				"archive_bin_name": "gh_{{ .Version }}_{{ .OS }}_{{ .Arch }}/bin/gh",
+			},
+		}
+		installer := newTestGitHubReleaseInstaller(data)
+		vars := NewTemplateVars("v2.0.0", nil)
+		got := installer.GetArchiveBinName(vars)
+		assert.Equal(t, fmt.Sprintf("gh_2.0.0_%s_%s/bin/gh", vars.OS, vars.Arch), got)
+	})
+
+	t.Run("accepts a per-platform map and resolves for current platform", func(t *testing.T) {
+		data := &appconfig.InstallerData{
+			Name: lo.ToPtr("tool"),
+			Type: appconfig.InstallerTypeGitHubRelease,
+			Opts: &map[string]any{
+				"archive_bin_name": map[string]any{
+					string(platform.GetPlatform()): "tool-{{ .OS }}/bin/tool",
+				},
+			},
+		}
+		installer := newTestGitHubReleaseInstaller(data)
+		vars := NewTemplateVars("v1.0.0", nil)
+		assert.Equal(t, fmt.Sprintf("tool-%s/bin/tool", vars.OS), installer.GetArchiveBinName(vars))
 	})
 }
 
