@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.30.0](https://github.com/chenasraf/sofmani/compare/v1.29.0...v1.30.0) (2026-05-17)
+
+
+### Features
+
+* **cli:** add --vars flag to print template variables ([8a5ed0b](https://github.com/chenasraf/sofmani/commit/8a5ed0b14441037f923dd0f69930fcdc707672f4))
+
 ## [1.29.0](https://github.com/chenasraf/sofmani/compare/v1.28.2...v1.29.0) (2026-05-17)
 
 
