@@ -50,6 +50,8 @@ func (i *GitInstaller) Validate() []ValidationError {
 // Install implements IInstaller.
 func (i *GitInstaller) Install() error {
 	opts := i.GetOpts()
+	repoUrl := i.GetRepositoryUrl()
+	installDir := i.GetInstallDir()
 	args := []string{"clone"}
 	if i.IsVerbose() {
 		args = append(args, "--verbose")
@@ -59,13 +61,15 @@ func (i *GitInstaller) Install() error {
 	} else if opts.Flags != nil {
 		args = append(args, strings.Fields(*opts.Flags)...)
 	}
-	args = append(args, i.GetRepositoryUrl(), i.GetInstallDir())
+	args = append(args, repoUrl, installDir)
 	err := i.RunCmdPassThrough("git", args...)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to clone %s into %s: %w", repoUrl, installDir, err)
 	}
 	if opts.Ref != nil {
-		return i.RunCmdPassThrough("git", "-C", i.GetInstallDir(), "checkout", *opts.Ref)
+		if err := i.RunCmdPassThrough("git", "-C", installDir, "checkout", *opts.Ref); err != nil {
+			return fmt.Errorf("failed to checkout ref %q in %s: %w", *opts.Ref, installDir, err)
+		}
 	}
 	return nil
 }
@@ -73,7 +77,8 @@ func (i *GitInstaller) Install() error {
 // Update implements IInstaller.
 func (i *GitInstaller) Update() error {
 	opts := i.GetOpts()
-	args := []string{"-C", i.GetInstallDir(), "pull"}
+	installDir := i.GetInstallDir()
+	args := []string{"-C", installDir, "pull"}
 	if i.IsVerbose() {
 		args = append(args, "--verbose")
 	}
@@ -82,7 +87,10 @@ func (i *GitInstaller) Update() error {
 	} else if opts.Flags != nil {
 		args = append(args, strings.Fields(*opts.Flags)...)
 	}
-	return i.RunCmdPassThrough("git", args...)
+	if err := i.RunCmdPassThrough("git", args...); err != nil {
+		return fmt.Errorf("failed to git pull in %s: %w", installDir, err)
+	}
+	return nil
 }
 
 // CheckNeedsUpdate implements IInstaller.
@@ -90,13 +98,14 @@ func (i *GitInstaller) CheckNeedsUpdate() (bool, error) {
 	if i.HasCustomUpdateCheck() {
 		return i.RunCustomUpdateCheck()
 	}
-	_, err := i.RunCmdGetSuccess("git", "-C", i.GetInstallDir(), "fetch")
+	installDir := i.GetInstallDir()
+	_, err := i.RunCmdGetSuccess("git", "-C", installDir, "fetch")
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to git fetch in %s: %w", installDir, err)
 	}
-	output, err := i.RunCmdGetOutput("git", "-C", i.GetInstallDir(), "status", "-uno")
+	output, err := i.RunCmdGetOutput("git", "-C", installDir, "status", "-uno")
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to git status in %s: %w", installDir, err)
 	}
 	if strings.Contains(string(output), "Your branch is behind") {
 		return true, nil

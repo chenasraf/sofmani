@@ -155,7 +155,7 @@ func (i *ManifestInstaller) FetchManifest() error {
 		}
 		config, err = appconfig.ParseConfigFromContent([]byte(content))
 		if err != nil {
-			return fmt.Errorf("failed to parse manifest content: %w", err)
+			return fmt.Errorf("failed to parse manifest content from %s: %w", source, err)
 		}
 	case strings.HasPrefix(source, "http://") || strings.HasPrefix(source, "https://"):
 		// Direct HTTP URL - fetch directly
@@ -165,7 +165,7 @@ func (i *ManifestInstaller) FetchManifest() error {
 		}
 		config, err = appconfig.ParseConfigFromContent([]byte(content))
 		if err != nil {
-			return fmt.Errorf("failed to parse manifest content: %w", err)
+			return fmt.Errorf("failed to parse manifest content from %s: %w", source, err)
 		}
 	default:
 		// Local file path
@@ -181,7 +181,7 @@ func (i *ManifestInstaller) FetchManifest() error {
 		logger.Debug("Parsing manifest from %s", fullPath)
 		config, err = i.getLocalManifestConfig(fullPath)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to load manifest from %s: %w", fullPath, err)
 		}
 	}
 
@@ -196,7 +196,7 @@ func (i *ManifestInstaller) fetchRawURL(url string) (string, error) {
 	logger.Debug("Fetching manifest from raw URL: %s", url)
 	resp, err := http.Get(url)
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch manifest: %w", err)
+		return "", fmt.Errorf("failed to fetch manifest from %s: %w", url, err)
 	}
 	defer func() {
 		if cerr := resp.Body.Close(); cerr != nil {
@@ -205,12 +205,12 @@ func (i *ManifestInstaller) fetchRawURL(url string) (string, error) {
 	}()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("failed to fetch manifest: HTTP %d", resp.StatusCode)
+		return "", fmt.Errorf("failed to fetch manifest from %s: HTTP %d", url, resp.StatusCode)
 	}
 
 	content, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("failed to read manifest content: %w", err)
+		return "", fmt.Errorf("failed to read manifest content from %s: %w", url, err)
 	}
 
 	return string(content), nil
@@ -231,13 +231,13 @@ func (i *ManifestInstaller) getGitManifestConfig(source string) (string, error) 
 
 	rawURL, err := utils.GetRawFileURL(source, ref, path)
 	if err != nil {
-		return "", fmt.Errorf("failed to construct raw file URL: %w", err)
+		return "", fmt.Errorf("failed to construct raw file URL (source=%s, ref=%s, path=%s): %w", source, ref, path, err)
 	}
 
 	logger.Debug("Fetching manifest from %s", rawURL)
 	resp, err := http.Get(rawURL)
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch manifest: %w", err)
+		return "", fmt.Errorf("failed to fetch manifest from %s: %w", rawURL, err)
 	}
 	defer func() {
 		if cerr := resp.Body.Close(); cerr != nil {
@@ -246,12 +246,12 @@ func (i *ManifestInstaller) getGitManifestConfig(source string) (string, error) 
 	}()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("failed to fetch manifest: HTTP %d", resp.StatusCode)
+		return "", fmt.Errorf("failed to fetch manifest from %s: HTTP %d", rawURL, resp.StatusCode)
 	}
 
 	content, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("failed to read manifest content: %w", err)
+		return "", fmt.Errorf("failed to read manifest content from %s: %w", rawURL, err)
 	}
 
 	return string(content), nil
@@ -261,7 +261,7 @@ func (i *ManifestInstaller) getLocalManifestConfig(path string) (*appconfig.AppC
 	config, err := appconfig.ParseConfigFrom(path)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse manifest at %s: %w", path, err)
 	}
 
 	logger.Debug("Setting manifest config")

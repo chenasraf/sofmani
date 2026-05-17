@@ -72,14 +72,14 @@ func (i *DockerInstaller) Update() error {
 
 	logger.Debug("Pulling updated image: %s", image)
 	if err := i.RunCmdPassThrough("docker", "pull", image); err != nil {
-		return fmt.Errorf("failed to pull image: %w", err)
+		return fmt.Errorf("failed to pull image %s: %w", image, err)
 	}
 
 	logger.Debug("Removing existing container: %s", containerName)
 	err := i.RunCmdPassThrough("docker", "rm", "-f", containerName)
 	if err != nil {
 		logger.Debug("Failed to remove existing container: %s, error: %v", containerName, err)
-		return fmt.Errorf("failed to remove existing container: %w", err)
+		return fmt.Errorf("failed to remove existing container %s: %w", containerName, err)
 	}
 
 	logger.Debug("Running updated container: %s", containerName)

@@ -142,14 +142,14 @@ func (i *BrewInstaller) CheckNeedsUpdate() (bool, error) {
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		logger.Error("Failed to get stdout pipe for brew command, error: %v", err)
-		return false, fmt.Errorf("failed to get stdout: %w", err)
+		return false, fmt.Errorf("failed to get stdout for `brew outdated %s`: %w", name, err)
 	}
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
 
 	if err := cmd.Start(); err != nil {
 		logger.Error("Failed to start brew command, error: %v", err)
-		return false, fmt.Errorf("failed to start brew: %w", err)
+		return false, fmt.Errorf("failed to start `brew outdated %s`: %w", name, err)
 	}
 
 	updateNeeded, parseErr := parseBrewOutdatedOutput(stdoutPipe, os.Stdout)

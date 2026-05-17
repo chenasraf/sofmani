@@ -1,6 +1,7 @@
 package installer
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -64,7 +65,10 @@ func (i *RsyncInstaller) Install() error {
 	flags = append(flags, dest)
 
 	logger.Debug("rsync %s to %s", src, dest)
-	return i.RunCmdPassThrough("rsync", flags...)
+	if err := i.RunCmdPassThrough("rsync", flags...); err != nil {
+		return fmt.Errorf("failed to rsync %s to %s: %w", src, dest, err)
+	}
+	return nil
 }
 
 // Update implements IInstaller.
@@ -87,7 +91,7 @@ func (i *RsyncInstaller) checkNeedsSync() (bool, error) {
 
 	output, err := i.RunCmdGetOutput("rsync", flags...)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to dry-run rsync %s to %s: %w", src, dest, err)
 	}
 	// If there's any output, files need to be synced
 	return len(strings.TrimSpace(string(output))) > 0, nil

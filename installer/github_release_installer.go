@@ -180,13 +180,13 @@ func (i *GitHubReleaseInstaller) Install() error {
 	name := *data.Name
 	tmpDir, err := os.MkdirTemp("", "sofmani")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create temp directory: %w", err)
 	}
 	tmpFile := fmt.Sprintf("%s/%s.download", tmpDir, name)
 	logger.Debug("Created temp directory: %s", tmpDir)
 	tmpOut, err := os.Create(tmpFile)
 	if err != nil {
-		return fmt.Errorf("failed to create temporary file: %w", err)
+		return fmt.Errorf("failed to create temporary file %s: %w", tmpFile, err)
 	}
 	defer func() {
 		if cerr := tmpOut.Close(); cerr != nil {
@@ -196,7 +196,7 @@ func (i *GitHubReleaseInstaller) Install() error {
 
 	err = os.MkdirAll(*opts.Destination, 0755)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create destination directory %s: %w", *opts.Destination, err)
 	}
 	// defer os.RemoveAll(tmpDir)
 
@@ -214,9 +214,10 @@ func (i *GitHubReleaseInstaller) Install() error {
 		machineAliases = *i.Config.MachineAliases
 	}
 	templateVars := NewTemplateVars(tag, machineAliases)
+	rawFilename := filename
 	filename, err = ApplyTemplate(filename, templateVars, name)
 	if err != nil {
-		return fmt.Errorf("failed to apply template to filename: %w", err)
+		return fmt.Errorf("failed to apply template to download_filename %q: %w", rawFilename, err)
 	}
 	downloadUrl := fmt.Sprintf("https://github.com/%s/releases/download/%s/%s", *opts.Repository, tag, filename)
 	logger.Debug("Downloading file: %s", filename)
@@ -225,7 +226,7 @@ func (i *GitHubReleaseInstaller) Install() error {
 
 	req, err := http.NewRequest("GET", downloadUrl, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to build request for %s: %w", downloadUrl, err)
 	}
 	if opts.GithubToken != nil && *opts.GithubToken != "" {
 		logger.Debug("Using GitHub token for authentication")
@@ -234,7 +235,7 @@ func (i *GitHubReleaseInstaller) Install() error {
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to download release asset from %s: %w", downloadUrl, err)
 	}
 	defer func() {
 		if cerr := resp.Body.Close(); cerr != nil {
@@ -248,10 +249,10 @@ func (i *GitHubReleaseInstaller) Install() error {
 
 	n, err := io.Copy(tmpOut, resp.Body)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to write downloaded asset from %s to %s: %w", downloadUrl, tmpFile, err)
 	}
 	if n == 0 {
-		return fmt.Errorf("no data was written to the file")
+		return fmt.Errorf("no data was written to %s from %s", tmpFile, downloadUrl)
 	}
 	logger.Debug("Downloaded %d bytes to temp file", n)
 
@@ -276,7 +277,7 @@ func (i *GitHubReleaseInstaller) Install() error {
 
 	out, err := os.Create(outPath)
 	if err != nil {
-		return fmt.Errorf("failed to create output file: %w", err)
+		return fmt.Errorf("failed to create output file %s: %w", outPath, err)
 	}
 	defer func() {
 		if cerr := out.Close(); cerr != nil {
@@ -292,15 +293,16 @@ func (i *GitHubReleaseInstaller) Install() error {
 			return wrapExtractError("tar", tmpOut.Name(), err)
 		}
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to extract tar archive %s: %w", tmpOut.Name(), err)
 		}
-		logger.Debug("Strategy 'tar': copying binary '%s' to destination", i.GetArchiveBinName(templateVars))
+		archiveBin := i.GetArchiveBinName(templateVars)
+		logger.Debug("Strategy 'tar': copying binary '%s' to destination", archiveBin)
 		success, err = i.CopyExtractedFile(out, tmpDir, templateVars)
 		if !success {
-			return fmt.Errorf("failed to copy extracted file: %w", err)
+			return fmt.Errorf("failed to copy extracted file %s from %s to %s: %w", archiveBin, tmpDir, outPath, err)
 		}
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to copy extracted file %s to %s: %w", archiveBin, outPath, err)
 		}
 	case GitHubReleaseInstallStrategyZip:
 		logger.Debug("Strategy 'zip': extracting archive to %s", tmpDir)
@@ -309,23 +311,24 @@ func (i *GitHubReleaseInstaller) Install() error {
 			return wrapExtractError("zip", tmpOut.Name(), err)
 		}
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to extract zip archive %s: %w", tmpOut.Name(), err)
 		}
-		logger.Debug("Strategy 'zip': copying binary '%s' to destination", i.GetArchiveBinName(templateVars))
+		archiveBin := i.GetArchiveBinName(templateVars)
+		logger.Debug("Strategy 'zip': copying binary '%s' to destination", archiveBin)
 		success, err = i.CopyExtractedFile(out, tmpDir, templateVars)
 		if !success {
-			return fmt.Errorf("failed to copy extracted file: %w", err)
+			return fmt.Errorf("failed to copy extracted file %s from %s to %s: %w", archiveBin, tmpDir, outPath, err)
 		}
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to copy extracted file %s to %s: %w", archiveBin, outPath, err)
 		}
 	case GitHubReleaseInstallStrategyGzip:
 		logger.Debug("Strategy 'gzip': decompressing downloaded file to %s", outPath)
 		if _, err = tmpOut.Seek(0, 0); err != nil {
-			return fmt.Errorf("failed to seek temp file: %w", err)
+			return fmt.Errorf("failed to seek temp file %s: %w", tmpOut.Name(), err)
 		}
 		if err = decompressGzip(tmpOut, out); err != nil {
-			return fmt.Errorf("failed to decompress gzip file: %w", err)
+			return fmt.Errorf("failed to decompress gzip file %s to %s: %w", tmpOut.Name(), outPath, err)
 		}
 		success = true
 		err = nil
@@ -339,42 +342,43 @@ func (i *GitHubReleaseInstaller) Install() error {
 		extractVars.ExtractDir = tmpDir
 		extractVars.Destination = *opts.Destination
 		extractVars.BinName = i.GetBinName()
-		extractVars.ArchiveBinName = i.GetArchiveBinName(templateVars)
+		archiveBin := i.GetArchiveBinName(templateVars)
+		extractVars.ArchiveBinName = archiveBin
 		if err = i.runCustomExtract(*opts.ExtractCommand, &extractVars); err != nil {
-			return fmt.Errorf("custom extract failed: %w", err)
+			return fmt.Errorf("custom extract failed (download=%s, extract_dir=%s): %w", tmpOut.Name(), tmpDir, err)
 		}
-		logger.Debug("Strategy 'custom': copying binary '%s' to destination", i.GetArchiveBinName(templateVars))
+		logger.Debug("Strategy 'custom': copying binary '%s' to destination", archiveBin)
 		success, err = i.CopyExtractedFile(out, tmpDir, templateVars)
 		if !success {
-			return fmt.Errorf("failed to copy extracted file: %w", err)
+			return fmt.Errorf("failed to copy extracted file %s from %s to %s: %w", archiveBin, tmpDir, outPath, err)
 		}
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to copy extracted file %s to %s: %w", archiveBin, outPath, err)
 		}
 	default:
 		logger.Debug("Strategy 'none': copying downloaded file directly to destination")
 		// Seek back to beginning of temp file before copying
 		if _, err = tmpOut.Seek(0, 0); err != nil {
-			return fmt.Errorf("failed to seek temp file: %w", err)
+			return fmt.Errorf("failed to seek temp file %s: %w", tmpOut.Name(), err)
 		}
 		_, err = io.Copy(out, tmpOut)
 		if err != nil {
-			return fmt.Errorf("failed to copy downloaded file to output: %w", err)
+			return fmt.Errorf("failed to copy downloaded file %s to %s: %w", tmpOut.Name(), outPath, err)
 		}
 		success = true
 		err = nil
 	}
 
 	if !success {
-		return fmt.Errorf("failed to copy the downloaded file to the output file")
+		return fmt.Errorf("failed to copy the downloaded file %s to %s", tmpOut.Name(), outPath)
 	}
 	if err != nil {
-		return errors.Join(fmt.Errorf("failed to extract the downloaded file"), err)
+		return errors.Join(fmt.Errorf("failed to extract the downloaded file %s", tmpOut.Name()), err)
 	}
 
 	// Make the file executable
 	if err = os.Chmod(outPath, 0755); err != nil {
-		return fmt.Errorf("failed to make file executable: %w", err)
+		return fmt.Errorf("failed to make file %s executable: %w", outPath, err)
 	}
 	logger.Debug("Set executable permissions on %s", outPath)
 
@@ -485,17 +489,17 @@ func (i *GitHubReleaseInstaller) GetArchiveBinName(vars *TemplateVars) string {
 func (i *GitHubReleaseInstaller) runCustomExtract(command string, vars *TemplateVars) error {
 	rendered, err := ApplyTemplate(command, vars, *i.Info.Name)
 	if err != nil {
-		return fmt.Errorf("failed to render extract_command template: %w", err)
+		return fmt.Errorf("failed to render extract_command template %q: %w", command, err)
 	}
 	logger.Debug("Custom extract command: %s", rendered)
 	shell := utils.GetOSShell(i.GetData().EnvShell)
 	args := utils.GetOSShellArgs(rendered)
 	success, err := i.RunCmdGetSuccessPassThrough(shell, args...)
 	if err != nil {
-		return err
+		return fmt.Errorf("extract_command failed (%q): %w", rendered, err)
 	}
 	if !success {
-		return fmt.Errorf("extract_command exited non-zero")
+		return fmt.Errorf("extract_command exited non-zero: %q", rendered)
 	}
 	return nil
 }
@@ -583,25 +587,27 @@ func isTarGzFile(path string) bool {
 func (i *GitHubReleaseInstaller) CopyExtractedFile(out *os.File, tmpDir string, vars *TemplateVars) (bool, error) {
 	binFile, err := os.Create(out.Name())
 	if err != nil {
-		return false, fmt.Errorf("failed to create output file: %w", err)
+		return false, fmt.Errorf("failed to create output file %s: %w", out.Name(), err)
 	}
 	defer func() {
 		if cerr := binFile.Close(); cerr != nil {
 			logger.Warn("failed to close binFile %s: %v", binFile.Name(), cerr)
 		}
 	}()
-	tmpBinFile, err := os.Open(filepath.Join(tmpDir, i.GetArchiveBinName(vars)))
+	archiveBin := i.GetArchiveBinName(vars)
+	srcPath := filepath.Join(tmpDir, archiveBin)
+	tmpBinFile, err := os.Open(srcPath)
 	if err != nil {
-		return false, fmt.Errorf("failed to open temporary file: %w", err)
+		return false, fmt.Errorf("failed to open extracted binary at %s (archive_bin_name=%q, extract_dir=%s): %w", srcPath, archiveBin, tmpDir, err)
 	}
 	logger.Debug("Copying file %s to %s", tmpBinFile.Name(), binFile.Name())
 
 	n, err := io.Copy(binFile, tmpBinFile)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to copy %s to %s: %w", srcPath, binFile.Name(), err)
 	}
 	if n == 0 {
-		return false, fmt.Errorf("no data was written to the file")
+		return false, fmt.Errorf("no data was written to %s (source %s is empty)", binFile.Name(), srcPath)
 	}
 	return true, nil
 }
@@ -611,12 +617,12 @@ func (i *GitHubReleaseInstaller) GetCachedTag() (string, error) {
 	logger.Debug("Getting cached tag for %s", *i.Info.Name)
 	cacheDir, err := utils.GetCacheDir()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to resolve cache directory: %w", err)
 	}
 	cacheFile := fmt.Sprintf("%s/%s", cacheDir, *i.Info.Name)
 	exists, err := utils.PathExists(cacheFile)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to stat cache file %s: %w", cacheFile, err)
 	}
 	if !exists {
 		return "", nil
@@ -637,13 +643,13 @@ func (i *GitHubReleaseInstaller) GetCachedTag() (string, error) {
 func (i *GitHubReleaseInstaller) UpdateCache(tag string) error {
 	cacheDir, err := utils.GetCacheDir()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to resolve cache directory: %w", err)
 	}
 	cacheFile := fmt.Sprintf("%s/%s", cacheDir, *i.Info.Name)
 	logger.Debug("Updating cache file %s with %s", cacheFile, tag)
 	err = os.WriteFile(cacheFile, []byte(tag), 0644)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to write cache file %s: %w", cacheFile, err)
 	}
 	return nil
 }
@@ -757,7 +763,7 @@ func (i *GitHubReleaseInstaller) GetLatestTag() (string, error) {
 
 	req, err := http.NewRequest("GET", latestReleaseUrl, nil)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to build request for %s: %w", latestReleaseUrl, err)
 	}
 	if opts.GithubToken != nil && *opts.GithubToken != "" {
 		req.Header.Set("Authorization", "Bearer "+*opts.GithubToken)
@@ -765,7 +771,7 @@ func (i *GitHubReleaseInstaller) GetLatestTag() (string, error) {
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to fetch latest release from %s: %w", latestReleaseUrl, err)
 	}
 	defer func() {
 		err := resp.Body.Close()
@@ -775,20 +781,20 @@ func (i *GitHubReleaseInstaller) GetLatestTag() (string, error) {
 	}()
 	contents, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to read response from %s: %w", latestReleaseUrl, err)
 	}
 	jsonMap := make(map[string]any)
 	err = json.Unmarshal(contents, &jsonMap)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to parse JSON response from %s: %w", latestReleaseUrl, err)
 	}
 	tag, ok := jsonMap["tag_name"].(string)
 	if !ok || tag == "" {
-		logger.Warn("Invalid GitHub API response: %s", string(contents))
+		logger.Warn("Invalid GitHub API response from %s: %s", latestReleaseUrl, string(contents))
 		if msg, ok := jsonMap["message"].(string); ok {
-			return "", fmt.Errorf("GitHub API error: %s", msg)
+			return "", fmt.Errorf("GitHub API error for %s: %s", latestReleaseUrl, msg)
 		}
-		return "", fmt.Errorf("no releases found for repository")
+		return "", fmt.Errorf("no releases found for repository %s (queried %s)", *opts.Repository, latestReleaseUrl)
 	}
 	logger.Debug("Latest release is %s", tag)
 	return tag, nil
@@ -848,7 +854,7 @@ func (i *GitHubReleaseInstaller) installTree() error {
 
 	tmpDir, err := os.MkdirTemp("", "sofmani")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create temp directory: %w", err)
 	}
 	defer func() {
 		if rerr := os.RemoveAll(tmpDir); rerr != nil {
@@ -889,13 +895,13 @@ func (i *GitHubReleaseInstaller) installTree() error {
 			if runErr == nil {
 				runErr = fmt.Errorf("tar exited with non-zero status")
 			}
-			return fmt.Errorf("failed to extract tar file: %w", runErr)
+			return fmt.Errorf("failed to extract tar file %s to %s: %w", tmpFile, staging, runErr)
 		}
 	case GitHubReleaseInstallStrategyZip:
 		logger.Debug("Extracting zip to staging: %s (strip=%d)", staging, stripComponents)
 		if err := extractZipWithStrip(tmpFile, staging, stripComponents); err != nil {
 			_ = os.RemoveAll(staging)
-			return fmt.Errorf("failed to extract zip file: %w", err)
+			return fmt.Errorf("failed to extract zip file %s to %s: %w", tmpFile, staging, err)
 		}
 	}
 
@@ -910,7 +916,7 @@ func (i *GitHubReleaseInstaller) installTree() error {
 		}
 		if err := os.Rename(extractTo, backup); err != nil {
 			_ = os.RemoveAll(staging)
-			return fmt.Errorf("failed to move existing tree aside: %w", err)
+			return fmt.Errorf("failed to move existing tree %s aside to %s: %w", extractTo, backup, err)
 		}
 	} else if !os.IsNotExist(err) {
 		_ = os.RemoveAll(staging)
@@ -918,7 +924,7 @@ func (i *GitHubReleaseInstaller) installTree() error {
 	} else {
 		if err := os.MkdirAll(filepath.Dir(extractTo), 0755); err != nil {
 			_ = os.RemoveAll(staging)
-			return fmt.Errorf("failed to create parent of extract_to: %w", err)
+			return fmt.Errorf("failed to create parent of extract_to %s: %w", extractTo, err)
 		}
 	}
 
@@ -930,7 +936,7 @@ func (i *GitHubReleaseInstaller) installTree() error {
 			}
 		}
 		_ = os.RemoveAll(staging)
-		return fmt.Errorf("failed to move staged tree into place: %w", err)
+		return fmt.Errorf("failed to move staged tree %s to %s: %w", staging, extractTo, err)
 	}
 	if backup != "" {
 		if rerr := os.RemoveAll(backup); rerr != nil {
@@ -977,15 +983,16 @@ func (i *GitHubReleaseInstaller) downloadRelease(tmpDir, name string) (string, s
 		machineAliases = *i.Config.MachineAliases
 	}
 	templateVars := NewTemplateVars(tag, machineAliases)
+	rawFilename := filename
 	filename, err = ApplyTemplate(filename, templateVars, name)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to apply template to filename: %w", err)
+		return "", "", fmt.Errorf("failed to apply template to download_filename %q: %w", rawFilename, err)
 	}
 
 	tmpFile := filepath.Join(tmpDir, name+".download")
 	out, err := os.Create(tmpFile)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to create temporary file: %w", err)
+		return "", "", fmt.Errorf("failed to create temporary file %s: %w", tmpFile, err)
 	}
 	defer func() {
 		if cerr := out.Close(); cerr != nil {
@@ -1000,7 +1007,7 @@ func (i *GitHubReleaseInstaller) downloadRelease(tmpDir, name string) (string, s
 
 	req, err := http.NewRequest("GET", downloadUrl, nil)
 	if err != nil {
-		return "", "", err
+		return "", "", fmt.Errorf("failed to build request for %s: %w", downloadUrl, err)
 	}
 	if opts.GithubToken != nil && *opts.GithubToken != "" {
 		logger.Debug("Using GitHub token for authentication")
@@ -1009,7 +1016,7 @@ func (i *GitHubReleaseInstaller) downloadRelease(tmpDir, name string) (string, s
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return "", "", err
+		return "", "", fmt.Errorf("failed to download release asset from %s: %w", downloadUrl, err)
 	}
 	defer func() {
 		if cerr := resp.Body.Close(); cerr != nil {
@@ -1023,10 +1030,10 @@ func (i *GitHubReleaseInstaller) downloadRelease(tmpDir, name string) (string, s
 
 	n, err := io.Copy(out, resp.Body)
 	if err != nil {
-		return "", "", err
+		return "", "", fmt.Errorf("failed to write downloaded asset from %s to %s: %w", downloadUrl, tmpFile, err)
 	}
 	if n == 0 {
-		return "", "", fmt.Errorf("no data was written to the file")
+		return "", "", fmt.Errorf("no data was written to %s from %s", tmpFile, downloadUrl)
 	}
 	logger.Debug("Downloaded %d bytes to temp file", n)
 	return tmpFile, tag, nil
@@ -1040,7 +1047,7 @@ func (i *GitHubReleaseInstaller) downloadRelease(tmpDir, name string) (string, s
 func extractZipWithStrip(zipPath, dest string, strip int) error {
 	r, err := zip.OpenReader(zipPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to open zip %s: %w", zipPath, err)
 	}
 	defer func() {
 		if cerr := r.Close(); cerr != nil {
@@ -1067,17 +1074,17 @@ func extractZipWithStrip(zipPath, dest string, strip int) error {
 
 		// Defend against zip-slip: the resolved target must stay inside dest.
 		if target != destClean && !strings.HasPrefix(target, destClean+string(os.PathSeparator)) {
-			return fmt.Errorf("invalid file path in zip: %s", f.Name)
+			return fmt.Errorf("invalid file path in zip %s: entry %q would resolve outside %s", zipPath, f.Name, destClean)
 		}
 
 		if f.FileInfo().IsDir() {
 			if err := os.MkdirAll(target, 0755); err != nil {
-				return err
+				return fmt.Errorf("failed to create directory %s: %w", target, err)
 			}
 			continue
 		}
 		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
-			return err
+			return fmt.Errorf("failed to create parent directory for %s: %w", target, err)
 		}
 		if err := writeZipFile(f, target); err != nil {
 			return err
@@ -1091,7 +1098,7 @@ func extractZipWithStrip(zipPath, dest string, strip int) error {
 func writeZipFile(f *zip.File, target string) error {
 	rc, err := f.Open()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to open zip entry %s: %w", f.Name, err)
 	}
 	defer func() {
 		if cerr := rc.Close(); cerr != nil {
@@ -1104,11 +1111,11 @@ func writeZipFile(f *zip.File, target string) error {
 	}
 	out, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create %s: %w", target, err)
 	}
 	if _, err := io.Copy(out, rc); err != nil {
 		_ = out.Close()
-		return err
+		return fmt.Errorf("failed to write zip entry %s to %s: %w", f.Name, target, err)
 	}
 	return out.Close()
 }
@@ -1119,41 +1126,44 @@ func writeZipFile(f *zip.File, target string) error {
 // requires elevated privileges or developer mode.
 func installBinLink(source, target string) error {
 	if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
-		return err
+		return fmt.Errorf("failed to create parent directory for %s: %w", target, err)
 	}
 	// Remove whatever is currently at target (file, broken symlink, or old symlink) so we
 	// can replace it cleanly. Use Lstat so we don't follow the symlink.
 	if _, err := os.Lstat(target); err == nil {
 		if err := os.Remove(target); err != nil {
-			return err
+			return fmt.Errorf("failed to remove existing target %s: %w", target, err)
 		}
 	} else if !os.IsNotExist(err) {
-		return err
+		return fmt.Errorf("failed to stat target %s: %w", target, err)
 	}
 	if runtime.GOOS == "windows" {
 		return copyFile(source, target)
 	}
-	return os.Symlink(source, target)
+	if err := os.Symlink(source, target); err != nil {
+		return fmt.Errorf("failed to create symlink %s -> %s: %w", target, source, err)
+	}
+	return nil
 }
 
 // copyFile is the Windows fallback for installBinLink.
 func copyFile(src, dst string) error {
 	in, err := os.Open(src)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to open source %s: %w", src, err)
 	}
 	defer func() { _ = in.Close() }()
 	info, err := in.Stat()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to stat source %s: %w", src, err)
 	}
 	out, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, info.Mode().Perm())
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to open destination %s: %w", dst, err)
 	}
 	if _, err := io.Copy(out, in); err != nil {
 		_ = out.Close()
-		return err
+		return fmt.Errorf("failed to copy %s to %s: %w", src, dst, err)
 	}
 	return out.Close()
 }
