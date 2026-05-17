@@ -95,6 +95,8 @@ type AppCliConfig struct {
 	ShowLogFile bool
 	// ShowMachineID indicates that only the machine ID should be shown.
 	ShowMachineID bool
+	// ShowVars indicates that the template variables and their current values should be shown.
+	ShowVars bool
 	// IgnoreFrequency overrides frequency checks, running all installers regardless.
 	IgnoreFrequency bool
 }

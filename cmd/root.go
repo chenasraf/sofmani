@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/chenasraf/sofmani/appconfig"
+	"github.com/chenasraf/sofmani/installer"
 	"github.com/chenasraf/sofmani/logger"
 	"github.com/chenasraf/sofmani/machine"
 	"github.com/samber/lo"
@@ -23,6 +24,7 @@ var (
 	filter          []string
 	logFile         string
 	machineID       bool
+	showVars        bool
 	ignoreFrequency bool
 
 	// The parsed CLI config
@@ -51,6 +53,12 @@ For online documentation, see https://github.com/chenasraf/sofmani/tree/master/d
 			// Handle --machine-id: show machine ID and exit
 			if cliConfig.ShowMachineID {
 				fmt.Println(machine.GetMachineID())
+				return
+			}
+
+			// Handle --vars: show template variables and exit
+			if cliConfig.ShowVars {
+				printTemplateVars(cliConfig.ConfigFile)
 				return
 			}
 
@@ -131,6 +139,9 @@ func init() {
 	// Machine ID flag
 	rootCmd.Flags().BoolVarP(&machineID, "machine-id", "m", false, "Show machine ID and exit")
 
+	// Template variables flag
+	rootCmd.Flags().BoolVar(&showVars, "vars", false, "Show template variables and their values for the current platform, then exit")
+
 	// Ignore frequency flag
 	rootCmd.Flags().BoolVar(&ignoreFrequency, "ignore-frequency", false, "Ignore frequency limits and run all installers")
 }
@@ -154,6 +165,7 @@ func buildCliConfig(cmd *cobra.Command, args []string) *appconfig.AppCliConfig {
 		LogFile:         nil,
 		ShowLogFile:     false,
 		ShowMachineID:   machineID,
+		ShowVars:        showVars,
 		IgnoreFrequency: ignoreFrequency,
 	}
 
@@ -192,9 +204,14 @@ func buildCliConfig(cmd *cobra.Command, args []string) *appconfig.AppCliConfig {
 	}
 
 	// Handle config file positional argument
-	if len(args) > 0 {
+	switch {
+	case len(args) > 0:
 		config.ConfigFile = args[0]
-	} else if !config.ShowLogFile && !config.ShowMachineID {
+	case config.ShowVars:
+		// --vars tries to read machine_aliases from a config if one exists, but does not
+		// require it. Best-effort lookup only.
+		config.ConfigFile = appconfig.FindConfigFile()
+	case !config.ShowLogFile && !config.ShowMachineID:
 		// Find config file if not showing log file or machine ID
 		file := appconfig.FindConfigFile()
 		if file == "" {
@@ -205,6 +222,41 @@ func buildCliConfig(cmd *cobra.Command, args []string) *appconfig.AppCliConfig {
 	}
 
 	return config
+}
+
+// printTemplateVars prints all template variables with their resolved values for the current
+// platform. If configFile is non-empty and parses successfully, machine_aliases is loaded so
+// {{ .DeviceIDAlias }} can be resolved; otherwise it is shown as unset.
+func printTemplateVars(configFile string) {
+	var machineAliases map[string]string
+	if configFile != "" {
+		if cfg, err := appconfig.ParseConfigFrom(configFile); err == nil && cfg != nil && cfg.MachineAliases != nil {
+			machineAliases = *cfg.MachineAliases
+		}
+	}
+	vars := installer.NewTemplateVars("", machineAliases)
+	descs := installer.DescribeTemplateVars(vars)
+
+	nameWidth := 0
+	for _, d := range descs {
+		if len(d.Name) > nameWidth {
+			nameWidth = len(d.Name)
+		}
+	}
+
+	for _, d := range descs {
+		value := d.Value
+		if value == "" {
+			if d.Note != "" {
+				value = "<" + d.Note + ">"
+			} else {
+				value = "<unset>"
+			}
+		} else if d.Note != "" {
+			value = fmt.Sprintf("%s  <%s>", value, d.Note)
+		}
+		fmt.Printf("%-*s  %s\n", nameWidth, d.Name, value)
+	}
 }
 
 // RunMain is set by main.go to run the main application logic.

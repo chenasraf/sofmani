@@ -86,6 +86,45 @@ func resolveDeviceAlias(machineID string, aliases map[string]string) string {
 	return ""
 }
 
+// TemplateVarDescription describes a single template variable for display purposes
+// (e.g., the --vars CLI output).
+type TemplateVarDescription struct {
+	// Name is the Go template form, e.g., "{{ .Arch }}".
+	Name string
+	// Value is the resolved value for the current platform, or "" when not applicable.
+	Value string
+	// Note explains when a value is unset (e.g., "set at install time").
+	Note string
+}
+
+// DescribeTemplateVars returns a stable, ordered list of all template variables along with
+// their current values for the calling platform. Variables that only have a value at install
+// time (Tag/Version, custom extract context) carry an explanatory Note instead.
+func DescribeTemplateVars(vars *TemplateVars) []TemplateVarDescription {
+	if vars == nil {
+		vars = NewTemplateVars("", nil)
+	}
+	deviceAliasNote := ""
+	if vars.DeviceIDAlias == "" {
+		deviceAliasNote = "no alias defined in machine_aliases for this device"
+	}
+	return []TemplateVarDescription{
+		{Name: "{{ .OS }}", Value: vars.OS},
+		{Name: "{{ .Arch }}", Value: vars.Arch},
+		{Name: "{{ .ArchAlias }}", Value: vars.ArchAlias},
+		{Name: "{{ .ArchGnu }}", Value: vars.ArchGnu},
+		{Name: "{{ .DeviceID }}", Value: vars.DeviceID},
+		{Name: "{{ .DeviceIDAlias }}", Value: vars.DeviceIDAlias, Note: deviceAliasNote},
+		{Name: "{{ .Tag }}", Note: "set per install from the resolved GitHub release tag"},
+		{Name: "{{ .Version }}", Note: "set per install (Tag without leading 'v')"},
+		{Name: "{{ .DownloadFile }}", Note: "set per install (github-release custom extract_command only)"},
+		{Name: "{{ .ExtractDir }}", Note: "set per install (github-release custom extract_command only)"},
+		{Name: "{{ .Destination }}", Note: "set per install (github-release custom extract_command only)"},
+		{Name: "{{ .BinName }}", Note: "set per install (github-release custom extract_command only)"},
+		{Name: "{{ .ArchiveBinName }}", Note: "set per install (github-release custom extract_command only)"},
+	}
+}
+
 // ApplyTemplate applies template variables to a string.
 // It supports both Go template syntax (e.g., "{{ .Tag }}") and legacy token syntax (e.g., "{tag}").
 // When legacy tokens are detected, a deprecation warning is logged at DEBUG level.
