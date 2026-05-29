@@ -79,6 +79,30 @@ func TestFillDefaults(t *testing.T) {
 		assert.NotNil(t, data.Platforms.Only)
 		assert.Contains(t, *data.Platforms.Only, platform.PlatformLinux)
 	})
+
+	t.Run("respects user-specified platforms for linux-only installers", func(t *testing.T) {
+		userOnly := []platform.Platform{platform.PlatformMacos}
+		data := &appconfig.InstallerData{
+			Type:      appconfig.InstallerTypeApt,
+			Platforms: &platform.Platforms{Only: &userOnly},
+		}
+		FillDefaults(data)
+
+		assert.NotNil(t, data.Platforms.Only)
+		assert.Equal(t, []platform.Platform{platform.PlatformMacos}, *data.Platforms.Only)
+	})
+
+	t.Run("respects user-specified except for linux-only installers", func(t *testing.T) {
+		userExcept := []platform.Platform{platform.PlatformWindows}
+		data := &appconfig.InstallerData{
+			Type:      appconfig.InstallerTypePacman,
+			Platforms: &platform.Platforms{Except: &userExcept},
+		}
+		FillDefaults(data)
+
+		assert.Nil(t, data.Platforms.Only)
+		assert.Equal(t, []platform.Platform{platform.PlatformWindows}, *data.Platforms.Except)
+	})
 }
 
 func TestInstallerWithDefaults_Comprehensive(t *testing.T) {

@@ -131,15 +131,14 @@ func FillDefaults(data *appconfig.InstallerData) {
 		str := ""
 		data.Tags = &str
 	}
-	// Default overrides per type
-	switch data.Type {
-	case appconfig.InstallerTypeApt, appconfig.InstallerTypeApk:
-		data.Platforms = &platform.Platforms{
-			Only: &[]platform.Platform{platform.PlatformLinux},
-		}
-	case appconfig.InstallerTypePacman, appconfig.InstallerTypeYay:
-		data.Platforms = &platform.Platforms{
-			Only: &[]platform.Platform{platform.PlatformLinux},
+	// Default overrides per type — only applied when the user hasn't constrained platforms.
+	if data.Platforms.Only == nil && data.Platforms.Except == nil {
+		switch data.Type {
+		case appconfig.InstallerTypeApt,
+			appconfig.InstallerTypeApk,
+			appconfig.InstallerTypePacman,
+			appconfig.InstallerTypeYay:
+			data.Platforms.Only = &[]platform.Platform{platform.PlatformLinux}
 		}
 	}
 }
