@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.30.1](https://github.com/chenasraf/sofmani/compare/v1.30.0...v1.30.1) (2026-05-29)
+
+
+### Bug Fixes
+
+* **installer:** preserve user platforms for linux-only installer defaults ([1dd40d9](https://github.com/chenasraf/sofmani/commit/1dd40d99f372db0f70162f8b4594e7ef73a4087d))
+
 ## [1.30.0](https://github.com/chenasraf/sofmani/compare/v1.29.0...v1.30.0) (2026-05-17)
 
 
