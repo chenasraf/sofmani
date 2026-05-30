@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.31.0](https://github.com/chenasraf/sofmani/compare/v1.30.0...v1.31.0) (2026-05-30)
+
+
+### Features
+
+* **cli:** add --start-from flag to skip installers before a given name ([87130af](https://github.com/chenasraf/sofmani/commit/87130af1d77d5a02eae815c36ef44b41d53966ca))
+* **installer:** add go installer using go install ([12adcd1](https://github.com/chenasraf/sofmani/commit/12adcd146bc744c52e1086d9886e9fa641f91732))
+
+
+### Bug Fixes
+
+* **brew:** tap before install when opts.tap is set ([0898660](https://github.com/chenasraf/sofmani/commit/0898660cdb8b2d69b70742f789f54b7b6e0fe3fa))
+* **installer:** preserve user platforms for linux-only installer defaults ([1dd40d9](https://github.com/chenasraf/sofmani/commit/1dd40d99f372db0f70162f8b4594e7ef73a4087d))
+
 ## [1.30.0](https://github.com/chenasraf/sofmani/compare/v1.29.0...v1.30.0) (2026-05-17)
 
 
