@@ -55,6 +55,9 @@ func (i *BrewInstaller) Validate() []ValidationError {
 func (i *BrewInstaller) Install() error {
 	name := i.GetFullName()
 	opts := i.GetOpts()
+	if err := i.ensureTapped(); err != nil {
+		return err
+	}
 	i.handleBrewRepoUpdate()
 	cmd := "brew install"
 	if i.IsVerbose() {
@@ -77,6 +80,9 @@ func (i *BrewInstaller) Install() error {
 func (i *BrewInstaller) Update() error {
 	name := i.GetFullName()
 	opts := i.GetOpts()
+	if err := i.ensureTapped(); err != nil {
+		return err
+	}
 	i.handleBrewRepoUpdate()
 	cmd := "brew upgrade"
 	if i.IsVerbose() {
@@ -102,6 +108,27 @@ func (i *BrewInstaller) GetFullName() string {
 		name = *i.GetOpts().Tap + "/" + name
 	}
 	return name
+}
+
+// ensureTapped runs `brew tap <tap>` once per process for the installer's configured tap.
+// Homebrew requires taps to be added explicitly before installing from them.
+func (i *BrewInstaller) ensureTapped() error {
+	opts := i.GetOpts()
+	if opts.Tap == nil {
+		return nil
+	}
+	tap := *opts.Tap
+	return RunRepoUpdateOnce("brew-tap:"+tap, func() error {
+		logger.Debug("Tapping brew tap %s", tap)
+		cmd := exec.Command("brew", "tap", tap)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmd.Stdin = os.Stdin
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("failed to tap %s: %w", tap, err)
+		}
+		return nil
+	})
 }
 
 // handleBrewRepoUpdate manages brew's auto-update behavior according to the configured mode.
@@ -135,6 +162,9 @@ func (i *BrewInstaller) CheckNeedsUpdate() (bool, error) {
 		return i.RunCustomUpdateCheck()
 	}
 
+	if err := i.ensureTapped(); err != nil {
+		return false, err
+	}
 	i.handleBrewRepoUpdate()
 	name := i.GetFullName()
 	cmd := exec.Command("brew", "outdated", "--json", name)

@@ -708,7 +708,8 @@ the top-level [`repo_update`](./configuration-reference.md#global-options) optio
 
 **Options**:
 
-- `opts.tap`: Name of the tap to install the package from.
+- `opts.tap`: Name of the tap to install the package from. The tap is automatically added via
+  `brew tap` before installing.
 - `opts.cask`: Install as a cask instead of a formula.
 - `opts.flags`: Additional flags to pass to brew commands (fallback for install/update).
 - `opts.install_flags`: Additional flags to pass only to `brew install`.

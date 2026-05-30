@@ -441,6 +441,21 @@ func TestBrewCheckNeedsUpdate(t *testing.T) {
 	})
 }
 
+func TestBrewEnsureTapped(t *testing.T) {
+	logger.InitLogger(false)
+
+	t.Run("is a no-op when tap is not set", func(t *testing.T) {
+		ResetRepoUpdateTracker()
+		data := &appconfig.InstallerData{
+			Name: lo.ToPtr("vim"),
+			Type: appconfig.InstallerTypeBrew,
+		}
+		installer := newTestBrewInstaller(data)
+		assert.NoError(t, installer.ensureTapped())
+		assert.False(t, IsRepoUpdated("brew-tap:"))
+	})
+}
+
 func TestBrewGetOptsWrongTypes(t *testing.T) {
 	logger.InitLogger(false)
 
