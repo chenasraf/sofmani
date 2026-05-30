@@ -102,6 +102,7 @@ func TestInstallerTypesMatchGoConstants(t *testing.T) {
 		string(appconfig.InstallerTypePacman),
 		string(appconfig.InstallerTypeYay),
 		string(appconfig.InstallerTypeCargo),
+		string(appconfig.InstallerTypeGo),
 	}
 	sort.Strings(goTypes)
 

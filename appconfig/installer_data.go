@@ -117,6 +117,7 @@ const (
 	InstallerTypePacman        InstallerType = "pacman"         // InstallerTypePacman represents a pacman package installer.
 	InstallerTypeYay           InstallerType = "yay"            // InstallerTypeYay represents a yay (AUR helper) package installer.
 	InstallerTypeCargo         InstallerType = "cargo"          // InstallerTypeCargo represents a Rust cargo package installer.
+	InstallerTypeGo            InstallerType = "go"             // InstallerTypeGo represents a Go package installer (go install).
 )
 
 // Environ returns the combined environment variables for the installer as a slice of strings.
