@@ -184,7 +184,8 @@
         "manifest",
         "pacman",
         "yay",
-        "cargo"
+        "cargo",
+        "go"
       ]
     },
     "installStep": {
@@ -472,6 +473,23 @@
                     }
                   },
                   "skip_if_unavailable": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "go" } }, "required": ["type"] },
+          "then": {
+            "properties": {
+              "opts": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "version": { "type": "string" },
+                  "flags": { "type": "string" },
+                  "install_flags": { "type": "string" },
+                  "update_flags": { "type": "string" }
                 }
               }
             }

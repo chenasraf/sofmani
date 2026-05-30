@@ -21,6 +21,7 @@ actions. Steps can be of **several types**, such as `brew`, `rsync`, `shell`, an
   - [pacman / yay](#pacman--yay)
   - [pipx](#pipx)
   - [cargo](#cargo)
+  - [go](#go)
   - [docker](#docker)
 - [Installer Examples](#installer-examples)
   - [group](#group-1)
@@ -35,6 +36,7 @@ actions. Steps can be of **several types**, such as `brew`, `rsync`, `shell`, an
   - [apt](#apt)
   - [pacman/yay](#pacmanyay)
   - [cargo](#cargo-1)
+  - [go](#go-1)
   - [docker](#docker-1)
 
 ## Categories
@@ -266,6 +268,7 @@ These fields are shared by all installer types. Some fields may vary in behavior
     | `npm`/`pnpm`/`yarn` | `--verbose`  |
     | `pipx`              | `--verbose`  |
     | `cargo`             | `--verbose`  |
+    | `go`                | `-v`         |
     | `pacman`/`yay`      | `--verbose`  |
     | `apk`               | `--verbose`  |
     | `apt`               | _(no-op)_    |
@@ -780,6 +783,30 @@ Installs packages using Rust's cargo. Uses `cargo install` for both installation
 - `opts.install_flags`: Additional flags to pass only during install.
 - `opts.update_flags`: Additional flags to pass only during update.
 
+### `go`
+
+Installs Go binaries using `go install`. Uses `go install` for both installation and updates — the
+Go toolchain will fetch the requested version and rebuild only if it differs from what's cached.
+
+The `name` field should be the full module path of the binary (e.g.,
+`golang.org/x/tools/gopls`). The package reference passed to `go install` is constructed as
+`<name>@<version>`:
+
+- If `name` already includes an `@version` suffix, it is used as-is.
+- Otherwise `opts.version` is appended, defaulting to `latest`.
+
+`bin_name` defaults to the last path component of `name` (with any `@version` stripped), so
+`golang.org/x/tools/gopls` resolves to `gopls`. Override `bin_name` if the produced binary has a
+different name.
+
+**Options**:
+
+- `opts.version`: Module version to install (e.g., `latest`, `v0.16.0`, a commit SHA, or a branch
+  name). Defaults to `latest`. Ignored when `name` already contains `@version`.
+- `opts.flags`: Additional flags to pass to commands (fallback for install/update).
+- `opts.install_flags`: Additional flags to pass only during install.
+- `opts.update_flags`: Additional flags to pass only during update.
+
 ### `docker`
 
 Pulls and runs Docker containers using `docker run`. Also supports update checks by comparing image
@@ -1011,6 +1038,25 @@ install:
   - name: ripgrep
     type: cargo
     bin_name: rg
+```
+
+### go
+
+```yaml
+install:
+  # Install the latest gopls
+  - name: golang.org/x/tools/gopls
+    type: go
+
+  # Pin a specific version via opts
+  - name: github.com/go-task/task/v3/cmd/task
+    type: go
+    opts:
+      version: v3.39.2
+
+  # Or include @version inline on the name
+  - name: github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+    type: go
 ```
 
 ### docker

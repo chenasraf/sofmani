@@ -59,6 +59,7 @@ func TestCheckIsInstalled_UsesBinName(t *testing.T) {
 		{"apt", func(d *appconfig.InstallerData) IInstaller { return newTestAptInstaller(d) }, appconfig.InstallerTypeApt},
 		{"pipx", func(d *appconfig.InstallerData) IInstaller { return newTestPipxInstaller(d) }, appconfig.InstallerTypePipx},
 		{"cargo", func(d *appconfig.InstallerData) IInstaller { return newTestCargoInstaller(d) }, appconfig.InstallerTypeCargo},
+		{"go", func(d *appconfig.InstallerData) IInstaller { return newTestGoInstaller(d) }, appconfig.InstallerTypeGo},
 		{"group", func(d *appconfig.InstallerData) IInstaller { return newTestGroupInstaller(d) }, appconfig.InstallerTypeGroup},
 	}
 

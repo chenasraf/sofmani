@@ -281,6 +281,11 @@ For a full list with all the supported options, see [the docs](./docs/installer-
 - **`cargo`**
   - Installs packages using Rust's cargo.
 
+- **`go`**
+  - Installs Go binaries using `go install`.
+  - `name` is the module path (e.g. `golang.org/x/tools/gopls`); version defaults to `latest` and
+    can be pinned via `opts.version` or an inline `@version` on the name.
+
 - **`docker`**
   - Pulls and runs a Docker container by name
   - Supports optional `flags`
