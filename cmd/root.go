@@ -26,6 +26,7 @@ var (
 	machineID       bool
 	showVars        bool
 	ignoreFrequency bool
+	startFrom       string
 
 	// The parsed CLI config
 	cliConfig *appconfig.AppCliConfig
@@ -144,6 +145,9 @@ func init() {
 
 	// Ignore frequency flag
 	rootCmd.Flags().BoolVar(&ignoreFrequency, "ignore-frequency", false, "Ignore frequency limits and run all installers")
+
+	// Start-from flag
+	rootCmd.Flags().StringVar(&startFrom, "start-from", "", "Skip all installers before the one with the given name")
 }
 
 // SetVersion sets the version for the root command.
@@ -167,6 +171,7 @@ func buildCliConfig(cmd *cobra.Command, args []string) *appconfig.AppCliConfig {
 		ShowMachineID:   machineID,
 		ShowVars:        showVars,
 		IgnoreFrequency: ignoreFrequency,
+		StartFrom:       startFrom,
 	}
 
 	// Handle debug flag

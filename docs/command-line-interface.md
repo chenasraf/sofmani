@@ -30,6 +30,7 @@ You can call `sofmani` with the following flags to alter the behavior for the cu
 | `-l`, `--log-file`   | Set log file path, or show current path if no value.    |
 | `-m`, `--machine-id` | Show machine ID and exit.                               |
 | `--ignore-frequency` | Ignore frequency limits and run all installers.         |
+| `--start-from`       | Skip all installers before the one with the given name. |
 | `-h`, `--help`       | Display help information and exit.                      |
 | `-v`, `--version`    | Display version information and exit.                   |
 

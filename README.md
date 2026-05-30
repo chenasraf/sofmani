@@ -149,6 +149,7 @@ The following flags are supported to customize behavior:
 | `-S`, `--no-summary` | Disable installation summary.                         |
 | `-f`, `--filter`     | Filter by installer name (can be used multiple times) |
 | `--ignore-frequency` | Ignore frequency limits and run all installers.       |
+| `--start-from`       | Skip all installers before the one with the given name. |
 | `-h`, `--help`       | Display help information and exit.                    |
 | `-v`, `--version`    | Display version information and exit.                 |
 

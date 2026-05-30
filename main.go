@@ -122,6 +122,21 @@ func runMain(cliConfig *appconfig.AppCliConfig) {
 		os.Exit(1)
 	}
 
+	if cfg.StartFrom != "" {
+		startIdx := -1
+		for idx, item := range items {
+			if item.data.Name != nil && *item.data.Name == cfg.StartFrom {
+				startIdx = idx
+				break
+			}
+		}
+		if startIdx == -1 {
+			logger.Error("--start-from: installer %q not found", cfg.StartFrom)
+			os.Exit(1)
+		}
+		items = items[startIdx:]
+	}
+
 	// Set up signal handling for graceful shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt)

@@ -64,6 +64,8 @@ type AppConfig struct {
 	Filter []string
 	// IgnoreFrequency overrides frequency checks, running all installers regardless.
 	IgnoreFrequency bool
+	// StartFrom skips all installers before the one with the given name.
+	StartFrom string
 }
 
 // GetRepoUpdateMode returns the repo update mode for the given installer type,
@@ -99,6 +101,8 @@ type AppCliConfig struct {
 	ShowVars bool
 	// IgnoreFrequency overrides frequency checks, running all installers regardless.
 	IgnoreFrequency bool
+	// StartFrom skips all installers before the one with the given name.
+	StartFrom string
 }
 
 // AppConfigDefaults provides default configurations for installer types.
@@ -138,6 +142,7 @@ func ParseConfig(overrides *AppCliConfig) (*AppConfig, error) {
 		}
 		appConfig.Filter = overrides.Filter
 		appConfig.IgnoreFrequency = overrides.IgnoreFrequency
+		appConfig.StartFrom = overrides.StartFrom
 		return appConfig, nil
 	}
 	return nil, fmt.Errorf("unsupported config file extension %s (filename: %s)", ext, file)
