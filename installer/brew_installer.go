@@ -112,6 +112,8 @@ func (i *BrewInstaller) GetFullName() string {
 
 // ensureTapped runs `brew tap <tap>` once per process for the installer's configured tap.
 // Homebrew requires taps to be added explicitly before installing from them.
+// When HOMEBREW_REQUIRE_TAP_TRUST is set, also runs `brew trust --tap <tap>` so the tap
+// can be loaded by subsequent install commands.
 func (i *BrewInstaller) ensureTapped() error {
 	opts := i.GetOpts()
 	if opts.Tap == nil {
@@ -126,6 +128,16 @@ func (i *BrewInstaller) ensureTapped() error {
 		cmd.Stdin = os.Stdin
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("failed to tap %s: %w", tap, err)
+		}
+		if os.Getenv("HOMEBREW_REQUIRE_TAP_TRUST") != "" {
+			logger.Debug("Trusting brew tap %s", tap)
+			trustCmd := exec.Command("brew", "trust", "--tap", tap)
+			trustCmd.Stdout = os.Stdout
+			trustCmd.Stderr = os.Stderr
+			trustCmd.Stdin = os.Stdin
+			if err := trustCmd.Run(); err != nil {
+				return fmt.Errorf("failed to trust tap %s: %w", tap, err)
+			}
 		}
 		return nil
 	})
