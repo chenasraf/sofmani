@@ -55,6 +55,7 @@ func (i *BrewInstaller) Validate() []ValidationError {
 func (i *BrewInstaller) Install() error {
 	name := i.GetFullName()
 	opts := i.GetOpts()
+	disableBrewAsk()
 	if err := i.ensureTapped(); err != nil {
 		return err
 	}
@@ -80,6 +81,7 @@ func (i *BrewInstaller) Install() error {
 func (i *BrewInstaller) Update() error {
 	name := i.GetFullName()
 	opts := i.GetOpts()
+	disableBrewAsk()
 	if err := i.ensureTapped(); err != nil {
 		return err
 	}
@@ -108,6 +110,12 @@ func (i *BrewInstaller) GetFullName() string {
 		name = *i.GetOpts().Tap + "/" + name
 	}
 	return name
+}
+
+// disableBrewAsk suppresses Homebrew's interactive "Ask mode" confirmation prompt
+// (the default since Homebrew 6.x) so installs and upgrades run non-interactively.
+func disableBrewAsk() {
+	_ = os.Setenv("HOMEBREW_NO_ASK", "1")
 }
 
 // ensureTapped runs `brew tap <tap>` once per process for the installer's configured tap.
