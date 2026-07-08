@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.32.1](https://github.com/chenasraf/sofmani/compare/v1.32.0...v1.32.1) (2026-07-08)
+
+
+### Bug Fixes
+
+* **brew:** disable interactive Ask mode prompt on install/upgrade ([6db6850](https://github.com/chenasraf/sofmani/commit/6db68506597c87e92e13b42bb24d90ca24d8041d))
+
 ## [1.32.0](https://github.com/chenasraf/sofmani/compare/v1.31.0...v1.32.0) (2026-06-17)
 
 
