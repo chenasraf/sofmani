@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
@@ -277,7 +278,86 @@ func (i *BrewInstaller) CheckIsInstalled() (bool, error) {
 	if i.HasCustomInstallCheck() {
 		return i.RunCustomInstallCheck()
 	}
-	return i.RunCmdGetSuccess(utils.GetShellWhich(), i.GetBinName())
+	// Ask Homebrew rather than looking the binary up on PATH: casks often ship only an
+	// .app bundle, and formulae may install a binary under a different name.
+	for _, scope := range []string{brewListAll, brewListCasks} {
+		installed, err := brewIsPackageInstalled(scope, *i.GetData().Name)
+		if err != nil {
+			return false, err
+		}
+		if installed {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+const (
+	brewListAll   = "all"
+	brewListCasks = "casks"
+)
+
+var (
+	brewListMu    sync.Mutex
+	brewListCache = map[string]map[string]bool{}
+)
+
+// brewIsPackageInstalled reports whether a package appears in the given `brew list` scope.
+func brewIsPackageInstalled(scope string, name string) (bool, error) {
+	names, err := brewInstalledNames(scope)
+	if err != nil {
+		return false, err
+	}
+	// A tap-qualified name is not what `brew list` reports, so compare on the bare name.
+	if idx := strings.LastIndex(name, "/"); idx >= 0 {
+		name = name[idx+1:]
+	}
+	return names[name], nil
+}
+
+// brewInstalledNames returns the names of the installed packages in the given `brew list`
+// scope. `brew list` covers both formulae and casks, and the cask-only scope catches
+// Homebrew versions that omit casks from it. Each scope is fetched once per run, since one
+// `brew list` costs about as much as querying a single package.
+func brewInstalledNames(scope string) (map[string]bool, error) {
+	brewListMu.Lock()
+	defer brewListMu.Unlock()
+	if names, ok := brewListCache[scope]; ok {
+		return names, nil
+	}
+	args := []string{"list", "--versions"}
+	if scope == brewListCasks {
+		args = []string{"list", "--cask", "--versions"}
+	}
+	logger.Debug("Listing installed brew packages (%s)", scope)
+	out, err := utils.RunCmdGetOutput(nil, "brew", args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list installed brew packages: %w", err)
+	}
+	names := parseBrewListOutput(out)
+	brewListCache[scope] = names
+	return names, nil
+}
+
+// parseBrewListOutput parses the output of `brew list --versions` into a set of package names.
+// Each line holds a name followed by the installed versions.
+func parseBrewListOutput(out []byte) map[string]bool {
+	names := map[string]bool{}
+	for line := range strings.SplitSeq(string(out), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) == 0 {
+			continue
+		}
+		names[fields[0]] = true
+	}
+	return names
+}
+
+// ResetBrewListCache clears the cached `brew list` output. Intended for testing.
+func ResetBrewListCache() {
+	brewListMu.Lock()
+	defer brewListMu.Unlock()
+	brewListCache = map[string]map[string]bool{}
 }
 
 // GetData implements IInstaller.

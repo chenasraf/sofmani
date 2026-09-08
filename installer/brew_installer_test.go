@@ -407,6 +407,72 @@ func TestBrewCheckIsInstalled(t *testing.T) {
 		assert.NoError(t, err)
 		assert.False(t, result)
 	})
+
+	seedBrewList := func(t *testing.T, all []string, casks []string) {
+		t.Helper()
+		ResetBrewListCache()
+		t.Cleanup(ResetBrewListCache)
+		brewListMu.Lock()
+		defer brewListMu.Unlock()
+		brewListCache[brewListAll] = lo.SliceToMap(all, func(n string) (string, bool) { return n, true })
+		brewListCache[brewListCasks] = lo.SliceToMap(casks, func(n string) (string, bool) { return n, true })
+	}
+
+	t.Run("finds an installed formula", func(t *testing.T) {
+		seedBrewList(t, []string{"git"}, nil)
+		installer := newTestBrewInstaller(&appconfig.InstallerData{
+			Name: lo.ToPtr("git"),
+			Type: appconfig.InstallerTypeBrew,
+		})
+		result, err := installer.CheckIsInstalled()
+
+		assert.NoError(t, err)
+		assert.True(t, result)
+	})
+
+	t.Run("finds an installed cask that is not declared as one", func(t *testing.T) {
+		seedBrewList(t, nil, []string{"volumehud"})
+		installer := newTestBrewInstaller(&appconfig.InstallerData{
+			Name: lo.ToPtr("volumehud"),
+			Type: appconfig.InstallerTypeBrew,
+			Opts: &map[string]any{"tap": "dannystewart/apps"},
+		})
+		result, err := installer.CheckIsInstalled()
+
+		assert.NoError(t, err)
+		assert.True(t, result)
+	})
+
+	t.Run("returns false when the package is not installed", func(t *testing.T) {
+		seedBrewList(t, []string{"git"}, []string{"firefox"})
+		installer := newTestBrewInstaller(&appconfig.InstallerData{
+			Name: lo.ToPtr("neovim"),
+			Type: appconfig.InstallerTypeBrew,
+		})
+		result, err := installer.CheckIsInstalled()
+
+		assert.NoError(t, err)
+		assert.False(t, result)
+	})
+}
+
+func TestParseBrewListOutput(t *testing.T) {
+	names := parseBrewListOutput([]byte("git 2.54.0\nneovim 0.11.0 0.10.4\n\nfirefox 145.0\n"))
+
+	assert.Equal(t, map[string]bool{"git": true, "neovim": true, "firefox": true}, names)
+}
+
+func TestBrewIsPackageInstalled(t *testing.T) {
+	ResetBrewListCache()
+	t.Cleanup(ResetBrewListCache)
+	brewListMu.Lock()
+	brewListCache[brewListCasks] = map[string]bool{"volumehud": true}
+	brewListMu.Unlock()
+
+	installed, err := brewIsPackageInstalled(brewListCasks, "dannystewart/apps/volumehud")
+
+	assert.NoError(t, err)
+	assert.True(t, installed)
 }
 
 func TestBrewCheckNeedsUpdate(t *testing.T) {

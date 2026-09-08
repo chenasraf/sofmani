@@ -53,7 +53,6 @@ func TestCheckIsInstalled_UsesBinName(t *testing.T) {
 		newInstaller  func(*appconfig.InstallerData) IInstaller
 		installerType appconfig.InstallerType
 	}{
-		{"brew", func(d *appconfig.InstallerData) IInstaller { return newTestBrewInstaller(d) }, appconfig.InstallerTypeBrew},
 		{"shell", func(d *appconfig.InstallerData) IInstaller { return newTestShellInstaller(d) }, appconfig.InstallerTypeShell},
 		{"npm", func(d *appconfig.InstallerData) IInstaller { return newTestNpmInstaller(d) }, appconfig.InstallerTypeNpm},
 		{"apt", func(d *appconfig.InstallerData) IInstaller { return newTestAptInstaller(d) }, appconfig.InstallerTypeApt},

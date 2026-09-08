@@ -709,6 +709,10 @@ Installs packages using Homebrew.
 brew command auto-update normally and suppresses it for subsequent ones (`once` mode). Configure via
 the top-level [`repo_update`](./configuration-reference.md#global-options) option.
 
+**Install check**: Packages are looked up in `brew list`, so casks that only ship an `.app` bundle
+are detected as well. The lookup uses `name` (without the tap prefix) — `bin_name` does not apply.
+Override with [`check_installed`](#fields) if you need different behavior.
+
 **Options**:
 
 - `opts.tap`: Name of the tap to install the package from. The tap is automatically added via
