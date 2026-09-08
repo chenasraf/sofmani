@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.32.3](https://github.com/chenasraf/sofmani/compare/v1.32.2...v1.32.3) (2026-09-08)
+
+
+### Bug Fixes
+
+* **brew:** trust tap unless HOMEBREW_NO_REQUIRE_TAP_TRUST is set ([2fe38cf](https://github.com/chenasraf/sofmani/commit/2fe38cf8210cc31d41512b0f667ad65f858f66b9))
+
 ## [1.32.2](https://github.com/chenasraf/sofmani/compare/v1.32.1...v1.32.2) (2026-09-08)
 
 
