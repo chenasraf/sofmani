@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.32.2](https://github.com/chenasraf/sofmani/compare/v1.32.1...v1.32.2) (2026-09-08)
+
+
+### Bug Fixes
+
+* **brew:** check installed packages via brew list instead of which ([4b017c7](https://github.com/chenasraf/sofmani/commit/4b017c781b7d1916341544c451f56479dfd6d454))
+
 ## [1.32.1](https://github.com/chenasraf/sofmani/compare/v1.32.0...v1.32.1) (2026-07-08)
 
 
