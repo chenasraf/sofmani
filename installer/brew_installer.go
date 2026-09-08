@@ -119,10 +119,10 @@ func disableBrewAsk() {
 	_ = os.Setenv("HOMEBREW_NO_ASK", "1")
 }
 
-// ensureTapped runs `brew tap <tap>` once per process for the installer's configured tap.
-// Homebrew requires taps to be added explicitly before installing from them.
-// When HOMEBREW_REQUIRE_TAP_TRUST is set, also runs `brew trust --tap <tap>` so the tap
-// can be loaded by subsequent install commands.
+// ensureTapped runs `brew tap <tap>` followed by `brew trust --tap <tap>`, once per process
+// for the installer's configured tap. Homebrew requires taps to be added explicitly before
+// installing from them, and refuses to load a formula or cask from a non-official tap that
+// has not been trusted, unless HOMEBREW_NO_REQUIRE_TAP_TRUST is set.
 func (i *BrewInstaller) ensureTapped() error {
 	opts := i.GetOpts()
 	if opts.Tap == nil {
@@ -131,25 +131,29 @@ func (i *BrewInstaller) ensureTapped() error {
 	tap := *opts.Tap
 	return RunRepoUpdateOnce("brew-tap:"+tap, func() error {
 		logger.Debug("Tapping brew tap %s", tap)
-		cmd := exec.Command("brew", "tap", tap)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		cmd.Stdin = os.Stdin
-		if err := cmd.Run(); err != nil {
+		if err := runBrewCmd("tap", tap); err != nil {
 			return fmt.Errorf("failed to tap %s: %w", tap, err)
 		}
-		if os.Getenv("HOMEBREW_REQUIRE_TAP_TRUST") != "" {
-			logger.Debug("Trusting brew tap %s", tap)
-			trustCmd := exec.Command("brew", "trust", "--tap", tap)
-			trustCmd.Stdout = os.Stdout
-			trustCmd.Stderr = os.Stderr
-			trustCmd.Stdin = os.Stdin
-			if err := trustCmd.Run(); err != nil {
-				return fmt.Errorf("failed to trust tap %s: %w", tap, err)
-			}
+		if os.Getenv("HOMEBREW_NO_REQUIRE_TAP_TRUST") != "" {
+			return nil
+		}
+		logger.Debug("Trusting brew tap %s", tap)
+		if err := runBrewCmd("trust", "--tap", tap); err != nil {
+			// Homebrew versions without `brew trust` don't require trust to begin with, so
+			// let the install itself report the problem if the tap really is untrusted.
+			logger.Warn("Failed to trust tap %s: %v", tap, err)
 		}
 		return nil
 	})
+}
+
+// runBrewCmd runs a brew command attached to the current process' stdio.
+func runBrewCmd(args ...string) error {
+	cmd := exec.Command("brew", args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+	return cmd.Run()
 }
 
 // handleBrewRepoUpdate manages brew's auto-update behavior according to the configured mode.

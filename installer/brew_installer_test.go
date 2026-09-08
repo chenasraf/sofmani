@@ -3,6 +3,8 @@ package installer
 import (
 	"bytes"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -520,6 +522,90 @@ func TestBrewEnsureTapped(t *testing.T) {
 		assert.NoError(t, installer.ensureTapped())
 		assert.False(t, IsRepoUpdated("brew-tap:"))
 	})
+
+	t.Run("taps and trusts the tap", func(t *testing.T) {
+		ResetRepoUpdateTracker()
+		log := stubBrewCommand(t)
+		data := &appconfig.InstallerData{
+			Name: lo.ToPtr("vim"),
+			Type: appconfig.InstallerTypeBrew,
+			Opts: &map[string]any{"tap": "some/tap"},
+		}
+		installer := newTestBrewInstaller(data)
+
+		assert.NoError(t, installer.ensureTapped())
+		assert.Equal(t, []string{"tap some/tap", "trust --tap some/tap"}, log())
+	})
+
+	t.Run("skips trust when brew does not require it", func(t *testing.T) {
+		ResetRepoUpdateTracker()
+		log := stubBrewCommand(t)
+		t.Setenv("HOMEBREW_NO_REQUIRE_TAP_TRUST", "1")
+		data := &appconfig.InstallerData{
+			Name: lo.ToPtr("vim"),
+			Type: appconfig.InstallerTypeBrew,
+			Opts: &map[string]any{"tap": "some/tap"},
+		}
+		installer := newTestBrewInstaller(data)
+
+		assert.NoError(t, installer.ensureTapped())
+		assert.Equal(t, []string{"tap some/tap"}, log())
+	})
+
+	t.Run("keeps going when trust fails", func(t *testing.T) {
+		ResetRepoUpdateTracker()
+		log := stubBrewCommand(t, "trust")
+		data := &appconfig.InstallerData{
+			Name: lo.ToPtr("vim"),
+			Type: appconfig.InstallerTypeBrew,
+			Opts: &map[string]any{"tap": "some/tap"},
+		}
+		installer := newTestBrewInstaller(data)
+
+		assert.NoError(t, installer.ensureTapped())
+		assert.Equal(t, []string{"tap some/tap", "trust --tap some/tap"}, log())
+	})
+
+	t.Run("fails when the tap cannot be added", func(t *testing.T) {
+		ResetRepoUpdateTracker()
+		stubBrewCommand(t, "tap")
+		data := &appconfig.InstallerData{
+			Name: lo.ToPtr("vim"),
+			Type: appconfig.InstallerTypeBrew,
+			Opts: &map[string]any{"tap": "some/tap"},
+		}
+		installer := newTestBrewInstaller(data)
+
+		assert.Error(t, installer.ensureTapped())
+	})
+}
+
+// stubBrewCommand puts a fake `brew` at the front of PATH that appends every invocation to a
+// log file, and exits non-zero for any of the given subcommands. The returned function reads
+// back the recorded invocations.
+func stubBrewCommand(t *testing.T, failSubcommands ...string) func() []string {
+	t.Helper()
+	dir := t.TempDir()
+	logPath := filepath.Join(dir, "calls.log")
+	script := fmt.Sprintf(`#!/bin/sh
+echo "$@" >> %q
+case "$1" in
+  %s) exit 1 ;;
+esac
+exit 0
+`, logPath, strings.Join(append([]string{"__none__"}, failSubcommands...), "|"))
+	if err := os.WriteFile(filepath.Join(dir, "brew"), []byte(script), 0o755); err != nil {
+		t.Fatalf("failed to write brew stub: %v", err)
+	}
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	return func() []string {
+		contents, err := os.ReadFile(logPath)
+		if err != nil {
+			return nil
+		}
+		return strings.Split(strings.TrimSpace(string(contents)), "\n")
+	}
 }
 
 func TestBrewGetOptsWrongTypes(t *testing.T) {
