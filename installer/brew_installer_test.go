@@ -525,6 +525,7 @@ func TestBrewEnsureTapped(t *testing.T) {
 
 	t.Run("taps and trusts the tap", func(t *testing.T) {
 		ResetRepoUpdateTracker()
+		resetBrewTrustCache()
 		log := stubBrewCommand(t)
 		data := &appconfig.InstallerData{
 			Name: lo.ToPtr("vim"),
@@ -534,11 +535,45 @@ func TestBrewEnsureTapped(t *testing.T) {
 		installer := newTestBrewInstaller(data)
 
 		assert.NoError(t, installer.ensureTapped())
-		assert.Equal(t, []string{"tap some/tap", "trust --tap some/tap"}, log())
+		assert.Equal(t, []string{"tap some/tap", "trust --json v1", "trust --tap some/tap"}, log())
+	})
+
+	t.Run("skips trust when the tap is already trusted", func(t *testing.T) {
+		ResetRepoUpdateTracker()
+		resetBrewTrustCache()
+		log := stubBrewCommand(t)
+		t.Setenv("SOFMANI_TEST_TRUSTED_TAPS", "other/tap some/tap")
+		data := &appconfig.InstallerData{
+			Name: lo.ToPtr("vim"),
+			Type: appconfig.InstallerTypeBrew,
+			Opts: &map[string]any{"tap": "some/tap"},
+		}
+		installer := newTestBrewInstaller(data)
+
+		assert.NoError(t, installer.ensureTapped())
+		assert.Equal(t, []string{"tap some/tap", "trust --json v1"}, log())
+	})
+
+	t.Run("reads the trust list once per process", func(t *testing.T) {
+		ResetRepoUpdateTracker()
+		resetBrewTrustCache()
+		log := stubBrewCommand(t)
+		t.Setenv("SOFMANI_TEST_TRUSTED_TAPS", "some/tap other/tap")
+		for _, tap := range []string{"some/tap", "other/tap"} {
+			data := &appconfig.InstallerData{
+				Name: lo.ToPtr("vim"),
+				Type: appconfig.InstallerTypeBrew,
+				Opts: &map[string]any{"tap": tap},
+			}
+			assert.NoError(t, newTestBrewInstaller(data).ensureTapped())
+		}
+
+		assert.Equal(t, []string{"tap some/tap", "trust --json v1", "tap other/tap"}, log())
 	})
 
 	t.Run("skips trust when brew does not require it", func(t *testing.T) {
 		ResetRepoUpdateTracker()
+		resetBrewTrustCache()
 		log := stubBrewCommand(t)
 		t.Setenv("HOMEBREW_NO_REQUIRE_TAP_TRUST", "1")
 		data := &appconfig.InstallerData{
@@ -554,6 +589,7 @@ func TestBrewEnsureTapped(t *testing.T) {
 
 	t.Run("keeps going when trust fails", func(t *testing.T) {
 		ResetRepoUpdateTracker()
+		resetBrewTrustCache()
 		log := stubBrewCommand(t, "trust")
 		data := &appconfig.InstallerData{
 			Name: lo.ToPtr("vim"),
@@ -563,11 +599,12 @@ func TestBrewEnsureTapped(t *testing.T) {
 		installer := newTestBrewInstaller(data)
 
 		assert.NoError(t, installer.ensureTapped())
-		assert.Equal(t, []string{"tap some/tap", "trust --tap some/tap"}, log())
+		assert.Equal(t, []string{"tap some/tap", "trust --json v1", "trust --tap some/tap"}, log())
 	})
 
 	t.Run("fails when the tap cannot be added", func(t *testing.T) {
 		ResetRepoUpdateTracker()
+		resetBrewTrustCache()
 		stubBrewCommand(t, "tap")
 		data := &appconfig.InstallerData{
 			Name: lo.ToPtr("vim"),
@@ -581,8 +618,9 @@ func TestBrewEnsureTapped(t *testing.T) {
 }
 
 // stubBrewCommand puts a fake `brew` at the front of PATH that appends every invocation to a
-// log file, and exits non-zero for any of the given subcommands. The returned function reads
-// back the recorded invocations.
+// log file, and exits non-zero for any of the given subcommands. `brew trust --json v1` answers
+// with the taps listed in $SOFMANI_TEST_TRUSTED_TAPS. The returned function reads back the
+// recorded invocations.
 func stubBrewCommand(t *testing.T, failSubcommands ...string) func() []string {
 	t.Helper()
 	dir := t.TempDir()
@@ -592,6 +630,13 @@ echo "$@" >> %q
 case "$1" in
   %s) exit 1 ;;
 esac
+if [ "$1" = "trust" ] && [ "$2" = "--json" ]; then
+  taps=""
+  for tap in $SOFMANI_TEST_TRUSTED_TAPS; do
+    taps="$taps${taps:+,}\"$tap\""
+  done
+  echo "{\"taps\":[$taps]}"
+fi
 exit 0
 `, logPath, strings.Join(append([]string{"__none__"}, failSubcommands...), "|"))
 	if err := os.WriteFile(filepath.Join(dir, "brew"), []byte(script), 0o755); err != nil {

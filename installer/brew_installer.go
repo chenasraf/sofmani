@@ -137,6 +137,10 @@ func (i *BrewInstaller) ensureTapped() error {
 		if os.Getenv("HOMEBREW_NO_REQUIRE_TAP_TRUST") != "" {
 			return nil
 		}
+		if brewTapTrusted(tap) {
+			logger.Debug("Brew tap %s is already trusted", tap)
+			return nil
+		}
 		logger.Debug("Trusting brew tap %s", tap)
 		if err := runBrewCmd("trust", "--tap", tap); err != nil {
 			// Homebrew versions without `brew trust` don't require trust to begin with, so
@@ -145,6 +149,46 @@ func (i *BrewInstaller) ensureTapped() error {
 		}
 		return nil
 	})
+}
+
+var (
+	brewTrustMu     sync.Mutex
+	brewTrustedTaps map[string]bool
+)
+
+// brewTapTrusted reports whether Homebrew already trusts the tap. `brew trust --tap` prints
+// "Already trusted tap: <tap>" on every invocation, so the trust list is read once per process
+// and consulted instead. A brew that can't produce the list reports nothing as trusted, which
+// falls back to trusting the tap unconditionally.
+func brewTapTrusted(tap string) bool {
+	brewTrustMu.Lock()
+	defer brewTrustMu.Unlock()
+	if brewTrustedTaps == nil {
+		brewTrustedTaps = map[string]bool{}
+		out, err := exec.Command("brew", "trust", "--json", "v1").Output()
+		if err != nil {
+			logger.Debug("Failed to read brew trust list: %v", err)
+			return false
+		}
+		var trusted struct {
+			Taps []string `json:"taps"`
+		}
+		if err := json.Unmarshal(out, &trusted); err != nil {
+			logger.Debug("Failed to parse brew trust list: %v", err)
+			return false
+		}
+		for _, t := range trusted.Taps {
+			brewTrustedTaps[t] = true
+		}
+	}
+	return brewTrustedTaps[tap]
+}
+
+// resetBrewTrustCache clears the cached trust list. Intended for testing.
+func resetBrewTrustCache() {
+	brewTrustMu.Lock()
+	defer brewTrustMu.Unlock()
+	brewTrustedTaps = nil
 }
 
 // runBrewCmd runs a brew command attached to the current process' stdio.
