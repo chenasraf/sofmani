@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.32.4](https://github.com/chenasraf/sofmani/compare/v1.32.3...v1.32.4) (2026-09-16)
+
+
+### Bug Fixes
+
+* **brew:** skip trust for taps already in the trust list ([8b3408d](https://github.com/chenasraf/sofmani/commit/8b3408d12e954c0de115139fe6f2ddcf231b3345))
+
 ## [1.32.3](https://github.com/chenasraf/sofmani/compare/v1.32.2...v1.32.3) (2026-09-08)
 
 
