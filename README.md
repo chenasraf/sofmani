@@ -37,6 +37,7 @@ reproducible.
 - Modular and extendable **installer types**: shell scripts, rsync, Homebrew taps, and more.
 - Configurable **platform-specific behaviors**.
 - Automatic software updates using custom logic.
+- **Version pinning** to hold software at an exact version instead of the newest release.
 - Group software installations into logical "steps" with sophisticated orchestration.
 - **Category headers** to visually organize your installers list.
 - **Template variables** for dynamic values (architecture, OS, device ID) in commands and filenames.
@@ -139,19 +140,19 @@ See [the documentation](/docs) for more information and examples.
 
 The following flags are supported to customize behavior:
 
-| Flag                 | Description                                           |
-| -------------------- | ----------------------------------------------------- |
-| `-d`, `--debug`      | Enable debug mode.                                    |
-| `-D`, `--no-debug`   | Disable debug mode (default).                         |
-| `-u`, `--update`     | Enable update checking.                               |
-| `-U`, `--no-update`  | Disable update checking (default).                    |
-| `-s`, `--summary`    | Enable installation summary (default).                |
-| `-S`, `--no-summary` | Disable installation summary.                         |
-| `-f`, `--filter`     | Filter by installer name (can be used multiple times) |
-| `--ignore-frequency` | Ignore frequency limits and run all installers.       |
+| Flag                 | Description                                             |
+| -------------------- | ------------------------------------------------------- |
+| `-d`, `--debug`      | Enable debug mode.                                      |
+| `-D`, `--no-debug`   | Disable debug mode (default).                           |
+| `-u`, `--update`     | Enable update checking.                                 |
+| `-U`, `--no-update`  | Disable update checking (default).                      |
+| `-s`, `--summary`    | Enable installation summary (default).                  |
+| `-S`, `--no-summary` | Disable installation summary.                           |
+| `-f`, `--filter`     | Filter by installer name (can be used multiple times)   |
+| `--ignore-frequency` | Ignore frequency limits and run all installers.         |
 | `--start-from`       | Skip all installers before the one with the given name. |
-| `-h`, `--help`       | Display help information and exit.                    |
-| `-v`, `--version`    | Display version information and exit.                 |
+| `-h`, `--help`       | Display help information and exit.                      |
+| `-v`, `--version`    | Display version information and exit.                   |
 
 If a configuration file is not explicitly provided, `sofmani` attempts to locate a `sofmani.yaml`,
 `sofmani.yml` or `sofmani.json` in the following directories, in this order (first match is used):
@@ -233,6 +234,9 @@ See [Installer Configuration](./docs/installer-configuration.md#categories) for 
 
 For a full list with all the supported options, see [the docs](./docs/installer-configuration.md).
 
+Most package-manager types take an `opts.version` to hold the software at an exact version — see
+[Version Pinning](./docs/installer-configuration.md#version-pinning).
+
 - **`shell`**
   - Executes arbitrary shell commands.
 
@@ -246,8 +250,8 @@ For a full list with all the supported options, see [the docs](./docs/installer-
     repository path, e.g. `chenasraf/sofmani`, GitHub is assumed.
 
 - **`github-release`**
-  - Downloads a GitHub release asset. Optionally untar, unzip, gunzip, or run a custom
-    shell hook to extract the downloaded file.
+  - Downloads a GitHub release asset. Optionally untar, unzip, gunzip, or run a custom shell hook to
+    extract the downloaded file.
 
 - **`manifest`**
   - Installs an entire manifest from a local or remote file.

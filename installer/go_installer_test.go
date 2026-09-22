@@ -6,6 +6,7 @@ import (
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
 	"github.com/samber/lo"
+	"github.com/stretchr/testify/assert"
 )
 
 func newTestGoInstaller(data *appconfig.InstallerData) *GoInstaller {
@@ -116,6 +117,30 @@ func TestGoGetPackageRef(t *testing.T) {
 	if ref := newTestGoInstaller(inlineData).GetPackageRef(); ref != "golang.org/x/tools/gopls@v0.15.0" {
 		t.Errorf("expected inline @version to take precedence, got %q", ref)
 	}
+}
+
+func TestGoVersionPin(t *testing.T) {
+	logger.InitLogger(false)
+
+	// `latest` follows the module proxy, so it is not a pin.
+	unpinned := newTestGoInstaller(&appconfig.InstallerData{
+		Name: lo.ToPtr("golang.org/x/tools/gopls"),
+		Type: appconfig.InstallerTypeGo,
+	})
+	assert.Equal(t, "", unpinned.GetPinnedVersion())
+
+	pinned := newTestGoInstaller(&appconfig.InstallerData{
+		Name: lo.ToPtr("golang.org/x/tools/gopls"),
+		Type: appconfig.InstallerTypeGo,
+		Opts: &map[string]any{"version": "v0.16.0"},
+	})
+	assert.Equal(t, "v0.16.0", pinned.GetPinnedVersion())
+
+	inline := newTestGoInstaller(&appconfig.InstallerData{
+		Name: lo.ToPtr("golang.org/x/tools/gopls@v0.16.0"),
+		Type: appconfig.InstallerTypeGo,
+	})
+	assert.Equal(t, "v0.16.0", inline.GetPinnedVersion())
 }
 
 func TestGoGetBinName(t *testing.T) {

@@ -20,6 +20,9 @@ type AptInstaller struct {
 
 // AptOpts represents options for the AptInstaller.
 type AptOpts struct {
+	// Version pins the package to an exact version, appended as `=version`.
+	// Ignored when Name already carries a `=version` suffix.
+	Version *string
 	// Flags is a string of additional flags to pass to the apt/apk command.
 	Flags *string
 	// InstallFlags is a string of additional flags to pass only during install.
@@ -60,17 +63,12 @@ func (i *AptInstaller) runRepoUpdate() error {
 
 // Install implements IInstaller.
 func (i *AptInstaller) Install() error {
-	name := *i.Info.Name
 	opts := i.GetOpts()
 	err := i.runRepoUpdate()
 	if err != nil {
 		return err
 	}
-	install := "install"
-	if i.PackageManager == PackageManagerApk {
-		install = "add"
-	}
-	args := []string{install}
+	args := []string{i.installVerb()}
 	if i.IsVerbose() {
 		if i.PackageManager == PackageManagerApk {
 			args = append(args, "--verbose")
@@ -84,8 +82,16 @@ func (i *AptInstaller) Install() error {
 	} else if opts.Flags != nil {
 		args = append(args, strings.Fields(*opts.Flags)...)
 	}
-	args = append(args, name)
+	args = append(args, i.GetPackageSpec())
 	return i.RunCmdPassThrough(string(i.PackageManager), args...)
+}
+
+// installVerb returns the package manager's install subcommand.
+func (i *AptInstaller) installVerb() string {
+	if i.PackageManager == PackageManagerApk {
+		return "add"
+	}
+	return "install"
 }
 
 // getConfirmArg returns the appropriate confirmation argument for the package manager.
@@ -101,7 +107,13 @@ func (i *AptInstaller) getConfirmArg() string {
 // Update implements IInstaller.
 func (i *AptInstaller) Update() error {
 	opts := i.GetOpts()
-	args := []string{"upgrade"}
+	// `upgrade` always moves to the newest candidate, so a pinned package is reinstalled at
+	// its pinned version instead.
+	verb := "upgrade"
+	if i.GetPinnedVersion() != "" {
+		verb = i.installVerb()
+	}
+	args := []string{verb}
 	if i.IsVerbose() {
 		if i.PackageManager == PackageManagerApk {
 			args = append(args, "--verbose")
@@ -115,7 +127,7 @@ func (i *AptInstaller) Update() error {
 	} else if opts.Flags != nil {
 		args = append(args, strings.Fields(*opts.Flags)...)
 	}
-	args = append(args, *i.Info.Name)
+	args = append(args, i.GetPackageSpec())
 	return i.RunCmdPassThrough(string(i.PackageManager), args...)
 }
 
@@ -123,6 +135,9 @@ func (i *AptInstaller) Update() error {
 func (i *AptInstaller) CheckNeedsUpdate() (bool, error) {
 	if i.HasCustomUpdateCheck() {
 		return i.RunCustomUpdateCheck()
+	}
+	if pinned := i.GetPinnedVersion(); pinned != "" {
+		return PinnedVersionNeedsUpdate(*i.Info.Name, pinned), nil
 	}
 	err := i.runRepoUpdate()
 	if err != nil {
@@ -153,6 +168,9 @@ func (i *AptInstaller) GetOpts() *AptOpts {
 	opts := &AptOpts{}
 	info := i.Info
 	if info.Opts != nil {
+		if version, ok := (*info.Opts)["version"].(string); ok {
+			opts.Version = &version
+		}
 		if flags, ok := (*info.Opts)["flags"].(string); ok {
 			opts.Flags = &flags
 		}
@@ -166,14 +184,41 @@ func (i *AptInstaller) GetOpts() *AptOpts {
 	return opts
 }
 
+// GetPinnedVersion implements IVersionPinned. The version may come from opts.version or from
+// a `=version` suffix on the package name.
+func (i *AptInstaller) GetPinnedVersion() string {
+	if _, version, found := strings.Cut(*i.Info.Name, "="); found {
+		return version
+	}
+	if version := i.GetOpts().Version; version != nil {
+		return *version
+	}
+	return ""
+}
+
+// GetPackageSpec returns the package argument passed to the package manager, as
+// `<name>=<version>` when a version is pinned.
+func (i *AptInstaller) GetPackageSpec() string {
+	name := *i.Info.Name
+	if strings.Contains(name, "=") {
+		return name
+	}
+	if version := i.GetPinnedVersion(); version != "" {
+		return name + "=" + version
+	}
+	return name
+}
+
 // GetBinName returns the binary name for the installer.
-// It uses the BinName from the installer data if provided, otherwise it uses the installer name.
+// It uses the BinName from the installer data if provided, otherwise it uses the installer
+// name with any `=version` suffix stripped.
 func (i *AptInstaller) GetBinName() string {
 	info := i.GetData()
 	if info.BinName != nil && len(*info.BinName) > 0 {
 		return *info.BinName
 	}
-	return *info.Name
+	name, _, _ := strings.Cut(*info.Name, "=")
+	return name
 }
 
 // NewAptInstaller creates a new AptInstaller.

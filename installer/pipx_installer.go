@@ -18,6 +18,9 @@ type PipxInstaller struct {
 
 // PipxOpts represents options for the PipxInstaller.
 type PipxOpts struct {
+	// Version pins the package to an exact version, appended as `==version`.
+	// Ignored when Name already carries a version specifier.
+	Version *string
 	// Flags is a string of additional flags to pass to the pipx command.
 	Flags *string
 	// InstallFlags is a string of additional flags to pass only during install.
@@ -34,7 +37,6 @@ func (i *PipxInstaller) Validate() []ValidationError {
 
 // Install implements IInstaller.
 func (i *PipxInstaller) Install() error {
-	name := *i.Info.Name
 	opts := i.GetOpts()
 	args := []string{"install"}
 	if i.IsVerbose() {
@@ -45,14 +47,20 @@ func (i *PipxInstaller) Install() error {
 	} else if opts.Flags != nil {
 		args = append(args, strings.Fields(*opts.Flags)...)
 	}
-	args = append(args, name)
+	args = append(args, i.GetPackageSpec())
 	return i.RunCmdPassThrough("pipx", args...)
 }
 
 // Update implements IInstaller.
 func (i *PipxInstaller) Update() error {
 	opts := i.GetOpts()
+	pinned := i.GetPinnedVersion()
+	// `pipx upgrade` always moves to the newest release, so a pinned package is reinstalled
+	// at its pinned version instead.
 	args := []string{"upgrade"}
+	if pinned != "" {
+		args = []string{"install", "--force"}
+	}
 	if i.IsVerbose() {
 		args = append(args, "--verbose")
 	}
@@ -61,7 +69,7 @@ func (i *PipxInstaller) Update() error {
 	} else if opts.Flags != nil {
 		args = append(args, strings.Fields(*opts.Flags)...)
 	}
-	args = append(args, *i.Info.Name)
+	args = append(args, i.GetPackageSpec())
 	return i.RunCmdPassThrough("pipx", args...)
 }
 
@@ -69,6 +77,9 @@ func (i *PipxInstaller) Update() error {
 func (i *PipxInstaller) CheckNeedsUpdate() (bool, error) {
 	if i.HasCustomUpdateCheck() {
 		return i.RunCustomUpdateCheck()
+	}
+	if pinned := i.GetPinnedVersion(); pinned != "" {
+		return PinnedVersionNeedsUpdate(*i.Info.Name, pinned), nil
 	}
 	success, err := i.RunCmdGetSuccess("pipx", "upgrade", "--pip-args=--dry-run", *i.Info.Name)
 	if err != nil {
@@ -95,6 +106,9 @@ func (i *PipxInstaller) GetOpts() *PipxOpts {
 	opts := &PipxOpts{}
 	info := i.Info
 	if info.Opts != nil {
+		if version, ok := (*info.Opts)["version"].(string); ok {
+			opts.Version = &version
+		}
 		if flags, ok := (*info.Opts)["flags"].(string); ok {
 			opts.Flags = &flags
 		}
@@ -108,14 +122,52 @@ func (i *PipxInstaller) GetOpts() *PipxOpts {
 	return opts
 }
 
+// GetPinnedVersion implements IVersionPinned.
+func (i *PipxInstaller) GetPinnedVersion() string {
+	if version := pipVersionSpec(*i.Info.Name); version != "" {
+		return version
+	}
+	if version := i.GetOpts().Version; version != nil {
+		return *version
+	}
+	return ""
+}
+
+// GetPackageSpec returns the package argument passed to pipx, as `<name>==<version>` when a
+// version is pinned.
+func (i *PipxInstaller) GetPackageSpec() string {
+	name := *i.Info.Name
+	if pipVersionSpec(name) != "" {
+		return name
+	}
+	if version := i.GetPinnedVersion(); version != "" {
+		return name + "==" + version
+	}
+	return name
+}
+
+// pipVersionSpec returns the version requirement of a pip package spec (`pkg==1.2.3`), or an
+// empty string when the name carries none.
+func pipVersionSpec(name string) string {
+	if idx := strings.IndexAny(name, "=<>~!"); idx >= 0 {
+		return strings.TrimLeft(name[idx:], "=<>~!")
+	}
+	return ""
+}
+
 // GetBinName returns the binary name for the installer.
-// It uses the BinName from the installer data if provided, otherwise it uses the installer name.
+// It uses the BinName from the installer data if provided, otherwise it uses the installer
+// name with any version requirement stripped.
 func (i *PipxInstaller) GetBinName() string {
 	info := i.GetData()
 	if info.BinName != nil && len(*info.BinName) > 0 {
 		return *info.BinName
 	}
-	return *info.Name
+	name := *info.Name
+	if idx := strings.IndexAny(name, "=<>~!"); idx >= 0 {
+		name = name[:idx]
+	}
+	return name
 }
 
 // NewPipxInstaller creates a new PipxInstaller.

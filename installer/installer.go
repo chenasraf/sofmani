@@ -357,6 +357,19 @@ func RunInstaller(config *appconfig.AppConfig, installer IInstaller) (*summary.I
 		result.Action = summary.ActionInstalled
 	}
 
+	// Record the version a pinned installer now holds, so the next run detects a changed pin.
+	if pinned, ok := installer.(IVersionPinned); ok {
+		version := pinned.GetPinnedVersion()
+		switch {
+		case version == "":
+			ClearInstalledVersion(name)
+		case result.Action == summary.ActionInstalled || result.Action == summary.ActionUpgraded:
+			if err := RecordInstalledVersion(name, version); err != nil {
+				logger.Warn("Failed to record installed version for %s: %v", logger.H(name), err)
+			}
+		}
+	}
+
 	// Write frequency timestamp on any successful completion (install, update, or up-to-date check).
 	// This ensures the next check is deferred until the frequency period has elapsed, even if no
 	// update was available this time.

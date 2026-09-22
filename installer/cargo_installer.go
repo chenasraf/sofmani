@@ -18,6 +18,9 @@ type CargoInstaller struct {
 
 // CargoOpts represents options for the CargoInstaller.
 type CargoOpts struct {
+	// Version pins the crate to an exact version, passed as `--version`.
+	// Accepts any cargo version requirement (e.g. `1.2.3`, `~1.2`).
+	Version *string
 	// Flags is a string of additional flags to pass to the cargo command.
 	Flags *string
 	// InstallFlags is a string of additional flags to pass only during install.
@@ -40,6 +43,7 @@ func (i *CargoInstaller) Install() error {
 	if i.IsVerbose() {
 		args = append(args, "--verbose")
 	}
+	args = append(args, i.GetVersionArgs()...)
 	if opts.InstallFlags != nil {
 		args = append(args, strings.Fields(*opts.InstallFlags)...)
 	} else if opts.Flags != nil {
@@ -57,6 +61,7 @@ func (i *CargoInstaller) Update() error {
 	if i.IsVerbose() {
 		args = append(args, "--verbose")
 	}
+	args = append(args, i.GetVersionArgs()...)
 	if opts.UpdateFlags != nil {
 		args = append(args, strings.Fields(*opts.UpdateFlags)...)
 	} else if opts.Flags != nil {
@@ -70,6 +75,9 @@ func (i *CargoInstaller) Update() error {
 func (i *CargoInstaller) CheckNeedsUpdate() (bool, error) {
 	if i.HasCustomUpdateCheck() {
 		return i.RunCustomUpdateCheck()
+	}
+	if pinned := i.GetPinnedVersion(); pinned != "" {
+		return PinnedVersionNeedsUpdate(*i.Info.Name, pinned), nil
 	}
 	// cargo install will skip if already up-to-date, so always attempt update
 	return true, nil
@@ -93,6 +101,9 @@ func (i *CargoInstaller) GetOpts() *CargoOpts {
 	opts := &CargoOpts{}
 	info := i.Info
 	if info.Opts != nil {
+		if version, ok := (*info.Opts)["version"].(string); ok {
+			opts.Version = &version
+		}
 		if flags, ok := (*info.Opts)["flags"].(string); ok {
 			opts.Flags = &flags
 		}
@@ -104,6 +115,23 @@ func (i *CargoInstaller) GetOpts() *CargoOpts {
 		}
 	}
 	return opts
+}
+
+// GetPinnedVersion implements IVersionPinned.
+func (i *CargoInstaller) GetPinnedVersion() string {
+	if version := i.GetOpts().Version; version != nil {
+		return *version
+	}
+	return ""
+}
+
+// GetVersionArgs returns the `--version` arguments for the pinned version, or nil when the
+// crate is not pinned.
+func (i *CargoInstaller) GetVersionArgs() []string {
+	if version := i.GetPinnedVersion(); version != "" {
+		return []string{"--version", version}
+	}
+	return nil
 }
 
 // GetBinName returns the binary name for the installer.

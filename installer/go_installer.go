@@ -73,6 +73,9 @@ func (i *GoInstaller) CheckNeedsUpdate() (bool, error) {
 	if i.HasCustomUpdateCheck() {
 		return i.RunCustomUpdateCheck()
 	}
+	if pinned := i.GetPinnedVersion(); pinned != "" {
+		return PinnedVersionNeedsUpdate(*i.Info.Name, pinned), nil
+	}
 	// `go install pkg@latest` re-fetches and rebuilds only if newer; always attempt.
 	return true, nil
 }
@@ -124,6 +127,16 @@ func (i *GoInstaller) GetPackageRef() string {
 		version = *opts.Version
 	}
 	return name + "@" + version
+}
+
+// GetPinnedVersion implements IVersionPinned. A module tracking `latest` is not pinned —
+// it follows whatever the module proxy serves.
+func (i *GoInstaller) GetPinnedVersion() string {
+	_, version, _ := strings.Cut(i.GetPackageRef(), "@")
+	if version == "latest" {
+		return ""
+	}
+	return version
 }
 
 // GetBinName returns the binary name for the installer.

@@ -7,6 +7,7 @@ import (
 
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
+	"github.com/chenasraf/sofmani/summary"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 )
@@ -41,6 +42,40 @@ func TestRunInstaller(t *testing.T) {
 	result, err := RunInstaller(config, mockInstaller)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
+}
+
+// pinnedMockInstaller is a MockInstaller pinned to a version.
+type pinnedMockInstaller struct {
+	*MockInstaller
+	version string
+}
+
+// GetPinnedVersion implements IVersionPinned.
+func (m *pinnedMockInstaller) GetPinnedVersion() string {
+	return m.version
+}
+
+func TestRunInstallerRecordsPinnedVersion(t *testing.T) {
+	logger.InitLogger(false)
+	config := &appconfig.AppConfig{}
+	name := "test-pin-run-installer"
+	mockInstaller := &pinnedMockInstaller{
+		MockInstaller: &MockInstaller{
+			data:        &appconfig.InstallerData{Name: lo.ToPtr(name), Type: appconfig.InstallerTypeNpm},
+			isInstalled: false,
+		},
+		version: "1.2.3",
+	}
+	t.Cleanup(func() {
+		if file, err := pinnedVersionCacheFile(name); err == nil {
+			_ = os.Remove(file)
+		}
+	})
+
+	result, err := RunInstaller(config, mockInstaller)
+	assert.NoError(t, err)
+	assert.Equal(t, summary.ActionInstalled, result.Action)
+	assert.Equal(t, "1.2.3", ReadInstalledVersion(name))
 }
 
 func TestCheckIsInstalled_UsesBinName(t *testing.T) {

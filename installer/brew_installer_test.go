@@ -273,6 +273,57 @@ func TestBrewGetFullName(t *testing.T) {
 	})
 }
 
+func TestBrewVersionPin(t *testing.T) {
+	logger.InitLogger(false)
+
+	t.Run("returns name without version", func(t *testing.T) {
+		data := &appconfig.InstallerData{
+			Name: lo.ToPtr("node"),
+			Type: appconfig.InstallerTypeBrew,
+		}
+		installer := newTestBrewInstaller(data)
+		assert.Equal(t, "node", installer.GetPackageName())
+	})
+
+	t.Run("selects the versioned formula", func(t *testing.T) {
+		data := &appconfig.InstallerData{
+			Name: lo.ToPtr("node"),
+			Type: appconfig.InstallerTypeBrew,
+			Opts: &map[string]any{
+				"version": "20",
+			},
+		}
+		installer := newTestBrewInstaller(data)
+		assert.Equal(t, "node@20", installer.GetPackageName())
+		assert.Equal(t, "node@20", installer.GetFullName())
+	})
+
+	t.Run("keeps a version written onto the name", func(t *testing.T) {
+		data := &appconfig.InstallerData{
+			Name: lo.ToPtr("node@20"),
+			Type: appconfig.InstallerTypeBrew,
+			Opts: &map[string]any{
+				"version": "22",
+			},
+		}
+		installer := newTestBrewInstaller(data)
+		assert.Equal(t, "node@20", installer.GetPackageName())
+	})
+
+	t.Run("prefixes the tap onto the versioned formula", func(t *testing.T) {
+		data := &appconfig.InstallerData{
+			Name: lo.ToPtr("node"),
+			Type: appconfig.InstallerTypeBrew,
+			Opts: &map[string]any{
+				"tap":     "chenasraf/tap",
+				"version": "20",
+			},
+		}
+		installer := newTestBrewInstaller(data)
+		assert.Equal(t, "chenasraf/tap/node@20", installer.GetFullName())
+	})
+}
+
 func TestBrewIsCask(t *testing.T) {
 	logger.InitLogger(false)
 

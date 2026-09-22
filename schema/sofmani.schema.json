@@ -302,6 +302,10 @@
                 "additionalProperties": false,
                 "properties": {
                   "repository": { "type": "string", "description": "user/repository-name" },
+                  "version": {
+                    "type": "string",
+                    "description": "Release tag to install, exactly as named on GitHub (e.g. 'v1.2.3'). Defaults to the latest release."
+                  },
                   "destination": { "type": "string" },
                   "strategy": {
                     "type": "string",
@@ -403,6 +407,10 @@
                 "type": "object",
                 "additionalProperties": false,
                 "properties": {
+                  "version": {
+                    "type": "string",
+                    "description": "Versioned formula to select, appended to the name as '@version' (e.g. '20' for 'node@20'). Only versions Homebrew publishes as their own formula are available."
+                  },
                   "tap": { "type": "string" },
                   "cask": { "type": "boolean" },
                   "flags": { "type": "string" },
@@ -426,6 +434,10 @@
                 "type": "object",
                 "additionalProperties": false,
                 "properties": {
+                  "version": {
+                    "type": "string",
+                    "description": "Exact version to install. The package stays at this version until the pin changes."
+                  },
                   "flags": { "type": "string" },
                   "install_flags": { "type": "string" },
                   "update_flags": { "type": "string" }
@@ -462,6 +474,10 @@
                 "type": "object",
                 "additionalProperties": false,
                 "properties": {
+                  "version": {
+                    "type": "string",
+                    "description": "Image tag to pin to, appended to the image name as ':version'. Ignored when the name already carries a tag or digest."
+                  },
                   "flags": { "type": "string" },
                   "platform": {
                     "type": "object",

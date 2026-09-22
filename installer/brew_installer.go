@@ -27,6 +27,10 @@ type BrewInstaller struct {
 
 // BrewOpts represents options for the BrewInstaller.
 type BrewOpts struct {
+	// Version selects a versioned formula, appended as `@version` (e.g. `node@20`).
+	// Homebrew only carries the versions that are published as their own formula.
+	// Ignored when Name already carries a `@version` suffix.
+	Version *string
 	// Tap is the Homebrew tap to use for the package.
 	Tap *string
 	// Cask installs the formula as a cask instead of a regular package.
@@ -104,9 +108,22 @@ func (i *BrewInstaller) Update() error {
 	return err
 }
 
+// GetPackageName returns the formula name, including the `@version` suffix when opts.version
+// selects a versioned formula.
+func (i *BrewInstaller) GetPackageName() string {
+	name := *i.Info.Name
+	if strings.Contains(name, "@") {
+		return name
+	}
+	if version := i.GetOpts().Version; version != nil && *version != "" {
+		return name + "@" + *version
+	}
+	return name
+}
+
 // GetFullName returns the full name of the package, including the tap if specified.
 func (i *BrewInstaller) GetFullName() string {
-	name := *i.Info.Name
+	name := i.GetPackageName()
 	if i.GetOpts().Tap != nil {
 		name = *i.GetOpts().Tap + "/" + name
 	}
@@ -329,7 +346,7 @@ func (i *BrewInstaller) CheckIsInstalled() (bool, error) {
 	// Ask Homebrew rather than looking the binary up on PATH: casks often ship only an
 	// .app bundle, and formulae may install a binary under a different name.
 	for _, scope := range []string{brewListAll, brewListCasks} {
-		installed, err := brewIsPackageInstalled(scope, *i.GetData().Name)
+		installed, err := brewIsPackageInstalled(scope, i.GetPackageName())
 		if err != nil {
 			return false, err
 		}
@@ -418,6 +435,9 @@ func (i *BrewInstaller) GetOpts() *BrewOpts {
 	opts := &BrewOpts{}
 	info := i.Info
 	if info.Opts != nil {
+		if version, ok := (*info.Opts)["version"].(string); ok {
+			opts.Version = &version
+		}
 		if tap, ok := (*info.Opts)["tap"].(string); ok {
 			opts.Tap = &tap
 		}

@@ -6,6 +6,7 @@ import (
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
 	"github.com/samber/lo"
+	"github.com/stretchr/testify/assert"
 )
 
 func newTestPipxInstaller(data *appconfig.InstallerData) *PipxInstaller {
@@ -34,6 +35,35 @@ func TestPipxValidation(t *testing.T) {
 		Type: appconfig.InstallerTypePipx,
 	}
 	assertValidationError(t, newTestPipxInstaller(nilNameData).Validate(), "name")
+}
+
+func TestPipxVersionPin(t *testing.T) {
+	logger.InitLogger(false)
+
+	unpinned := newTestPipxInstaller(&appconfig.InstallerData{
+		Name: lo.ToPtr("black"),
+		Type: appconfig.InstallerTypePipx,
+	})
+	assert.Equal(t, "", unpinned.GetPinnedVersion())
+	assert.Equal(t, "black", unpinned.GetPackageSpec())
+
+	pinned := newTestPipxInstaller(&appconfig.InstallerData{
+		Name: lo.ToPtr("black"),
+		Type: appconfig.InstallerTypePipx,
+		Opts: &map[string]any{"version": "24.3.0"},
+	})
+	assert.Equal(t, "24.3.0", pinned.GetPinnedVersion())
+	assert.Equal(t, "black==24.3.0", pinned.GetPackageSpec())
+	assert.Equal(t, "black", pinned.GetBinName())
+
+	// A requirement written onto the name pins just the same.
+	inline := newTestPipxInstaller(&appconfig.InstallerData{
+		Name: lo.ToPtr("black==24.3.0"),
+		Type: appconfig.InstallerTypePipx,
+	})
+	assert.Equal(t, "24.3.0", inline.GetPinnedVersion())
+	assert.Equal(t, "black==24.3.0", inline.GetPackageSpec())
+	assert.Equal(t, "black", inline.GetBinName())
 }
 
 func TestPipxGetOpts(t *testing.T) {

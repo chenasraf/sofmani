@@ -8,6 +8,7 @@ actions. Steps can be of **several types**, such as `brew`, `rsync`, `shell`, an
 - [Categories](#categories)
 - [Fields](#fields)
 - [Template Variables](#template-variables)
+- [Version Pinning](#version-pinning)
 - [Supported `type` of Installers](#supported-type-of-installers)
   - [shell](#shell)
   - [group](#group)
@@ -378,21 +379,21 @@ This includes `opts.command`, `opts.update_command`, `pre_install`, `post_instal
 
 Available variables:
 
-| Variable               | Description                                                                          | Example                     |
-| ---------------------- | ------------------------------------------------------------------------------------ | --------------------------- |
-| `{{ .Arch }}`          | System architecture in Go format                                                     | `amd64`, `arm64`            |
-| `{{ .ArchAlias }}`     | Architecture in common alias format                                                  | `x86_64`, `arm64`           |
-| `{{ .ArchGnu }}`       | Architecture in GNU/Linux format                                                     | `x86_64`, `aarch64`         |
-| `{{ .OS }}`            | Current operating system                                                             | `macos`, `linux`, `windows` |
-| `{{ .DeviceID }}`      | Unique machine identifier (truncated SHA-256 hash)                                   | `5fa2a8e8193868df`          |
-| `{{ .DeviceIDAlias }}` | Friendly alias for the current machine, if defined in `machine_aliases`              | `work-laptop`               |
-| `{{ .Tag }}`           | Full tag name (only available in `github-release` `download_filename`)               | `v1.0.0`                    |
-| `{{ .Version }}`       | Version without leading "v" (only available in `github-release` `download_filename`) | `1.0.0`                     |
-| `{{ .DownloadFile }}`  | Absolute path to the downloaded asset (only in `github-release` `extract_command`)   | `/tmp/sofmani.../app.download` |
-| `{{ .ExtractDir }}`    | Temp directory to extract into (only in `github-release` `extract_command`)          | `/tmp/sofmani...`           |
-| `{{ .Destination }}`   | Final destination directory (only in `github-release` `extract_command`)             | `~/.local/bin`              |
-| `{{ .BinName }}`       | Expected output binary name (only in `github-release` `extract_command`)             | `my-tool`                   |
-| `{{ .ArchiveBinName }}`| Filename sofmani copies from `ExtractDir` → `Destination` (only in `extract_command`)| `my-tool`                   |
+| Variable                | Description                                                                           | Example                        |
+| ----------------------- | ------------------------------------------------------------------------------------- | ------------------------------ |
+| `{{ .Arch }}`           | System architecture in Go format                                                      | `amd64`, `arm64`               |
+| `{{ .ArchAlias }}`      | Architecture in common alias format                                                   | `x86_64`, `arm64`              |
+| `{{ .ArchGnu }}`        | Architecture in GNU/Linux format                                                      | `x86_64`, `aarch64`            |
+| `{{ .OS }}`             | Current operating system                                                              | `macos`, `linux`, `windows`    |
+| `{{ .DeviceID }}`       | Unique machine identifier (truncated SHA-256 hash)                                    | `5fa2a8e8193868df`             |
+| `{{ .DeviceIDAlias }}`  | Friendly alias for the current machine, if defined in `machine_aliases`               | `work-laptop`                  |
+| `{{ .Tag }}`            | Full tag name (only available in `github-release` `download_filename`)                | `v1.0.0`                       |
+| `{{ .Version }}`        | Version without leading "v" (only available in `github-release` `download_filename`)  | `1.0.0`                        |
+| `{{ .DownloadFile }}`   | Absolute path to the downloaded asset (only in `github-release` `extract_command`)    | `/tmp/sofmani.../app.download` |
+| `{{ .ExtractDir }}`     | Temp directory to extract into (only in `github-release` `extract_command`)           | `/tmp/sofmani...`              |
+| `{{ .Destination }}`    | Final destination directory (only in `github-release` `extract_command`)              | `~/.local/bin`                 |
+| `{{ .BinName }}`        | Expected output binary name (only in `github-release` `extract_command`)              | `my-tool`                      |
+| `{{ .ArchiveBinName }}` | Filename sofmani copies from `ExtractDir` → `Destination` (only in `extract_command`) | `my-tool`                      |
 
 In addition, `DEVICE_ID` and `DEVICE_ID_ALIAS` are injected as **environment variables** into all
 command executions, so they can also be referenced as `$DEVICE_ID` and `$DEVICE_ID_ALIAS` in shell
@@ -418,6 +419,48 @@ install:
         echo "Setting up on device $DEVICE_ID ({{ .DeviceIDAlias }})"
         ./setup.sh --arch {{ .Arch }} --os {{ .OS }}
 ```
+
+## Version Pinning
+
+Most installer types accept `opts.version`, which holds the software at an exact version instead of
+following the newest release:
+
+```yaml
+install:
+  - name: prettier
+    type: npm
+    opts:
+      version: 3.3.3
+```
+
+A pinned installer does not move on its own. sofmani records the version it installed and reports an
+update only once the pin in the manifest changes, reinstalling the software at the new version.
+Remove the pin to follow the newest release again.
+
+The version is written in the format the underlying package manager expects:
+
+| Type                    | Installed as                     | Example version         |
+| ----------------------- | -------------------------------- | ----------------------- |
+| `npm` / `pnpm` / `yarn` | `name@version`                   | `3.3.3`                 |
+| `pipx`                  | `name==version`                  | `24.3.0`                |
+| `cargo`                 | `cargo install --version`        | `14.1.0`, `~1.2`        |
+| `go`                    | `module@version`                 | `v0.16.0`, a commit SHA |
+| `apt` / `apk`           | `name=version`                   | `13.0.0-2`              |
+| `brew`                  | versioned formula `name@version` | `20`, for `node@20`     |
+| `docker`                | image tag `name:version`         | `v0.5.0`                |
+| `github-release`        | release tag                      | `v1.2.3`                |
+
+For `npm`, `pnpm`, `yarn`, `pipx`, `apt`, `apk`, `go` and `brew` the version can equally be written
+onto `name` (`prettier@3.3.3`, `black==24.3.0`, `ripgrep=13.0.0-2`), and takes precedence over
+`opts.version`. Docker is the exception: a tag written into the image name is often a moving one
+(`:main`, `:latest`), so it keeps following the registry — use `opts.version` to pin.
+
+Homebrew only offers the versions it publishes as formulae of their own, so `version: 20` on `node`
+resolves to the `node@20` formula and fails if no such formula exists.
+
+Two types express a version through a field of their own: `git` and `manifest` take `opts.ref`, a
+branch, tag or commit. `pacman` and `yay` support no pinning — the Arch repositories carry only the
+current version of a package.
 
 ## Supported `type` of Installers
 
@@ -461,16 +504,19 @@ Downloads a GitHub release asset. Optionally untar/unzip the downloaded file.
 
 - `opts.repository`: The repository to download from. Should be in the format:
   `user/repository-name`
+- `opts.version`: The release tag to install, exactly as it is named on GitHub (e.g. `v1.2.3`). It
+  fills `{{ .Tag }}` in the download filename. Without it, the repository's latest release is
+  installed (see [Version Pinning](#version-pinning)).
 - `opts.destination`: The target directory to extract the files to.
 - `opts.strategy`: The download strategy. Can be one of: `tar`, `zip`, `gzip`, `custom`, `none`
   (default)
   - `none` - the release file is not compressed, and should be copied directly
   - `tar` - the release file is a tar file, and should be extracted
   - `zip` - the release file is a zip file, and should be extracted
-  - `gzip` (alias: `gz`) - the release file is a single gzip-compressed file (not a tar
-    archive). It is decompressed with Go's `compress/gzip` and written to
-    `destination/bin_name` with the executable bit set. Use this for projects like
-    `tree-sitter` that publish each binary as a plain `.gz` file:
+  - `gzip` (alias: `gz`) - the release file is a single gzip-compressed file (not a tar archive). It
+    is decompressed with Go's `compress/gzip` and written to `destination/bin_name` with the
+    executable bit set. Use this for projects like `tree-sitter` that publish each binary as a plain
+    `.gz` file:
 
     ```yaml
     - name: tree-sitter
@@ -482,27 +528,27 @@ Downloads a GitHub release asset. Optionally untar/unzip the downloaded file.
         download_filename: tree-sitter-{{ .OS }}-{{ .ArchAlias }}.gz
     ```
 
-  - `custom` - run a user-provided shell hook (`opts.extract_command`) to extract the
-    downloaded asset yourself. After the command finishes, sofmani copies
-    `{{ .ExtractDir }}/{{ .ArchiveBinName }}` to `{{ .Destination }}/{{ .BinName }}` and
-    sets the executable bit — exactly like the `tar` and `zip` strategies do. Use this
-    for unusual archive formats (7-Zip, xz, self-extracting installers, ...).
+  - `custom` - run a user-provided shell hook (`opts.extract_command`) to extract the downloaded
+    asset yourself. After the command finishes, sofmani copies
+    `{{ .ExtractDir }}/{{ .ArchiveBinName }}` to `{{ .Destination }}/{{ .BinName }}` and sets the
+    executable bit — exactly like the `tar` and `zip` strategies do. Use this for unusual archive
+    formats (7-Zip, xz, self-extracting installers, ...).
 
-- `opts.extract_command`: The shell command to run when `strategy: custom`. It goes through
-  the same Go template substitution as other sofmani shell hooks, with extra variables
-  specific to the extract context:
+- `opts.extract_command`: The shell command to run when `strategy: custom`. It goes through the same
+  Go template substitution as other sofmani shell hooks, with extra variables specific to the
+  extract context:
 
-  | Variable               | Description                                                             |
-  | ---------------------- | ----------------------------------------------------------------------- |
-  | `{{ .DownloadFile }}`  | Absolute path to the downloaded asset                                   |
-  | `{{ .ExtractDir }}`    | Temp directory — your command should place extracted files here        |
-  | `{{ .Destination }}`   | Final destination directory (from `opts.destination`)                   |
-  | `{{ .BinName }}`       | The expected output binary name (`bin_name` or installer name)          |
-  | `{{ .ArchiveBinName }}`| Filename sofmani will copy from `ExtractDir` → `Destination` afterwards |
+  | Variable                | Description                                                             |
+  | ----------------------- | ----------------------------------------------------------------------- |
+  | `{{ .DownloadFile }}`   | Absolute path to the downloaded asset                                   |
+  | `{{ .ExtractDir }}`     | Temp directory — your command should place extracted files here         |
+  | `{{ .Destination }}`    | Final destination directory (from `opts.destination`)                   |
+  | `{{ .BinName }}`        | The expected output binary name (`bin_name` or installer name)          |
+  | `{{ .ArchiveBinName }}` | Filename sofmani will copy from `ExtractDir` → `Destination` afterwards |
 
   All the usual template variables (`{{ .OS }}`, `{{ .Arch }}`, `{{ .Tag }}`, ...) are also
-  available. `extract_command` is required when `strategy: custom`, and is not allowed
-  with any other strategy.
+  available. `extract_command` is required when `strategy: custom`, and is not allowed with any
+  other strategy.
 
   Example — extracting a `.tar.xz` asset by shelling out to `tar`:
 
@@ -529,6 +575,7 @@ Downloads a GitHub release asset. Optionally untar/unzip the downloaded file.
       download_filename: weird-tool-{{ .Version }}.7z
       extract_command: 7z x {{ .DownloadFile }} -o{{ .ExtractDir }}
   ```
+
 - `opts.download_filename`: The filename of the release asset to download.
 
   This should either be a string, or a map of platforms to filenames.
@@ -715,6 +762,8 @@ Override with [`check_installed`](#fields) if you need different behavior.
 
 **Options**:
 
+- `opts.version`: Versioned formula to select, appended to the name as `@version` (see
+  [Version Pinning](#version-pinning)).
 - `opts.tap`: Name of the tap to install the package from. The tap is automatically added via
   `brew tap` before installing.
 - `opts.cask`: Install as a cask instead of a formula.
@@ -731,6 +780,8 @@ Installs packages using npm/pnpm/yarn.
 
 **Options**:
 
+- `opts.version`: Exact version to install, appended to the name as `@version` (see
+  [Version Pinning](#version-pinning)).
 - `opts.flags`: Additional flags to pass to commands (fallback for install/update).
 - `opts.install_flags`: Additional flags to pass only during install.
 - `opts.update_flags`: Additional flags to pass only during update.
@@ -747,6 +798,8 @@ most once per sofmani run (`once` mode). Configure via the top-level
 
 **Options**:
 
+- `opts.version`: Exact version to install, appended to the name as `=version` (see
+  [Version Pinning](#version-pinning)).
 - `opts.flags`: Additional flags to pass to commands (fallback for install/update).
 - `opts.install_flags`: Additional flags to pass only during install.
 - `opts.update_flags`: Additional flags to pass only during update.
@@ -758,6 +811,8 @@ Installs packages using pacman or yay (Arch Linux).
 - Use `type: pacman` for official Arch repository packages.
 - Use `type: yay` for AUR (Arch User Repository) packages.
 - Both use `--noconfirm` for non-interactive installation.
+- The Arch repositories carry only the current version of a package, so there is no version to pin
+  to.
 
 **Options**:
 
@@ -772,6 +827,9 @@ Installs packages using pipx.
 
 **Options**:
 
+- `opts.version`: Exact version to install, appended to the name as `==version` (see
+  [Version Pinning](#version-pinning)). A pinned package is reinstalled with `pipx install --force`
+  instead of `pipx upgrade`, which would move it off the pin.
 - `opts.flags`: Additional flags to pass to commands (fallback for install/update).
 - `opts.install_flags`: Additional flags to pass only to `pipx install`.
 - `opts.update_flags`: Additional flags to pass only to `pipx upgrade`.
@@ -783,6 +841,8 @@ Installs packages using Rust's cargo. Uses `cargo install` for both installation
 
 **Options**:
 
+- `opts.version`: Version requirement passed as `--version` (see
+  [Version Pinning](#version-pinning)).
 - `opts.flags`: Additional flags to pass to commands (fallback for install/update).
 - `opts.install_flags`: Additional flags to pass only during install.
 - `opts.update_flags`: Additional flags to pass only during update.
@@ -792,9 +852,8 @@ Installs packages using Rust's cargo. Uses `cargo install` for both installation
 Installs Go binaries using `go install`. Uses `go install` for both installation and updates — the
 Go toolchain will fetch the requested version and rebuild only if it differs from what's cached.
 
-The `name` field should be the full module path of the binary (e.g.,
-`golang.org/x/tools/gopls`). The package reference passed to `go install` is constructed as
-`<name>@<version>`:
+The `name` field should be the full module path of the binary (e.g., `golang.org/x/tools/gopls`).
+The package reference passed to `go install` is constructed as `<name>@<version>`:
 
 - If `name` already includes an `@version` suffix, it is used as-is.
 - Otherwise `opts.version` is appended, defaulting to `latest`.
@@ -806,7 +865,8 @@ different name.
 **Options**:
 
 - `opts.version`: Module version to install (e.g., `latest`, `v0.16.0`, a commit SHA, or a branch
-  name). Defaults to `latest`. Ignored when `name` already contains `@version`.
+  name). Defaults to `latest`. Ignored when `name` already contains `@version`. Anything other than
+  `latest` pins the binary (see [Version Pinning](#version-pinning)).
 - `opts.flags`: Additional flags to pass to commands (fallback for install/update).
 - `opts.install_flags`: Additional flags to pass only during install.
 - `opts.update_flags`: Additional flags to pass only during update.
@@ -830,6 +890,9 @@ digests.
 
 **Options**:
 
+- `opts.version`: Image tag to pin to, appended to the image name as `:version` (see
+  [Version Pinning](#version-pinning)). Ignored when `name` already carries a tag or digest, since
+  such a tag may well be a moving one.
 - `opts.flags`: A string of flags to pass to `docker run` (e.g., ports, volumes, extra args). These
   are appended after the default flags and before the image name.
 

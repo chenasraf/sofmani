@@ -48,6 +48,44 @@ func TestDockerValidation(t *testing.T) {
 	assertValidationError(t, newTestDockerInstaller(invalid).Validate(), "name")
 }
 
+func TestDockerVersionPin(t *testing.T) {
+	logger.InitLogger(false)
+
+	unpinned := newTestDockerInstaller(&appconfig.InstallerData{
+		Name: lo.ToPtr("ghcr.io/open-webui/open-webui"),
+		Type: appconfig.InstallerTypeDocker,
+	})
+	require.Equal(t, "", unpinned.GetPinnedVersion())
+	require.Equal(t, "ghcr.io/open-webui/open-webui", unpinned.GetImage())
+
+	pinned := newTestDockerInstaller(&appconfig.InstallerData{
+		Name: lo.ToPtr("ghcr.io/open-webui/open-webui"),
+		Type: appconfig.InstallerTypeDocker,
+		Opts: &map[string]any{"version": "v0.5.0"},
+	})
+	require.Equal(t, "v0.5.0", pinned.GetPinnedVersion())
+	require.Equal(t, "ghcr.io/open-webui/open-webui:v0.5.0", pinned.GetImage())
+
+	// A tag on the image name may be a moving one, so it keeps following the registry.
+	tagged := newTestDockerInstaller(&appconfig.InstallerData{
+		Name: lo.ToPtr("ghcr.io/open-webui/open-webui:main"),
+		Type: appconfig.InstallerTypeDocker,
+		Opts: &map[string]any{"version": "v0.5.0"},
+	})
+	require.Equal(t, "", tagged.GetPinnedVersion())
+	require.Equal(t, "ghcr.io/open-webui/open-webui:main", tagged.GetImage())
+}
+
+func TestImageHasTag(t *testing.T) {
+	require.False(t, imageHasTag("nginx"))
+	require.True(t, imageHasTag("nginx:1.25"))
+	require.False(t, imageHasTag("ghcr.io/owner/image"))
+	require.True(t, imageHasTag("ghcr.io/owner/image:latest"))
+	// A registry port is not a tag.
+	require.False(t, imageHasTag("localhost:5000/owner/image"))
+	require.True(t, imageHasTag("localhost:5000/owner/image:1.0"))
+}
+
 func TestExtractDigestFromManifest(t *testing.T) {
 	data := []byte(`{
 		"schemaVersion": 2,

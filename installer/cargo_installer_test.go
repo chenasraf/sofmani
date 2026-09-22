@@ -6,6 +6,7 @@ import (
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
 	"github.com/samber/lo"
+	"github.com/stretchr/testify/assert"
 )
 
 func newTestCargoInstaller(data *appconfig.InstallerData) *CargoInstaller {
@@ -119,6 +120,25 @@ func TestCargoGetOpts(t *testing.T) {
 	if optsWithAllFlags.UpdateFlags == nil || *optsWithAllFlags.UpdateFlags != "--update-specific" {
 		t.Errorf("expected UpdateFlags to be '--update-specific'")
 	}
+}
+
+func TestCargoVersionPin(t *testing.T) {
+	logger.InitLogger(false)
+
+	unpinned := newTestCargoInstaller(&appconfig.InstallerData{
+		Name: lo.ToPtr("ripgrep"),
+		Type: appconfig.InstallerTypeCargo,
+	})
+	assert.Equal(t, "", unpinned.GetPinnedVersion())
+	assert.Nil(t, unpinned.GetVersionArgs())
+
+	pinned := newTestCargoInstaller(&appconfig.InstallerData{
+		Name: lo.ToPtr("ripgrep"),
+		Type: appconfig.InstallerTypeCargo,
+		Opts: &map[string]any{"version": "14.1.0"},
+	})
+	assert.Equal(t, "14.1.0", pinned.GetPinnedVersion())
+	assert.Equal(t, []string{"--version", "14.1.0"}, pinned.GetVersionArgs())
 }
 
 func TestCargoGetBinName(t *testing.T) {

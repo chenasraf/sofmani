@@ -13,6 +13,7 @@ import (
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
 	"github.com/chenasraf/sofmani/platform"
+	"github.com/chenasraf/sofmani/utils"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 )
@@ -748,6 +749,71 @@ func TestGitHubReleaseCheckNeedsUpdate(t *testing.T) {
 		needsUpdate, err := installer.CheckNeedsUpdate()
 		assert.NoError(t, err)
 		assert.True(t, needsUpdate)
+	})
+}
+
+func TestGitHubReleaseVersionPin(t *testing.T) {
+	logger.InitLogger(false)
+
+	t.Run("resolves the pinned tag without querying GitHub", func(t *testing.T) {
+		data := &appconfig.InstallerData{
+			Name: lo.ToPtr("myapp"),
+			Type: appconfig.InstallerTypeGitHubRelease,
+			Opts: &map[string]any{
+				"repository":        "owner/repo",
+				"destination":       "/tmp",
+				"download_filename": "app.tar.gz",
+				"version":           "v1.2.3",
+			},
+		}
+		installer := newTestGitHubReleaseInstaller(data)
+
+		assert.Equal(t, "v1.2.3", installer.GetPinnedVersion())
+		tag, err := installer.GetTag()
+		assert.NoError(t, err)
+		assert.Equal(t, "v1.2.3", tag)
+	})
+
+	t.Run("reports no update when the cached tag is the pinned one", func(t *testing.T) {
+		data := &appconfig.InstallerData{
+			Name: lo.ToPtr("pinned-release-app-99999"),
+			Type: appconfig.InstallerTypeGitHubRelease,
+			Opts: &map[string]any{
+				"repository":        "owner/repo",
+				"destination":       "/tmp",
+				"download_filename": "app.tar.gz",
+				"version":           "v1.2.3",
+			},
+		}
+		installer := newTestGitHubReleaseInstaller(data)
+		assert.NoError(t, installer.UpdateCache("v1.2.3"))
+		t.Cleanup(func() {
+			cacheDir, err := utils.GetCacheDir()
+			if err == nil {
+				_ = os.Remove(filepath.Join(cacheDir, *data.Name))
+			}
+		})
+
+		needsUpdate, err := installer.CheckNeedsUpdate()
+		assert.NoError(t, err)
+		assert.False(t, needsUpdate)
+
+		// Moving the pin makes the installed release stale.
+		(*data.Opts)["version"] = "v1.3.0"
+		needsUpdate, err = installer.CheckNeedsUpdate()
+		assert.NoError(t, err)
+		assert.True(t, needsUpdate)
+	})
+
+	t.Run("is unpinned without a version", func(t *testing.T) {
+		data := &appconfig.InstallerData{
+			Name: lo.ToPtr("myapp"),
+			Type: appconfig.InstallerTypeGitHubRelease,
+			Opts: &map[string]any{
+				"repository": "owner/repo",
+			},
+		}
+		assert.Equal(t, "", newTestGitHubReleaseInstaller(data).GetPinnedVersion())
 	})
 }
 

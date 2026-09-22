@@ -20,6 +20,9 @@ type NpmInstaller struct {
 
 // NpmOpts represents options for the NpmInstaller.
 type NpmOpts struct {
+	// Version pins the package to an exact version, appended as `@version`.
+	// Ignored when Name already carries a `@version` suffix.
+	Version *string
 	// Flags is a string of additional flags to pass to the npm/pnpm/yarn command.
 	Flags *string
 	// InstallFlags is a string of additional flags to pass only during install.
@@ -57,7 +60,7 @@ func (i *NpmInstaller) Install() error {
 	} else if opts.Flags != nil {
 		args = append(args, strings.Fields(*opts.Flags)...)
 	}
-	args = append(args, *i.Info.Name)
+	args = append(args, i.GetPackageSpec())
 	return i.RunCmdPassThrough(string(i.PackageManager), args...)
 }
 
@@ -73,7 +76,11 @@ func (i *NpmInstaller) Update() error {
 	} else if opts.Flags != nil {
 		args = append(args, strings.Fields(*opts.Flags)...)
 	}
-	args = append(args, *i.Info.Name+"@latest")
+	target := *i.Info.Name + "@latest"
+	if i.GetPinnedVersion() != "" {
+		target = i.GetPackageSpec()
+	}
+	args = append(args, target)
 	return i.RunCmdPassThrough(string(i.PackageManager), args...)
 }
 
@@ -81,6 +88,11 @@ func (i *NpmInstaller) Update() error {
 func (i *NpmInstaller) CheckNeedsUpdate() (bool, error) {
 	if i.HasCustomUpdateCheck() {
 		return i.RunCustomUpdateCheck()
+	}
+	// A pinned package is always "outdated" as far as the registry is concerned, so the pin
+	// itself decides instead.
+	if pinned := i.GetPinnedVersion(); pinned != "" {
+		return PinnedVersionNeedsUpdate(*i.Info.Name, pinned), nil
 	}
 	success, err := i.RunCmdGetSuccess(string(i.PackageManager), "outdated", "--global", "--json", *i.Info.Name)
 	if err != nil {
@@ -107,6 +119,9 @@ func (i *NpmInstaller) GetOpts() *NpmOpts {
 	opts := &NpmOpts{}
 	info := i.Info
 	if info.Opts != nil {
+		if version, ok := (*info.Opts)["version"].(string); ok {
+			opts.Version = &version
+		}
 		if flags, ok := (*info.Opts)["flags"].(string); ok {
 			opts.Flags = &flags
 		}
@@ -120,14 +135,53 @@ func (i *NpmInstaller) GetOpts() *NpmOpts {
 	return opts
 }
 
+// GetPinnedVersion implements IVersionPinned. The version may come from opts.version or
+// from a `@version` suffix on the package name.
+func (i *NpmInstaller) GetPinnedVersion() string {
+	if version := npmVersionSpec(*i.Info.Name); version != "" {
+		return version
+	}
+	if version := i.GetOpts().Version; version != nil {
+		return *version
+	}
+	return ""
+}
+
+// GetPackageSpec returns the package argument passed to the package manager, as
+// `<name>@<version>` when a version is pinned.
+func (i *NpmInstaller) GetPackageSpec() string {
+	name := *i.Info.Name
+	if npmVersionSpec(name) != "" {
+		return name
+	}
+	if version := i.GetPinnedVersion(); version != "" {
+		return name + "@" + version
+	}
+	return name
+}
+
+// npmVersionSpec returns the version part of an npm package spec (`pkg@1.2.3`), or an empty
+// string when the name carries no version. A leading `@` belongs to the package scope.
+func npmVersionSpec(name string) string {
+	if idx := strings.LastIndex(name, "@"); idx > 0 {
+		return name[idx+1:]
+	}
+	return ""
+}
+
 // GetBinName returns the binary name for the installer.
-// It uses the BinName from the installer data if provided, otherwise it uses the installer name.
+// It uses the BinName from the installer data if provided, otherwise it uses the installer
+// name with any `@version` suffix stripped.
 func (i *NpmInstaller) GetBinName() string {
 	info := i.GetData()
 	if info.BinName != nil && len(*info.BinName) > 0 {
 		return *info.BinName
 	}
-	return *info.Name
+	name := *info.Name
+	if idx := strings.LastIndex(name, "@"); idx > 0 {
+		name = name[:idx]
+	}
+	return name
 }
 
 // NewNpmInstaller creates a new NpmInstaller.

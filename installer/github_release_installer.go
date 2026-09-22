@@ -32,6 +32,9 @@ type GitHubReleaseInstaller struct {
 type GitHubReleaseOpts struct {
 	// Repository is the GitHub repository (e.g., "owner/repo").
 	Repository *string
+	// Version pins the installer to a release tag, exactly as it is named on GitHub
+	// (e.g. "v1.2.3"). Without it, the repository's latest release is installed.
+	Version *string
 	// Destination is the directory where the release asset will be installed.
 	Destination *string
 	// DownloadFilename is a platform-specific map of the filename to download from the release.
@@ -200,7 +203,7 @@ func (i *GitHubReleaseInstaller) Install() error {
 	}
 	// defer os.RemoveAll(tmpDir)
 
-	tag, err := i.GetLatestTag()
+	tag, err := i.GetTag()
 	if err != nil {
 		return err
 	}
@@ -435,11 +438,11 @@ func (i *GitHubReleaseInstaller) CheckNeedsUpdate() (bool, error) {
 	if cachedTag == "" {
 		return true, nil
 	}
-	latest, err := i.GetLatestTag()
+	wanted, err := i.GetTag()
 	if err != nil {
 		return false, err
 	}
-	if latest != cachedTag {
+	if wanted != cachedTag {
 		return true, nil
 	}
 	return false, nil
@@ -668,6 +671,9 @@ func (i *GitHubReleaseInstaller) GetOpts() *GitHubReleaseOpts {
 			repository = utils.GetRealPath(i.GetData().Environ(), repository)
 			opts.Repository = &repository
 		}
+		if version, ok := (*info.Opts)["version"].(string); ok {
+			opts.Version = &version
+		}
 		if destination, ok := (*info.Opts)["destination"].(string); ok {
 			destination = utils.GetRealPath(i.GetData().Environ(), destination)
 			opts.Destination = &destination
@@ -754,6 +760,24 @@ func parseBinLinkEntry(entry any, env []string) (GitHubReleaseBinLink, bool) {
 		return link, false
 	}
 	return link, true
+}
+
+// GetPinnedVersion implements IVersionPinned. The pin is the release tag to install.
+func (i *GitHubReleaseInstaller) GetPinnedVersion() string {
+	if version := i.GetOpts().Version; version != nil {
+		return *version
+	}
+	return ""
+}
+
+// GetTag returns the release tag to install: the pinned opts.version when set, otherwise the
+// repository's latest release tag.
+func (i *GitHubReleaseInstaller) GetTag() (string, error) {
+	if tag := i.GetPinnedVersion(); tag != "" {
+		logger.Debug("%s is pinned to release %s", *i.Info.Name, tag)
+		return tag, nil
+	}
+	return i.GetLatestTag()
 }
 
 func (i *GitHubReleaseInstaller) GetLatestTag() (string, error) {
@@ -969,7 +993,7 @@ func (i *GitHubReleaseInstaller) installTree() error {
 func (i *GitHubReleaseInstaller) downloadRelease(tmpDir, name string) (string, string, error) {
 	opts := i.GetOpts()
 
-	tag, err := i.GetLatestTag()
+	tag, err := i.GetTag()
 	if err != nil {
 		return "", "", err
 	}

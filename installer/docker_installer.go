@@ -22,6 +22,9 @@ type DockerInstaller struct {
 
 // DockerOpts represents options for the DockerInstaller.
 type DockerOpts struct {
+	// Version pins the image to a tag, appended as `:version`.
+	// Ignored when Name already carries a tag or digest.
+	Version *string
 	// Flags is a string of flags to pass to the `docker run` command.
 	Flags *string
 	// Platform is a platform-specific map of Docker platform strings (e.g., "linux/amd64").
@@ -67,7 +70,7 @@ func (i *DockerInstaller) Update() error {
 		return fmt.Errorf("docker is not available")
 	}
 
-	image := *i.Info.Name
+	image := i.GetImage()
 	containerName := i.GetContainerName()
 
 	logger.Debug("Pulling updated image: %s", image)
@@ -88,6 +91,13 @@ func (i *DockerInstaller) Update() error {
 
 // CheckNeedsUpdate implements IInstaller.
 func (i *DockerInstaller) CheckNeedsUpdate() (bool, error) {
+	if i.HasCustomUpdateCheck() {
+		return i.RunCustomUpdateCheck()
+	}
+	// A pinned image would otherwise be re-pulled and its container recreated on every run.
+	if pinned := i.GetPinnedVersion(); pinned != "" {
+		return PinnedVersionNeedsUpdate(*i.Info.Name, pinned), nil
+	}
 	// Always assume an update is available
 	return true, nil
 }
@@ -113,17 +123,49 @@ func (i *DockerInstaller) GetData() *appconfig.InstallerData {
 func (i *DockerInstaller) GetOpts() *DockerOpts {
 	opts := &DockerOpts{}
 	if i.Info.Opts != nil {
+		if version, ok := (*i.Info.Opts)["version"].(string); ok {
+			opts.Version = &version
+		}
 		if flags, ok := (*i.Info.Opts)["flags"].(string); ok {
 			opts.Flags = &flags
 		}
 		if raw, ok := (*i.Info.Opts)["platform"]; ok && raw != nil {
 			opts.Platform = platform.NewPlatformMap[string](raw)
 		}
-	}
-	if skip, ok := (*i.Info.Opts)["skip_if_unavailable"].(bool); ok {
-		opts.SkipIfUnavailable = &skip
+		if skip, ok := (*i.Info.Opts)["skip_if_unavailable"].(bool); ok {
+			opts.SkipIfUnavailable = &skip
+		}
 	}
 	return opts
+}
+
+// GetPinnedVersion implements IVersionPinned. Only opts.version counts as a pin — a tag
+// written into the image name may well be a moving one (`:main`, `:latest`), which keeps
+// following the registry.
+func (i *DockerInstaller) GetPinnedVersion() string {
+	if imageHasTag(*i.Info.Name) {
+		return ""
+	}
+	if version := i.GetOpts().Version; version != nil {
+		return *version
+	}
+	return ""
+}
+
+// GetImage returns the image reference to pull and run, as `<name>:<version>` when a version
+// is pinned.
+func (i *DockerInstaller) GetImage() string {
+	name := *i.Info.Name
+	if version := i.GetPinnedVersion(); version != "" {
+		return name + ":" + version
+	}
+	return name
+}
+
+// imageHasTag reports whether an image reference already carries a tag or digest. Only the
+// part after the last slash is considered, since a registry host may include a port.
+func imageHasTag(image string) bool {
+	return strings.Contains(image[strings.LastIndex(image, "/")+1:], ":")
 }
 
 // GetContainerName returns the name of the Docker container.
@@ -141,7 +183,7 @@ func (i *DockerInstaller) GetContainerName() string {
 // If forceRun is true, it will always run a new container. Otherwise, it will start an existing container if found.
 func (i *DockerInstaller) runOrStartContainer(forceRun bool) error {
 	containerName := i.GetContainerName()
-	image := *i.Info.Name
+	image := i.GetImage()
 	opts := i.GetOpts()
 
 	flags := "-d --restart always"

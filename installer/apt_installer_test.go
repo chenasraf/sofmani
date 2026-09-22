@@ -6,6 +6,7 @@ import (
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
 	"github.com/samber/lo"
+	"github.com/stretchr/testify/assert"
 )
 
 func newTestAptInstaller(data *appconfig.InstallerData) *AptInstaller {
@@ -27,6 +28,53 @@ func TestAptValidation(t *testing.T) {
 		},
 	)
 	assertNoValidationErrors(t, aptInstaller.Validate())
+}
+
+func TestAptVersionPin(t *testing.T) {
+	logger.InitLogger(false)
+
+	unpinned := newTestAptInstaller(&appconfig.InstallerData{
+		Name: lo.ToPtr("ripgrep"),
+		Type: appconfig.InstallerTypeApt,
+	})
+	assert.Equal(t, "", unpinned.GetPinnedVersion())
+	assert.Equal(t, "ripgrep", unpinned.GetPackageSpec())
+
+	pinned := newTestAptInstaller(&appconfig.InstallerData{
+		Name: lo.ToPtr("ripgrep"),
+		Type: appconfig.InstallerTypeApt,
+		Opts: &map[string]any{"version": "13.0.0-2"},
+	})
+	assert.Equal(t, "13.0.0-2", pinned.GetPinnedVersion())
+	assert.Equal(t, "ripgrep=13.0.0-2", pinned.GetPackageSpec())
+	assert.Equal(t, "ripgrep", pinned.GetBinName())
+
+	// A version written onto the name pins just the same.
+	inline := newTestAptInstaller(&appconfig.InstallerData{
+		Name: lo.ToPtr("ripgrep=13.0.0-2"),
+		Type: appconfig.InstallerTypeApt,
+	})
+	assert.Equal(t, "13.0.0-2", inline.GetPinnedVersion())
+	assert.Equal(t, "ripgrep=13.0.0-2", inline.GetPackageSpec())
+	assert.Equal(t, "ripgrep", inline.GetBinName())
+}
+
+func TestAptInstallVerb(t *testing.T) {
+	logger.InitLogger(false)
+
+	apt := newTestAptInstaller(&appconfig.InstallerData{
+		Name: lo.ToPtr("ripgrep"),
+		Type: appconfig.InstallerTypeApt,
+	})
+	apt.PackageManager = PackageManagerApt
+	assert.Equal(t, "install", apt.installVerb())
+
+	apk := newTestAptInstaller(&appconfig.InstallerData{
+		Name: lo.ToPtr("ripgrep"),
+		Type: appconfig.InstallerTypeApk,
+	})
+	apk.PackageManager = PackageManagerApk
+	assert.Equal(t, "add", apk.installVerb())
 }
 
 func TestAptGetOpts(t *testing.T) {

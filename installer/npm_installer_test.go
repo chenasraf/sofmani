@@ -6,6 +6,7 @@ import (
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
 	"github.com/samber/lo"
+	"github.com/stretchr/testify/assert"
 )
 
 func newTestNpmInstaller(data *appconfig.InstallerData) *NpmInstaller {
@@ -35,6 +36,51 @@ func TestNpmValidation(t *testing.T) {
 		Type: appconfig.InstallerTypeNpm,
 	}
 	assertValidationError(t, newTestNpmInstaller(nilNameData).Validate(), "name")
+}
+
+func TestNpmVersionPin(t *testing.T) {
+	logger.InitLogger(false)
+
+	unpinned := newTestNpmInstaller(&appconfig.InstallerData{
+		Name: lo.ToPtr("prettier"),
+		Type: appconfig.InstallerTypeNpm,
+	})
+	assert.Equal(t, "", unpinned.GetPinnedVersion())
+	assert.Equal(t, "prettier", unpinned.GetPackageSpec())
+
+	pinned := newTestNpmInstaller(&appconfig.InstallerData{
+		Name: lo.ToPtr("prettier"),
+		Type: appconfig.InstallerTypeNpm,
+		Opts: &map[string]any{"version": "3.3.3"},
+	})
+	assert.Equal(t, "3.3.3", pinned.GetPinnedVersion())
+	assert.Equal(t, "prettier@3.3.3", pinned.GetPackageSpec())
+	assert.Equal(t, "prettier", pinned.GetBinName())
+
+	// A version written onto the name pins just the same.
+	inline := newTestNpmInstaller(&appconfig.InstallerData{
+		Name: lo.ToPtr("prettier@3.3.3"),
+		Type: appconfig.InstallerTypeNpm,
+	})
+	assert.Equal(t, "3.3.3", inline.GetPinnedVersion())
+	assert.Equal(t, "prettier@3.3.3", inline.GetPackageSpec())
+	assert.Equal(t, "prettier", inline.GetBinName())
+
+	// The `@` opening a scoped package is not a version.
+	scoped := newTestNpmInstaller(&appconfig.InstallerData{
+		Name: lo.ToPtr("@vue/cli"),
+		Type: appconfig.InstallerTypeNpm,
+		Opts: &map[string]any{"version": "5.0.8"},
+	})
+	assert.Equal(t, "5.0.8", scoped.GetPinnedVersion())
+	assert.Equal(t, "@vue/cli@5.0.8", scoped.GetPackageSpec())
+
+	scopedUnpinned := newTestNpmInstaller(&appconfig.InstallerData{
+		Name: lo.ToPtr("@vue/cli"),
+		Type: appconfig.InstallerTypeNpm,
+	})
+	assert.Equal(t, "", scopedUnpinned.GetPinnedVersion())
+	assert.Equal(t, "@vue/cli", scopedUnpinned.GetBinName())
 }
 
 func TestNpmGetOpts(t *testing.T) {

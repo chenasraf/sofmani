@@ -11,16 +11,9 @@ import (
 	"github.com/chenasraf/sofmani/utils"
 )
 
-// frequencyCacheFileName returns the cache file name for a given installer name,
-// escaping characters that are not safe for file names.
+// frequencyCacheFileName returns the cache file name for a given installer name.
 func frequencyCacheFileName(name string) string {
-	replacer := strings.NewReplacer(
-		"/", "__",
-		"\\", "__",
-		":", "__",
-		" ", "_",
-	)
-	return "freq_" + replacer.Replace(name)
+	return cacheFileName("freq_", name)
 }
 
 // checkFrequency checks whether enough time has passed since the last successful run
