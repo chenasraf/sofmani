@@ -1,6 +1,7 @@
 package installer
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -42,6 +43,34 @@ func TestRunInstaller(t *testing.T) {
 	result, err := RunInstaller(config, mockInstaller)
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
+}
+
+func TestRunInstallerAllowFailure(t *testing.T) {
+	logger.InitLogger(false)
+	config := &appconfig.AppConfig{}
+	failure := errors.New("install blew up")
+
+	// Without allow_failure the error reaches the caller, which stops the run.
+	strict := &MockInstaller{
+		data:         &appconfig.InstallerData{Name: lo.ToPtr("strict"), Type: appconfig.InstallerTypeBrew},
+		installError: failure,
+	}
+	result, err := RunInstaller(config, strict)
+	assert.ErrorIs(t, err, failure)
+	assert.Nil(t, result)
+
+	// With allow_failure the error is reported and swallowed, leaving no result to summarize.
+	lenient := &MockInstaller{
+		data: &appconfig.InstallerData{
+			Name:         lo.ToPtr("lenient"),
+			Type:         appconfig.InstallerTypeBrew,
+			AllowFailure: lo.ToPtr(true),
+		},
+		installError: failure,
+	}
+	result, err = RunInstaller(config, lenient)
+	assert.NoError(t, err)
+	assert.Nil(t, result)
 }
 
 // pinnedMockInstaller is a MockInstaller pinned to a version.

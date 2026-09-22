@@ -183,9 +183,34 @@ type IChildResultsProvider interface {
 	GetChildResults() []summary.InstallResult
 }
 
+// allowsFailure reports whether a failure of this installer may be swallowed so the run can
+// carry on with the next one.
+func allowsFailure(info *appconfig.InstallerData) bool {
+	return info != nil && info.AllowFailure != nil && *info.AllowFailure
+}
+
 // RunInstaller executes the installation or update process for a given installer.
 // It returns the result of the installation/update and any error that occurred.
+// An installer marked `allow_failure` reports its error and yields no result, leaving the
+// caller to carry on with the next installer.
 func RunInstaller(config *appconfig.AppConfig, installer IInstaller) (*summary.InstallResult, error) {
+	result, err := runInstaller(config, installer)
+	info := installer.GetData()
+	if err != nil && allowsFailure(info) {
+		name := ""
+		if info.Name != nil {
+			name = *info.Name
+		}
+		logger.Error("%s: %v", logger.H(name), err)
+		logger.Warn("Allowed to fail, continuing")
+		return nil, nil
+	}
+	return result, err
+}
+
+// runInstaller runs the installer lifecycle: platform, machine, filter and frequency checks,
+// then the install or update itself along with its hooks.
+func runInstaller(config *appconfig.AppConfig, installer IInstaller) (*summary.InstallResult, error) {
 	info := installer.GetData()
 	name := *info.Name
 	curOS := platform.GetPlatform()

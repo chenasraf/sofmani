@@ -297,6 +297,27 @@ These fields are shared by all installer types. Some fields may vary in behavior
           verbose: true
     ```
 
+- **`allow_failure`**
+  - **Type**: Boolean (optional)
+  - **Description**: When an installer fails, sofmani reports the error and stops, leaving the
+    remaining installers untouched. Set this to `true` to log the failure and carry on with the next
+    installer instead. The failing installer is left out of the summary.
+  - **Default**: `false`.
+  - **Examples**:
+
+    ```yaml
+    # A tool that isn't available everywhere shouldn't hold up the rest of the run
+    - name: some-flaky-tool
+      type: brew
+      allow_failure: true
+
+    # Can also be set for a whole installer type
+    defaults:
+      type:
+        docker:
+          allow_failure: true
+    ```
+
 - **`frequency`**
   - **Type**: String (optional)
   - **Description**: Limits how often the installer runs. After a successful install or update, the

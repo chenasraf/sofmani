@@ -257,6 +257,11 @@
           "description": "Pass verbose flags to the underlying installer tool.",
           "default": false
         },
+        "allow_failure": {
+          "type": "boolean",
+          "description": "Report a failure of this step and continue with the next one, instead of stopping the run.",
+          "default": false
+        },
         "frequency": { "$ref": "#/definitions/frequency" }
       },
       "allOf": [

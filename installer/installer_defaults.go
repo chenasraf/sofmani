@@ -91,6 +91,9 @@ func InstallerWithDefaults(
 			if override.Verbose != nil && data.Verbose == nil {
 				data.Verbose = override.Verbose
 			}
+			if override.AllowFailure != nil && data.AllowFailure == nil {
+				data.AllowFailure = override.AllowFailure
+			}
 		}
 	}
 	return data
