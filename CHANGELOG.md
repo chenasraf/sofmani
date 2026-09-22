@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.33.0](https://github.com/chenasraf/sofmani/compare/v1.32.4...v1.33.0) (2026-09-22)
+
+
+### Features
+
+* **installer:** add allow_failure to continue past a failed step ([a5d67d2](https://github.com/chenasraf/sofmani/commit/a5d67d26df6e4c807b6440f7abc0296afb253d4f))
+* **installer:** pin installers to an exact version ([a4510e1](https://github.com/chenasraf/sofmani/commit/a4510e12ca8afc50ea969cd23f1e98db58592b3f))
+
 ## [1.32.4](https://github.com/chenasraf/sofmani/compare/v1.32.3...v1.32.4) (2026-09-16)
 
 
