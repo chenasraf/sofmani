@@ -2,11 +2,43 @@ package installer
 
 import (
 	"maps"
+	"slices"
 
 	"github.com/chenasraf/sofmani/appconfig"
+	"github.com/chenasraf/sofmani/logger"
 	"github.com/chenasraf/sofmani/machine"
 	"github.com/chenasraf/sofmani/platform"
 )
+
+// platformLockedTypes maps installer types to the platforms their package manager exists on.
+// The restriction is not configurable: honoring a `platforms` value for one of these would run
+// the step somewhere its package manager cannot be there.
+var platformLockedTypes = map[appconfig.InstallerType][]platform.Platform{
+	appconfig.InstallerTypeApt:    {platform.PlatformLinux},
+	appconfig.InstallerTypeApk:    {platform.PlatformLinux},
+	appconfig.InstallerTypePacman: {platform.PlatformLinux},
+	appconfig.InstallerTypeYay:    {platform.PlatformLinux},
+}
+
+// lockPlatforms pins the platforms of a platform-locked type, discarding any `platforms` the
+// manifest or the type defaults set. Use `enabled` to turn such a step off.
+func lockPlatforms(data *appconfig.InstallerData) {
+	locked, ok := platformLockedTypes[data.Type]
+	if !ok {
+		return
+	}
+	if data.Platforms == nil {
+		data.Platforms = &platform.Platforms{}
+	}
+	configured := data.Platforms.Except != nil ||
+		(data.Platforms.Only != nil && !slices.Equal(*data.Platforms.Only, locked))
+	if configured {
+		logger.Debug("Ignoring platforms for %s: the type only runs on %s", data.Type, locked)
+	}
+	only := slices.Clone(locked)
+	data.Platforms.Only = &only
+	data.Platforms.Except = nil
+}
 
 // InstallerWithDefaults applies default configurations to an installer data object.
 // It first applies base defaults using FillDefaults, and then applies type-specific defaults.
@@ -96,6 +128,8 @@ func InstallerWithDefaults(
 			}
 		}
 	}
+	// The type defaults may have replaced the platforms wholesale, so pin them once more.
+	lockPlatforms(data)
 	return data
 }
 
@@ -134,14 +168,5 @@ func FillDefaults(data *appconfig.InstallerData) {
 		str := ""
 		data.Tags = &str
 	}
-	// Default overrides per type — only applied when the user hasn't constrained platforms.
-	if data.Platforms.Only == nil && data.Platforms.Except == nil {
-		switch data.Type {
-		case appconfig.InstallerTypeApt,
-			appconfig.InstallerTypeApk,
-			appconfig.InstallerTypePacman,
-			appconfig.InstallerTypeYay:
-			data.Platforms.Only = &[]platform.Platform{platform.PlatformLinux}
-		}
-	}
+	lockPlatforms(data)
 }

@@ -164,7 +164,9 @@ These fields are shared by all installer types. Some fields may vary in behavior
 
 - **`platforms`**
   - **Type**: Object (optional)
-  - **Description**: Platform-specific execution controls. See `platforms` subfields below.
+  - **Description**: Platform-specific execution controls. See `platforms` subfields below. Ignored
+    by types whose package manager exists on one platform only — `apt`, `apk`, `pacman` and `yay`
+    always run on Linux alone.
   - **Subfields**:
     - **`platforms.only`**
       - **Type**: Array of Strings
@@ -813,6 +815,9 @@ Installs packages using apt install or apk add.
 
 - Use `type: apt` for `apt install`, and `type: apk` for `apk add`.
 
+**Platforms**: These types only run on Linux, and the restriction is not configurable — a
+`platforms` value on such a step is ignored. Use [`enabled`](#fields) to turn one off.
+
 **Repo update**: Runs `apt update` or `apk update` before installing. By default, the update runs at
 most once per sofmani run (`once` mode). Configure via the top-level
 [`repo_update`](./configuration-reference.md#global-options) option.
@@ -834,6 +839,9 @@ Installs packages using pacman or yay (Arch Linux).
 - Both use `--noconfirm` for non-interactive installation.
 - The Arch repositories carry only the current version of a package, so there is no version to pin
   to.
+
+**Platforms**: These types only run on Linux, and the restriction is not configurable — a
+`platforms` value on such a step is ignored. Use [`enabled`](#fields) to turn one off.
 
 **Options**:
 

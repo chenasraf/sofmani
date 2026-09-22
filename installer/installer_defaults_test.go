@@ -80,7 +80,7 @@ func TestFillDefaults(t *testing.T) {
 		assert.Contains(t, *data.Platforms.Only, platform.PlatformLinux)
 	})
 
-	t.Run("respects user-specified platforms for linux-only installers", func(t *testing.T) {
+	t.Run("ignores user-specified platforms for linux-only installers", func(t *testing.T) {
 		userOnly := []platform.Platform{platform.PlatformMacos}
 		data := &appconfig.InstallerData{
 			Type:      appconfig.InstallerTypeApt,
@@ -89,10 +89,10 @@ func TestFillDefaults(t *testing.T) {
 		FillDefaults(data)
 
 		assert.NotNil(t, data.Platforms.Only)
-		assert.Equal(t, []platform.Platform{platform.PlatformMacos}, *data.Platforms.Only)
+		assert.Equal(t, []platform.Platform{platform.PlatformLinux}, *data.Platforms.Only)
 	})
 
-	t.Run("respects user-specified except for linux-only installers", func(t *testing.T) {
+	t.Run("ignores user-specified except for linux-only installers", func(t *testing.T) {
 		userExcept := []platform.Platform{platform.PlatformWindows}
 		data := &appconfig.InstallerData{
 			Type:      appconfig.InstallerTypePacman,
@@ -100,9 +100,34 @@ func TestFillDefaults(t *testing.T) {
 		}
 		FillDefaults(data)
 
-		assert.Nil(t, data.Platforms.Only)
-		assert.Equal(t, []platform.Platform{platform.PlatformWindows}, *data.Platforms.Except)
+		assert.Nil(t, data.Platforms.Except)
+		assert.Equal(t, []platform.Platform{platform.PlatformLinux}, *data.Platforms.Only)
 	})
+
+	t.Run("leaves platforms alone for types that are not locked", func(t *testing.T) {
+		userOnly := []platform.Platform{platform.PlatformMacos}
+		data := &appconfig.InstallerData{
+			Type:      appconfig.InstallerTypeBrew,
+			Platforms: &platform.Platforms{Only: &userOnly},
+		}
+		FillDefaults(data)
+
+		assert.Equal(t, []platform.Platform{platform.PlatformMacos}, *data.Platforms.Only)
+	})
+}
+
+func TestPlatformLockSurvivesTypeDefaults(t *testing.T) {
+	macos := []platform.Platform{platform.PlatformMacos}
+	defaults := &appconfig.AppConfigDefaults{
+		Type: &map[appconfig.InstallerType]appconfig.InstallerData{
+			appconfig.InstallerTypeApt: {Platforms: &platform.Platforms{Only: &macos}},
+		},
+	}
+	data := &appconfig.InstallerData{Type: appconfig.InstallerTypeApt}
+	result := InstallerWithDefaults(data, appconfig.InstallerTypeApt, defaults)
+
+	assert.Equal(t, []platform.Platform{platform.PlatformLinux}, *result.Platforms.Only)
+	assert.Nil(t, result.Platforms.Except)
 }
 
 func TestInstallerWithDefaults_Comprehensive(t *testing.T) {
