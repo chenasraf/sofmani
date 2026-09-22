@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.33.1](https://github.com/chenasraf/sofmani/compare/v1.33.0...v1.33.1) (2026-09-22)
+
+
+### Bug Fixes
+
+* **installer:** lock platform-specific types to their platform ([ad657e9](https://github.com/chenasraf/sofmani/commit/ad657e98f09d733c87cff64addf7cad4b5412056))
+
 ## [1.33.0](https://github.com/chenasraf/sofmani/compare/v1.32.4...v1.33.0) (2026-09-22)
 
 
