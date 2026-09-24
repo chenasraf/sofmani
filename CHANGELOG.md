@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.34.0](https://github.com/chenasraf/sofmani/compare/v1.33.1...v1.34.0) (2026-09-24)
+
+
+### Features
+
+* **installer:** add confirm_install and confirm_update prompts ([48ec6f9](https://github.com/chenasraf/sofmani/commit/48ec6f9e4413664a651720d6f46278184def16bb))
+
 ## [1.33.1](https://github.com/chenasraf/sofmani/compare/v1.33.0...v1.33.1) (2026-09-22)
 
 
