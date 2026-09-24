@@ -126,6 +126,12 @@ func InstallerWithDefaults(
 			if override.AllowFailure != nil && data.AllowFailure == nil {
 				data.AllowFailure = override.AllowFailure
 			}
+			if override.ConfirmInstall != nil && data.ConfirmInstall == nil {
+				data.ConfirmInstall = override.ConfirmInstall
+			}
+			if override.ConfirmUpdate != nil && data.ConfirmUpdate == nil {
+				data.ConfirmUpdate = override.ConfirmUpdate
+			}
 		}
 	}
 	// The type defaults may have replaced the platforms wholesale, so pin them once more.

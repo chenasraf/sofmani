@@ -189,6 +189,17 @@ func allowsFailure(info *appconfig.InstallerData) bool {
 	return info != nil && info.AllowFailure != nil && *info.AllowFailure
 }
 
+// confirmPrompt asks the user a yes/no question. Tests replace it to answer on their own.
+var confirmPrompt = utils.Confirm
+
+// confirmStep asks the user to approve a step when the installer opted into a confirmation.
+func confirmStep(enabled *bool, question string) bool {
+	if enabled == nil || !*enabled {
+		return true
+	}
+	return confirmPrompt(question)
+}
+
 // RunInstaller executes the installation or update process for a given installer.
 // It returns the result of the installation/update and any error that occurred.
 // An installer marked `allow_failure` reports its error and yields no result, leaving the
@@ -324,6 +335,11 @@ func runInstaller(config *appconfig.AppConfig, installer IInstaller) (*summary.I
 				return nil, err
 			}
 			if needsUpdate {
+				if !confirmStep(info.ConfirmUpdate, fmt.Sprintf("Update %s: %s?", info.Type, name)) {
+					logger.Info("Skipping update for %s: %s", logger.H(string(info.Type)), logger.H(name))
+					result.Action = summary.ActionSkipped
+					return result, nil
+				}
 				if !isDelegating {
 					logger.Info("Updating %s", logger.H(name))
 				}
@@ -357,6 +373,11 @@ func runInstaller(config *appconfig.AppConfig, installer IInstaller) (*summary.I
 			result.Action = summary.ActionUpToDate
 		}
 	} else {
+		if !confirmStep(info.ConfirmInstall, fmt.Sprintf("Install %s: %s?", info.Type, name)) {
+			logger.Info("Skipping install for %s: %s", logger.H(string(info.Type)), logger.H(name))
+			result.Action = summary.ActionSkipped
+			return result, nil
+		}
 		if !isDelegating {
 			logger.Info("Installing %s: %s", logger.H(string(installer.GetData().Type)), logger.H(name))
 		}

@@ -92,6 +92,12 @@ type InstallerData struct {
 	// AllowFailure lets the run continue with the next installer when this one fails,
 	// instead of stopping.
 	AllowFailure *bool `json:"allow_failure"     yaml:"allow_failure"`
+	// ConfirmInstall asks for confirmation before installing. Declining skips the installer
+	// and the run carries on with the next one.
+	ConfirmInstall *bool `json:"confirm_install"   yaml:"confirm_install"`
+	// ConfirmUpdate asks for confirmation before updating. Declining skips the installer
+	// and the run carries on with the next one.
+	ConfirmUpdate *bool `json:"confirm_update"    yaml:"confirm_update"`
 	// Frequency is a prettified duration (e.g. "1d", "1w", "3m") that limits how often
 	// the installer runs. After a successful install/update, the next run will be skipped
 	// until the frequency period has elapsed.

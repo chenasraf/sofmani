@@ -28,6 +28,10 @@ type MockInstaller struct {
 	validationErrors []ValidationError
 	// templateVars holds template variables for testing.
 	templateVars *TemplateVars
+	// installCalls counts the calls to Install.
+	installCalls int
+	// updateCalls counts the calls to Update.
+	updateCalls int
 }
 
 // GetData returns the installer data for the mock installer.
@@ -47,11 +51,13 @@ func (m *MockInstaller) CheckNeedsUpdate() (bool, error) {
 
 // Install simulates installing the software.
 func (m *MockInstaller) Install() error {
+	m.installCalls++
 	return m.installError
 }
 
 // Update simulates updating the software.
 func (m *MockInstaller) Update() error {
+	m.updateCalls++
 	return m.updateError
 }
 

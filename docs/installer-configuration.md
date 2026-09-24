@@ -320,6 +320,40 @@ These fields are shared by all installer types. Some fields may vary in behavior
           allow_failure: true
     ```
 
+- **`confirm_install`** / **`confirm_update`**
+  - **Type**: Boolean (optional)
+  - **Description**: Ask before installing (`confirm_install`) or updating (`confirm_update`) this
+    step. The question is only asked when the work is actually needed, and answering `n` skips the
+    step and moves on to the next one — the rest of the run is unaffected. Pressing enter accepts.
+    With no terminal attached — a pipe, a cron job, CI — there is nobody to ask, so the step runs as
+    it otherwise would.
+  - **Default**: `false`.
+  - **Examples**:
+
+    ```yaml
+    # A slow build worth deciding on each time
+    - name: emacs
+      type: brew
+      confirm_install: true
+      confirm_update: true
+
+    # Ask before a group's steps run
+    - name: work-tools
+      type: group
+      confirm_install: true
+      steps:
+        - name: awscli
+          type: brew
+        - name: terraform
+          type: brew
+
+    # Can also be set for a whole installer type
+    defaults:
+      type:
+        docker:
+          confirm_update: true
+    ```
+
 - **`frequency`**
   - **Type**: String (optional)
   - **Description**: Limits how often the installer runs. After a successful install or update, the

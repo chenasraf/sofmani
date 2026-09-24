@@ -262,6 +262,16 @@
           "description": "Report a failure of this step and continue with the next one, instead of stopping the run.",
           "default": false
         },
+        "confirm_install": {
+          "type": "boolean",
+          "description": "Ask for confirmation before installing this step. Declining skips it and continues with the next one.",
+          "default": false
+        },
+        "confirm_update": {
+          "type": "boolean",
+          "description": "Ask for confirmation before updating this step. Declining skips it and continues with the next one.",
+          "default": false
+        },
         "frequency": { "$ref": "#/definitions/frequency" }
       },
       "allOf": [
