@@ -605,6 +605,43 @@ func TestBrewEnsureTapped(t *testing.T) {
 		assert.Equal(t, []string{"tap some/tap", "trust --json v1"}, log())
 	})
 
+	t.Run("skips trust when the tap is trusted under a different case", func(t *testing.T) {
+		ResetRepoUpdateTracker()
+		resetBrewTrustCache()
+		log := stubBrewCommand(t)
+		t.Setenv("SOFMANI_TEST_TRUSTED_TAPS", "some/tap")
+		data := &appconfig.InstallerData{
+			Name: lo.ToPtr("vim"),
+			Type: appconfig.InstallerTypeBrew,
+			Opts: &map[string]any{"tap": "Some/Tap"},
+		}
+		installer := newTestBrewInstaller(data)
+
+		assert.NoError(t, installer.ensureTapped())
+		assert.Equal(t, []string{"tap Some/Tap", "trust --json v1"}, log())
+	})
+
+	t.Run("reads the trust list again after a failed read", func(t *testing.T) {
+		ResetRepoUpdateTracker()
+		resetBrewTrustCache()
+		log := stubBrewCommand(t, "trust")
+		data := &appconfig.InstallerData{
+			Name: lo.ToPtr("vim"),
+			Type: appconfig.InstallerTypeBrew,
+			Opts: &map[string]any{"tap": "some/tap"},
+		}
+		assert.NoError(t, newTestBrewInstaller(data).ensureTapped())
+
+		ResetRepoUpdateTracker()
+		data.Opts = &map[string]any{"tap": "other/tap"}
+		assert.NoError(t, newTestBrewInstaller(data).ensureTapped())
+
+		assert.Equal(t, []string{
+			"tap some/tap", "trust --json v1", "trust --tap some/tap",
+			"tap other/tap", "trust --json v1", "trust --tap other/tap",
+		}, log())
+	})
+
 	t.Run("reads the trust list once per process", func(t *testing.T) {
 		ResetRepoUpdateTracker()
 		resetBrewTrustCache()

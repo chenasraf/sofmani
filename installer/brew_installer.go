@@ -159,10 +159,14 @@ func (i *BrewInstaller) ensureTapped() error {
 			return nil
 		}
 		logger.Debug("Trusting brew tap %s", tap)
-		if err := runBrewCmd("trust", "--tap", tap); err != nil {
+		if out, err := runBrewCmdCaptured("trust", "--tap", tap); err != nil {
 			// Homebrew versions without `brew trust` don't require trust to begin with, so
 			// let the install itself report the problem if the tap really is untrusted.
-			logger.Warn("Failed to trust tap %s: %v", tap, err)
+			detail := ""
+			if trimmed := strings.TrimSpace(string(out)); trimmed != "" {
+				detail = ": " + trimmed
+			}
+			logger.Warn("Failed to trust tap %s: %v%s", tap, err, detail)
 		}
 		return nil
 	})
@@ -181,24 +185,37 @@ func brewTapTrusted(tap string) bool {
 	brewTrustMu.Lock()
 	defer brewTrustMu.Unlock()
 	if brewTrustedTaps == nil {
-		brewTrustedTaps = map[string]bool{}
-		out, err := exec.Command("brew", "trust", "--json", "v1").Output()
+		taps, err := readBrewTrustedTaps()
 		if err != nil {
+			// Leaving the cache empty would retry the read for every tap, so let the caller
+			// trust this one and ask brew again on the next tap.
 			logger.Debug("Failed to read brew trust list: %v", err)
 			return false
 		}
-		var trusted struct {
-			Taps []string `json:"taps"`
-		}
-		if err := json.Unmarshal(out, &trusted); err != nil {
-			logger.Debug("Failed to parse brew trust list: %v", err)
-			return false
-		}
-		for _, t := range trusted.Taps {
-			brewTrustedTaps[t] = true
-		}
+		brewTrustedTaps = taps
 	}
-	return brewTrustedTaps[tap]
+	// Homebrew reports tap names lowercased, while a manifest spells the tap the way its
+	// owner writes it — `FelixKratz/formulae` names the same tap as `felixkratz/formulae`.
+	return brewTrustedTaps[strings.ToLower(tap)]
+}
+
+// readBrewTrustedTaps returns the set of taps in Homebrew's trust list, keyed by lowercased name.
+func readBrewTrustedTaps() (map[string]bool, error) {
+	out, err := exec.Command("brew", "trust", "--json", "v1").Output()
+	if err != nil {
+		return nil, err
+	}
+	var trusted struct {
+		Taps []string `json:"taps"`
+	}
+	if err := json.Unmarshal(out, &trusted); err != nil {
+		return nil, err
+	}
+	taps := map[string]bool{}
+	for _, t := range trusted.Taps {
+		taps[strings.ToLower(t)] = true
+	}
+	return taps, nil
 }
 
 // resetBrewTrustCache clears the cached trust list. Intended for testing.
@@ -215,6 +232,16 @@ func runBrewCmd(args ...string) error {
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
 	return cmd.Run()
+}
+
+// runBrewCmdCaptured runs a brew command and returns its output instead of letting it reach
+// the console, for commands whose chatter says nothing the run's own log doesn't already say.
+func runBrewCmdCaptured(args ...string) ([]byte, error) {
+	out, err := exec.Command("brew", args...).CombinedOutput()
+	if trimmed := strings.TrimSpace(string(out)); trimmed != "" {
+		logger.Debug("brew %s: %s", strings.Join(args, " "), trimmed)
+	}
+	return out, err
 }
 
 // handleBrewRepoUpdate manages brew's auto-update behavior according to the configured mode.
