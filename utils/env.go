@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"maps"
+	"os"
 	"strings"
 
 	"github.com/samber/lo"
@@ -78,4 +79,66 @@ func mergeEnvs(source *[]string, target []string) []string {
 	}
 	maps.Copy(tgt, EnvSliceAsMap(*source))
 	return EnvMapAsSlice(tgt)
+}
+
+// launchEnv is the process environment as sofmani received it, before any config applied its
+// own env on top. Variables reset by ScopeEnv go back to these values.
+var launchEnv = func() map[string]string {
+	out := map[string]string{}
+	for _, line := range os.Environ() {
+		if k, v, ok := strings.Cut(line, "="); ok {
+			out[k] = v
+		}
+	}
+	return out
+}()
+
+// ScopeEnv changes the process environment for the duration of a scope. Every key in reset goes
+// back to its value at launch (or is unset if it had none), then every key in set is applied.
+// The returned function puts each touched key back to its value from before the call.
+//
+// The process environment is what child commands inherit and what path expansion reads, so a
+// value only disappears from both by leaving the process environment.
+func ScopeEnv(set map[string]string, reset []string) (restore func(), err error) {
+	type prior struct {
+		value  string
+		exists bool
+	}
+	previous := map[string]prior{}
+	remember := func(k string) {
+		if _, seen := previous[k]; !seen {
+			v, ok := os.LookupEnv(k)
+			previous[k] = prior{value: v, exists: ok}
+		}
+	}
+	restore = func() {
+		for k, p := range previous {
+			if p.exists {
+				_ = os.Setenv(k, p.value)
+			} else {
+				_ = os.Unsetenv(k)
+			}
+		}
+	}
+
+	for _, k := range reset {
+		remember(k)
+		if v, ok := launchEnv[k]; ok {
+			err = os.Setenv(k, v)
+		} else {
+			err = os.Unsetenv(k)
+		}
+		if err != nil {
+			restore()
+			return func() {}, fmt.Errorf("failed to reset environment variable %s: %w", k, err)
+		}
+	}
+	for k, v := range set {
+		remember(k)
+		if err = os.Setenv(k, v); err != nil {
+			restore()
+			return func() {}, fmt.Errorf("failed to set environment variable %s: %w", k, err)
+		}
+	}
+	return restore, nil
 }

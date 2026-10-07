@@ -1,17 +1,22 @@
 package installer
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"maps"
 	"net/http"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
+	"github.com/chenasraf/sofmani/platform"
 	"github.com/chenasraf/sofmani/summary"
 	"github.com/chenasraf/sofmani/utils"
+	"github.com/samber/lo"
+	"gopkg.in/yaml.v3"
 )
 
 // ManifestInstaller is an installer that installs software based on another sofmani manifest file.
@@ -35,6 +40,92 @@ type ManifestOpts struct {
 	Path *string
 	// Ref is the Git reference (branch, tag, or commit) to use if the source is a Git URL.
 	Ref *string
+	// Inherit selects which global settings the loaded manifest receives from the config that loads it.
+	Inherit ManifestInherit
+	// Overrides holds global settings applied on top of everything else the loaded manifest ends up with.
+	Overrides *ManifestSettings
+}
+
+// ManifestInherit selects which global settings a loaded manifest inherits. In YAML it is either a
+// boolean covering every setting, or a map of setting name to boolean where omitted settings are
+// not inherited. A manifest inherits nothing unless asked to, so a remote manifest never sees the
+// loading config's env by accident.
+type ManifestInherit struct {
+	// Env covers both `env` and `platform_env`.
+	Env            bool `yaml:"env"`
+	Defaults       bool `yaml:"defaults"`
+	RepoUpdate     bool `yaml:"repo_update"`
+	MachineAliases bool `yaml:"machine_aliases"`
+	CheckUpdates   bool `yaml:"check_updates"`
+}
+
+// inheritAll is what `inherit: true` selects.
+var inheritAll = ManifestInherit{Env: true, Defaults: true, RepoUpdate: true, MachineAliases: true, CheckUpdates: true}
+
+// ManifestSettings are the global settings a manifest installer can pass to the manifest it loads.
+type ManifestSettings struct {
+	CheckUpdates   *bool                                                 `yaml:"check_updates"`
+	RepoUpdate     *map[appconfig.InstallerType]appconfig.RepoUpdateMode `yaml:"repo_update"`
+	Defaults       *appconfig.AppConfigDefaults                          `yaml:"defaults"`
+	Env            *map[string]string                                    `yaml:"env"`
+	PlatformEnv    *platform.PlatformMap[map[string]string]              `yaml:"platform_env"`
+	MachineAliases *map[string]string                                    `yaml:"machine_aliases"`
+}
+
+// decodeStrict re-encodes a loosely typed opts value and decodes it into out, rejecting unknown keys
+// so that a misspelled setting fails validation instead of being silently inherited.
+func decodeStrict(value any, out any) error {
+	raw, err := yaml.Marshal(value)
+	if err != nil {
+		return err
+	}
+	dec := yaml.NewDecoder(bytes.NewReader(raw))
+	dec.KnownFields(true)
+	return dec.Decode(out)
+}
+
+// parseInherit reads `opts.inherit`.
+func (i *ManifestInstaller) parseInherit() (ManifestInherit, error) {
+	inherit := ManifestInherit{}
+	if i.GetData().Opts == nil {
+		return inherit, nil
+	}
+	value, ok := (*i.GetData().Opts)["inherit"]
+	if !ok || value == nil {
+		return inherit, nil
+	}
+	if all, ok := value.(bool); ok {
+		if all {
+			return inheritAll, nil
+		}
+		return ManifestInherit{}, nil
+	}
+	if _, ok := value.(map[string]any); !ok {
+		return inherit, fmt.Errorf("must be a boolean or a map of setting names to booleans")
+	}
+	if err := decodeStrict(value, &inherit); err != nil {
+		return inherit, err
+	}
+	return inherit, nil
+}
+
+// parseOverrides reads `opts.overrides`.
+func (i *ManifestInstaller) parseOverrides() (*ManifestSettings, error) {
+	if i.GetData().Opts == nil {
+		return nil, nil
+	}
+	value, ok := (*i.GetData().Opts)["overrides"]
+	if !ok || value == nil {
+		return nil, nil
+	}
+	if _, ok := value.(map[string]any); !ok {
+		return nil, fmt.Errorf("must be a map of global settings")
+	}
+	overrides := &ManifestSettings{}
+	if err := decodeStrict(value, overrides); err != nil {
+		return nil, err
+	}
+	return overrides, nil
 }
 
 // Validate validates the installer configuration.
@@ -42,6 +133,12 @@ func (i *ManifestInstaller) Validate() []ValidationError {
 	errors := i.BaseValidate()
 	info := i.GetData()
 	opts := i.GetOpts()
+	if _, err := i.parseInherit(); err != nil {
+		errors = append(errors, ValidationError{FieldName: "inherit", Message: err.Error(), InstallerName: *info.Name})
+	}
+	if _, err := i.parseOverrides(); err != nil {
+		errors = append(errors, ValidationError{FieldName: "overrides", Message: err.Error(), InstallerName: *info.Name})
+	}
 	if opts.Source == nil || len(*opts.Source) == 0 {
 		errors = append(errors, ValidationError{FieldName: "source", Message: validationIsRequired(), InstallerName: *info.Name})
 	}
@@ -64,6 +161,11 @@ func (i *ManifestInstaller) Install() error {
 	info := i.GetData()
 	name := *info.Name
 	config := i.ManifestConfig
+	restoreEnv, err := i.scopeManifestEnv()
+	if err != nil {
+		return err
+	}
+	defer restoreEnv()
 	logger.Info("Installing manifest %s", logger.H(name))
 	i.childResults = []summary.InstallResult{}
 	for _, step := range config.Install {
@@ -133,12 +235,22 @@ func (i *ManifestInstaller) GetOpts() *ManifestOpts {
 			opts.Ref = &ref
 		}
 	}
+	// Invalid values are reported by Validate and refuse to install in FetchManifest.
+	opts.Inherit, _ = i.parseInherit()
+	opts.Overrides, _ = i.parseOverrides()
 	return opts
 }
 
 // FetchManifest fetches and parses the manifest file.
 // It handles local files, Git repository URLs, and raw HTTP URLs.
 func (i *ManifestInstaller) FetchManifest() error {
+	// An unreadable inherit or overrides must not fall back to inheriting everything.
+	if _, err := i.parseInherit(); err != nil {
+		return fmt.Errorf("invalid inherit for manifest %s: %w", *i.GetData().Name, err)
+	}
+	if _, err := i.parseOverrides(); err != nil {
+		return fmt.Errorf("invalid overrides for manifest %s: %w", *i.GetData().Name, err)
+	}
 	opts := i.GetOpts()
 	source := *opts.Source
 	env := i.GetData().Environ()
@@ -186,8 +298,7 @@ func (i *ManifestInstaller) FetchManifest() error {
 	}
 
 	logger.Debug("Installers: %d", len(config.Install))
-	config = i.inheritManifest(config)
-	i.ManifestConfig = config
+	i.ManifestConfig = i.buildManifestConfig(config, opts)
 	return nil
 }
 
@@ -264,44 +375,95 @@ func (i *ManifestInstaller) getLocalManifestConfig(path string) (*appconfig.AppC
 		return nil, fmt.Errorf("failed to parse manifest at %s: %w", path, err)
 	}
 
-	logger.Debug("Setting manifest config")
-	config = i.inheritManifest(config)
 	return config, nil
 }
 
-func (i *ManifestInstaller) inheritManifest(config *appconfig.AppConfig) *appconfig.AppConfig {
-	self := i.Config
-	if self.Debug != nil {
-		config.Debug = self.Debug
-	}
-	if *self.CheckUpdates {
-		config.CheckUpdates = self.CheckUpdates
-	}
-	if self.Env != nil {
-		logger.Debug("Injecting base env variables")
-		var env map[string]string
-		if config.Env == nil {
-			env = make(map[string]string)
-		} else {
-			env = *config.Env
+// buildManifestConfig layers the global settings of a loaded manifest. From lowest to highest
+// precedence: the manifest's own settings, the inherited settings of the loading config, and the
+// installer's `overrides`.
+func (i *ManifestInstaller) buildManifestConfig(config *appconfig.AppConfig, opts *ManifestOpts) *appconfig.AppConfig {
+	if parent := i.Config; parent != nil {
+		inherited := ManifestSettings{}
+		if opts.Inherit.CheckUpdates {
+			inherited.CheckUpdates = parent.CheckUpdates
 		}
-		maps.Copy(env, *self.Env)
-	}
-	if self.Defaults != nil {
-		defs := self.Defaults
-		if defs.Type != nil {
-			types := *defs.Type
-			if shell, ok := types["shell"]; ok {
-				logger.Debug("Setting shell to %v", shell)
-				if config.Defaults == nil {
-					config.Defaults = &appconfig.AppConfigDefaults{}
-				}
-				confDefs := *config.Defaults.Type
-				confDefs["shell"] = shell
-			}
+		if opts.Inherit.RepoUpdate {
+			inherited.RepoUpdate = parent.RepoUpdate
 		}
+		if opts.Inherit.Defaults {
+			inherited.Defaults = parent.Defaults
+		}
+		if opts.Inherit.Env {
+			inherited.Env = parent.Env
+			inherited.PlatformEnv = parent.PlatformEnv
+		}
+		if opts.Inherit.MachineAliases {
+			inherited.MachineAliases = parent.MachineAliases
+		}
+		logger.Debug("Manifest %s inherits %+v", *i.GetData().Name, opts.Inherit)
+		applyManifestSettings(config, &inherited)
+	}
+	if opts.Overrides != nil {
+		applyManifestSettings(config, opts.Overrides)
+	}
+	if config.CheckUpdates == nil {
+		config.CheckUpdates = lo.ToPtr(false)
 	}
 	return config
+}
+
+// applyManifestSettings merges settings into config. Maps merge key by key and `defaults` merge
+// type by type, with the values in settings winning. The maps are copied so that a manifest never
+// writes into the config it inherited from.
+func applyManifestSettings(config *appconfig.AppConfig, settings *ManifestSettings) {
+	if settings.CheckUpdates != nil {
+		config.CheckUpdates = lo.ToPtr(*settings.CheckUpdates)
+	}
+	config.RepoUpdate = mergeMap(config.RepoUpdate, settings.RepoUpdate)
+	config.Env = mergeMap(config.Env, settings.Env)
+	config.MachineAliases = mergeMap(config.MachineAliases, settings.MachineAliases)
+	if settings.PlatformEnv != nil {
+		if config.PlatformEnv == nil {
+			config.PlatformEnv = &platform.PlatformMap[map[string]string]{}
+		}
+		config.PlatformEnv.MacOS = mergeMap(config.PlatformEnv.MacOS, settings.PlatformEnv.MacOS)
+		config.PlatformEnv.Linux = mergeMap(config.PlatformEnv.Linux, settings.PlatformEnv.Linux)
+		config.PlatformEnv.Windows = mergeMap(config.PlatformEnv.Windows, settings.PlatformEnv.Windows)
+	}
+	if settings.Defaults != nil && settings.Defaults.Type != nil {
+		if config.Defaults == nil {
+			config.Defaults = &appconfig.AppConfigDefaults{}
+		}
+		config.Defaults.Type = mergeMap(config.Defaults.Type, settings.Defaults.Type)
+	}
+}
+
+// mergeMap returns a fresh map holding base with overlay applied on top, or base when there is
+// nothing to apply.
+func mergeMap[K comparable, V any](base, overlay *map[K]V) *map[K]V {
+	if overlay == nil {
+		return base
+	}
+	out := map[K]V{}
+	if base != nil {
+		maps.Copy(out, *base)
+	}
+	maps.Copy(out, *overlay)
+	return &out
+}
+
+// scopeManifestEnv applies the loaded manifest's env to the process for the duration of its
+// install. When env is not inherited, every variable the loading config set first goes back to
+// its value from before sofmani applied any config, so the manifest cannot read it from the
+// process either.
+func (i *ManifestInstaller) scopeManifestEnv() (func(), error) {
+	var reset []string
+	if i.Config != nil && !i.GetOpts().Inherit.Env {
+		reset = slices.Collect(maps.Keys(utils.CombineEnvMaps(i.Config.Env, i.Config.PlatformEnv.Resolve())))
+	}
+	config := i.ManifestConfig
+	set := utils.CombineEnvMaps(config.Env, config.PlatformEnv.Resolve())
+	return utils.ScopeEnv(set, reset)
 }
 
 func NewManifestInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *ManifestInstaller {

@@ -782,8 +782,9 @@ Installs an entire manifest from a local or remote file.
 
 - Every entry in the `install` array will be run, similar to how `steps` are run for `group`
   installers.
-- `debug` and `check_updates` will be inherited by the loaded config.
-- `env` and `defaults` will be merged into the loaded config, overriding any existing values.
+- The loaded manifest inherits none of the global settings of the config that loads it unless
+  `opts.inherit` says so. A manifest you don't control never sees your `env` by accident.
+- The manifest's `env` and `platform_env` apply to everything it runs, and only while it runs.
 - Remote manifests are fetched directly via HTTP (no git clone required).
 
 **Options**:
@@ -796,6 +797,22 @@ Installs an entire manifest from a local or remote file.
   for local files (will be appended to source). Ignored for raw HTTP URLs.
 - `opts.ref`: The branch, tag, or commit to use if `opts.source` is a git URL. Defaults to `master`.
   Ignored for local files and raw HTTP URLs.
+- `opts.inherit`: Which global settings the loaded manifest inherits. Defaults to `false`.
+  - `true` inherits every setting below; `false` inherits none.
+  - A map picks settings individually; any setting left out is not inherited:
+    - `env`: `env` and `platform_env`
+    - `defaults`
+    - `repo_update`
+    - `machine_aliases`
+    - `check_updates`
+  - Inherited settings take precedence over the manifest's own. Maps (`env`, `repo_update`,
+    `machine_aliases`) merge key by key, and `defaults` merge type by type.
+  - When `env` is not inherited, every variable your config sets goes back to its value from the
+    shell sofmani was started from (or is unset) while the manifest runs. Variables already exported
+    in that shell stay visible.
+- `opts.overrides`: Global settings applied to the loaded manifest, taking precedence over both its
+  own and inherited settings. Accepts `env`, `platform_env`, `defaults`, `repo_update`,
+  `machine_aliases`, and `check_updates`, in the same shape as the top level of a config file.
 
 ### `rsync`
 
@@ -1064,6 +1081,21 @@ install:
     opts:
       source: git@github.com:chenasraf/sofmani.git
       path: docs/recipes/lazygit.yml
+
+  # Share brew defaults and repo update settings, but keep env private
+  - name: team-tools
+    type: manifest
+    opts:
+      source: https://github.com/acme/dotfiles.git
+      path: sofmani.yml
+      inherit:
+        defaults: true
+        repo_update: true
+      overrides:
+        env:
+          INSTALL_PREFIX: ~/.local
+        repo_update:
+          brew: never
 ```
 
 ### git

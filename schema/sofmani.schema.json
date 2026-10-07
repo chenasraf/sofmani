@@ -392,7 +392,41 @@
                 "properties": {
                   "source": { "type": "string" },
                   "path": { "type": "string" },
-                  "ref": { "type": "string" }
+                  "ref": { "type": "string" },
+                  "inherit": {
+                    "description": "Global settings the loaded manifest inherits from this config. true inherits all of them; a map inherits only the settings set to true. Nothing is inherited when omitted.",
+                    "default": false,
+                    "oneOf": [
+                      { "type": "boolean" },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "env": {
+                            "type": "boolean",
+                            "description": "Inherit env and platform_env."
+                          },
+                          "defaults": { "type": "boolean" },
+                          "repo_update": { "type": "boolean" },
+                          "machine_aliases": { "type": "boolean" },
+                          "check_updates": { "type": "boolean" }
+                        }
+                      }
+                    ]
+                  },
+                  "overrides": {
+                    "type": "object",
+                    "description": "Global settings applied to the loaded manifest, taking precedence over its own and inherited settings.",
+                    "additionalProperties": false,
+                    "properties": {
+                      "env": { "$ref": "#/definitions/envMap" },
+                      "platform_env": { "$ref": "#/definitions/platformEnvMap" },
+                      "defaults": { "$ref": "#/properties/defaults" },
+                      "repo_update": { "$ref": "#/properties/repo_update" },
+                      "machine_aliases": { "$ref": "#/properties/machine_aliases" },
+                      "check_updates": { "type": "boolean" }
+                    }
+                  }
                 }
               }
             }

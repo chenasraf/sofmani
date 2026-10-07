@@ -66,14 +66,12 @@ func runMain(cliConfig *appconfig.AppCliConfig) {
 		return
 	}
 
-	if cfg.Env != nil {
-		for k, v := range *cfg.Env {
-			logger.Debug("Setting env %s=%s", k, v)
-			err := os.Setenv(k, v)
-			if err != nil {
-				logger.Error("failed to set environment variable %s: %v", k, err)
-				return
-			}
+	for k, v := range utils.CombineEnvMaps(cfg.Env, cfg.PlatformEnv.Resolve()) {
+		logger.Debug("Setting env %s=%s", k, v)
+		err := os.Setenv(k, v)
+		if err != nil {
+			logger.Error("failed to set environment variable %s: %v", k, err)
+			return
 		}
 	}
 

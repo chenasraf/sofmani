@@ -260,8 +260,8 @@ Most package-manager types take an `opts.version` to hold the software at an exa
   - Installs an entire manifest from a local or remote file.
   - Every entry in the `install` array will be run, similar to how `steps` are run for `group`
     installers.
-  - `debug` and `check_updates` will be inherited by the loaded config.
-  - `env` and `defaults` will be merged into the loaded config, overriding any existing values.
+  - Global settings (`env`, `defaults`, `repo_update`, …) are only inherited when `opts.inherit`
+    allows it, and `opts.overrides` sets them for that manifest alone.
 
 - **`rsync`**
   - Copy files from `source` to `destination` using rsync.

@@ -1,6 +1,10 @@
 package installer
 
 import (
+	"fmt"
+	"maps"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/chenasraf/sofmani/appconfig"
@@ -242,4 +246,173 @@ func TestNewManifestInstaller(t *testing.T) {
 		assert.Equal(t, data, installer.Info)
 		assert.Equal(t, data, installer.Data)
 	})
+}
+
+func manifestData(opts map[string]any) *appconfig.InstallerData {
+	base := map[string]any{"source": "/tmp", "path": "manifest.yml"}
+	maps.Copy(base, opts)
+	return &appconfig.InstallerData{
+		Name: lo.ToPtr("manifest-test"),
+		Type: appconfig.InstallerTypeManifest,
+		Opts: &base,
+	}
+}
+
+func TestManifestInheritParsing(t *testing.T) {
+	logger.InitLogger(false)
+
+	t.Run("inherits nothing by default", func(t *testing.T) {
+		opts := newTestManifestInstaller(manifestData(nil)).GetOpts()
+		assert.Equal(t, ManifestInherit{}, opts.Inherit)
+	})
+
+	t.Run("true inherits everything", func(t *testing.T) {
+		opts := newTestManifestInstaller(manifestData(map[string]any{"inherit": true})).GetOpts()
+		assert.Equal(t, inheritAll, opts.Inherit)
+	})
+
+	t.Run("map inherits only the listed settings", func(t *testing.T) {
+		data := manifestData(map[string]any{"inherit": map[string]any{"defaults": true, "env": false}})
+		opts := newTestManifestInstaller(data).GetOpts()
+		assert.Equal(t, ManifestInherit{Defaults: true}, opts.Inherit)
+	})
+
+	t.Run("unknown setting fails validation", func(t *testing.T) {
+		data := manifestData(map[string]any{"inherit": map[string]any{"envs": true}})
+		assertValidationError(t, newTestManifestInstaller(data).Validate(), "inherit")
+	})
+
+	t.Run("non-bool non-map fails validation", func(t *testing.T) {
+		data := manifestData(map[string]any{"inherit": "yes"})
+		assertValidationError(t, newTestManifestInstaller(data).Validate(), "inherit")
+	})
+}
+
+func TestManifestOverridesParsing(t *testing.T) {
+	logger.InitLogger(false)
+
+	t.Run("parses global settings", func(t *testing.T) {
+		data := manifestData(map[string]any{"overrides": map[string]any{
+			"env":             map[string]any{"FOO": "bar"},
+			"platform_env":    map[string]any{"linux": map[string]any{"BAZ": "qux"}},
+			"repo_update":     map[string]any{"brew": "never"},
+			"check_updates":   true,
+			"machine_aliases": map[string]any{"work": "abc"},
+			"defaults": map[string]any{"type": map[string]any{
+				"brew": map[string]any{"opts": map[string]any{"tap": "x/y"}},
+			}},
+		}})
+		inst := newTestManifestInstaller(data)
+		assertNoValidationErrors(t, inst.Validate())
+		o := inst.GetOpts().Overrides
+		assert.Equal(t, "bar", (*o.Env)["FOO"])
+		assert.Equal(t, "qux", (*o.PlatformEnv.Linux)["BAZ"])
+		assert.Equal(t, appconfig.RepoUpdateNever, (*o.RepoUpdate)[appconfig.InstallerTypeBrew])
+		assert.True(t, *o.CheckUpdates)
+		assert.Equal(t, "abc", (*o.MachineAliases)["work"])
+		assert.Equal(t, "x/y", (*(*o.Defaults.Type)[appconfig.InstallerTypeBrew].Opts)["tap"])
+	})
+
+	t.Run("unknown setting fails validation", func(t *testing.T) {
+		data := manifestData(map[string]any{"overrides": map[string]any{"install": []any{}}})
+		assertValidationError(t, newTestManifestInstaller(data).Validate(), "overrides")
+	})
+
+	t.Run("invalid overrides refuse to fetch", func(t *testing.T) {
+		data := manifestData(map[string]any{"overrides": "nope"})
+		assert.Error(t, newTestManifestInstaller(data).FetchManifest())
+	})
+}
+
+func TestManifestBuildConfig(t *testing.T) {
+	logger.InitLogger(false)
+
+	parent := func() *appconfig.AppConfig {
+		return &appconfig.AppConfig{
+			CheckUpdates:   lo.ToPtr(true),
+			Env:            &map[string]string{"SECRET": "parent", "SHARED": "parent"},
+			RepoUpdate:     &map[appconfig.InstallerType]appconfig.RepoUpdateMode{appconfig.InstallerTypeBrew: appconfig.RepoUpdateNever},
+			MachineAliases: &map[string]string{"home": "123"},
+			Defaults: &appconfig.AppConfigDefaults{Type: &map[appconfig.InstallerType]appconfig.InstallerData{
+				appconfig.InstallerTypeShell: {Verbose: lo.ToPtr(true)},
+			}},
+		}
+	}
+	child := func() *appconfig.AppConfig {
+		return &appconfig.AppConfig{Env: &map[string]string{"SHARED": "child", "OWN": "child"}}
+	}
+	build := func(p *appconfig.AppConfig, opts map[string]any) *appconfig.AppConfig {
+		inst := NewManifestInstaller(p, manifestData(opts))
+		return inst.buildManifestConfig(child(), inst.GetOpts())
+	}
+
+	t.Run("inherits nothing by default", func(t *testing.T) {
+		cfg := build(parent(), nil)
+		assert.Equal(t, map[string]string{"SHARED": "child", "OWN": "child"}, *cfg.Env)
+		assert.False(t, *cfg.CheckUpdates)
+		assert.Nil(t, cfg.RepoUpdate)
+		assert.Nil(t, cfg.MachineAliases)
+		assert.Nil(t, cfg.Defaults)
+	})
+
+	t.Run("inherited settings win over the manifest's own", func(t *testing.T) {
+		cfg := build(parent(), map[string]any{"inherit": true})
+		assert.Equal(t, map[string]string{"SECRET": "parent", "SHARED": "parent", "OWN": "child"}, *cfg.Env)
+		assert.True(t, *cfg.CheckUpdates)
+		assert.Equal(t, appconfig.RepoUpdateNever, cfg.GetRepoUpdateMode(appconfig.InstallerTypeBrew))
+		assert.Equal(t, "123", (*cfg.MachineAliases)["home"])
+		assert.Contains(t, *cfg.Defaults.Type, appconfig.InstallerTypeShell)
+	})
+
+	t.Run("overrides win over everything", func(t *testing.T) {
+		cfg := build(parent(), map[string]any{
+			"inherit":   map[string]any{"env": true},
+			"overrides": map[string]any{"env": map[string]any{"SHARED": "override"}, "check_updates": true},
+		})
+		assert.Equal(t, map[string]string{"SECRET": "parent", "SHARED": "override", "OWN": "child"}, *cfg.Env)
+		assert.True(t, *cfg.CheckUpdates)
+	})
+
+	t.Run("never writes into the parent config", func(t *testing.T) {
+		p := parent()
+		build(p, map[string]any{"inherit": true, "overrides": map[string]any{"env": map[string]any{"X": "y"}}})
+		assert.Equal(t, map[string]string{"SECRET": "parent", "SHARED": "parent"}, *p.Env)
+	})
+}
+
+func TestManifestEnvIsolation(t *testing.T) {
+	logger.InitLogger(false)
+
+	dir := t.TempDir()
+	out := filepath.Join(dir, "out.txt")
+	manifest := fmt.Sprintf(`install:
+  - name: probe
+    type: shell
+    opts:
+      command: 'printf "%%s|%%s" "$SOFMANI_TEST_SECRET" "$SOFMANI_TEST_OWN" > %s'
+`, out)
+	assert.NoError(t, os.WriteFile(filepath.Join(dir, "manifest.yml"), []byte(manifest), 0o644))
+
+	run := func(opts map[string]any) string {
+		// main applies the root env to the process the same way.
+		t.Setenv("SOFMANI_TEST_SECRET", "hunter2")
+		parent := &appconfig.AppConfig{
+			CheckUpdates: lo.ToPtr(false),
+			Env:          &map[string]string{"SOFMANI_TEST_SECRET": "hunter2"},
+		}
+		base := map[string]any{"source": dir, "path": "manifest.yml"}
+		maps.Copy(base, opts)
+		data := &appconfig.InstallerData{Name: lo.ToPtr("isolated"), Type: appconfig.InstallerTypeManifest, Opts: &base}
+		assert.NoError(t, NewManifestInstaller(parent, data).Install())
+		assert.Equal(t, "hunter2", os.Getenv("SOFMANI_TEST_SECRET"), "parent env is restored afterwards")
+		_, leaked := os.LookupEnv("SOFMANI_TEST_OWN")
+		assert.False(t, leaked, "manifest env does not outlive the manifest")
+		content, err := os.ReadFile(out)
+		assert.NoError(t, err)
+		return string(content)
+	}
+
+	overrides := map[string]any{"env": map[string]any{"SOFMANI_TEST_OWN": "mine"}}
+	assert.Equal(t, "|mine", run(map[string]any{"overrides": overrides}))
+	assert.Equal(t, "hunter2|mine", run(map[string]any{"overrides": overrides, "inherit": map[string]any{"env": true}}))
 }
