@@ -66,6 +66,24 @@ func RunCmdGetSuccessPassThrough(env []string, bin string, args ...string) (bool
 	return true, nil
 }
 
+// RunCmdGetSuccessCaptured executes a command and returns true if it succeeds (exit code 0),
+// keeping its output in the debug log rather than on the console. Commands that are only asked
+// a yes/no question answer it with their exit code, so anything they print is noise in the
+// middle of the run's own output.
+func RunCmdGetSuccessCaptured(env []string, bin string, args ...string) (bool, error) {
+	logger.Debug("Running command: %s %v", bin, args)
+	cmd := exec.Command(bin, args...)
+	cmd.Env = ResolveEnvPaths(os.Environ(), cmd.Env, env)
+	out, err := cmd.CombinedOutput()
+	if trimmed := strings.TrimSpace(string(out)); trimmed != "" {
+		logger.Debug("Command output: %s", trimmed)
+	}
+	if err != nil {
+		return false, nil
+	}
+	return true, nil
+}
+
 // RunCmdGetOutput executes a command and returns its standard output.
 func RunCmdGetOutput(env []string, bin string, args ...string) ([]byte, error) {
 	logger.Debug("Running command: %s %v", bin, args)

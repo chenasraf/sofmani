@@ -212,13 +212,15 @@ These fields are shared by all installer types. Some fields may vary in behavior
   - **Description**: Shell command to check whether an update is available for the installed
     software. This will override the default check provided by the corresponding `type`. The check
     **must succeed** (return exit code 0) if the app has an update, or fail (other status codes) if
-    the app is up to date. Supports [template variables](#template-variables).
+    the app is up to date. Anything the command prints goes to the debug log rather than the
+    console. Supports [template variables](#template-variables).
 
 - **`check_installed`**
   - **Type**: String (shell script)
   - **Description**: Shell command to check if the step has already been installed. If the check
     succeeds (exits with status 0), it means the app is already installed and can be skipped if not
-    checking for updates. Supports [template variables](#template-variables).
+    checking for updates. Anything the command prints goes to the debug log rather than the console.
+    Supports [template variables](#template-variables).
 
 - **`pre_install`**
   - **Type**: String (shell script)

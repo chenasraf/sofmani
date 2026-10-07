@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"io"
+	"os"
 	"testing"
 
 	"github.com/chenasraf/sofmani/logger"
@@ -40,6 +42,44 @@ func TestRunCmdGetSuccess(t *testing.T) {
 			assert.Equal(t, tt.expectedResult, result)
 		})
 	}
+}
+
+func TestRunCmdGetSuccessCaptured(t *testing.T) {
+	t.Run("reports success without printing the command output", func(t *testing.T) {
+		out := captureStdout(t, func() {
+			result, err := RunCmdGetSuccessCaptured(nil, "echo", "hello")
+			assert.NoError(t, err)
+			assert.True(t, result)
+		})
+		assert.Empty(t, out)
+	})
+
+	t.Run("reports failure", func(t *testing.T) {
+		result, err := RunCmdGetSuccessCaptured(nil, "false")
+		assert.NoError(t, err)
+		assert.False(t, result)
+	})
+}
+
+// captureStdout runs fn with os.Stdout replaced by a pipe and returns what was written to it.
+func captureStdout(t *testing.T, fn func()) string {
+	t.Helper()
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("failed to create pipe: %v", err)
+	}
+	orig := os.Stdout
+	os.Stdout = w
+	fn()
+	os.Stdout = orig
+	if err := w.Close(); err != nil {
+		t.Fatalf("failed to close pipe: %v", err)
+	}
+	written, err := io.ReadAll(r)
+	if err != nil {
+		t.Fatalf("failed to read pipe: %v", err)
+	}
+	return string(written)
 }
 
 func TestRunCmdGetOutput(t *testing.T) {

@@ -126,14 +126,14 @@ func (i *InstallerBase) applyTemplate(input string) string {
 func (i *InstallerBase) RunCustomUpdateCheck() (bool, error) {
 	envShell := utils.GetOSShell(i.GetData().EnvShell)
 	args := utils.GetOSShellArgs(i.applyTemplate(*i.GetData().CheckHasUpdate))
-	return utils.RunCmdGetSuccessPassThrough(i.Data.Environ(), envShell, args...)
+	return utils.RunCmdGetSuccessCaptured(i.Data.Environ(), envShell, args...)
 }
 
 // RunCustomInstallCheck runs a custom command to check if the software is installed.
 func (i *InstallerBase) RunCustomInstallCheck() (bool, error) {
 	envShell := utils.GetOSShell(i.GetData().EnvShell)
 	args := utils.GetOSShellArgs(i.applyTemplate(*i.GetData().CheckInstalled))
-	return utils.RunCmdGetSuccessPassThrough(i.Data.Environ(), envShell, args...)
+	return utils.RunCmdGetSuccessCaptured(i.Data.Environ(), envShell, args...)
 }
 
 // HasCustomUpdateCheck checks if a custom update check command is defined.
