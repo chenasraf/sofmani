@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.35.0](https://github.com/chenasraf/sofmani/compare/v1.34.0...v1.35.0) (2026-10-07)
+
+
+### Features
+
+* **installer:** per-manifest inherit and overrides for global settings ([4e4753b](https://github.com/chenasraf/sofmani/commit/4e4753b7cf8b59e7ea03c8bb7ffa8d35388c66ef))
+
+
+### Bug Fixes
+
+* **brew:** match trusted taps case-insensitively ([5f2602e](https://github.com/chenasraf/sofmani/commit/5f2602e75a56459d6ba1d5d6281d360fd511e78e))
+* **installer:** keep custom check output off the console ([f948c5b](https://github.com/chenasraf/sofmani/commit/f948c5b77cf87c6a019697e087e02388f8733207))
+
 ## [1.34.0](https://github.com/chenasraf/sofmani/compare/v1.33.1...v1.34.0) (2026-09-24)
 
 
