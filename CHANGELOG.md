@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.35.1](https://github.com/chenasraf/sofmani/compare/v1.35.0...v1.35.1) (2026-10-09)
+
+
+### Bug Fixes
+
+* **installer/github-release:** download private assets via the releases API ([e7b35c6](https://github.com/chenasraf/sofmani/commit/e7b35c65f6204fe470eae429eb682b4ccd433ca4))
+
 ## [1.35.0](https://github.com/chenasraf/sofmani/compare/v1.34.0...v1.35.0) (2026-10-07)
 
 
