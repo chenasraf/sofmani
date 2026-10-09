@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -222,40 +223,10 @@ func (i *GitHubReleaseInstaller) Install() error {
 	if err != nil {
 		return fmt.Errorf("failed to apply template to download_filename %q: %w", rawFilename, err)
 	}
-	downloadUrl := fmt.Sprintf("https://github.com/%s/releases/download/%s/%s", *opts.Repository, tag, filename)
-	logger.Debug("Downloading file: %s", filename)
-	logger.Debug("Download URL: %s", downloadUrl)
 	logger.Debug("Temp file: %s", tmpFile)
-
-	req, err := http.NewRequest("GET", downloadUrl, nil)
+	n, err := i.downloadAsset(tmpOut, tag, filename)
 	if err != nil {
-		return fmt.Errorf("failed to build request for %s: %w", downloadUrl, err)
-	}
-	if opts.GithubToken != nil && *opts.GithubToken != "" {
-		logger.Debug("Using GitHub token for authentication")
-		req.Header.Set("Authorization", "Bearer "+*opts.GithubToken)
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to download release asset from %s: %w", downloadUrl, err)
-	}
-	defer func() {
-		if cerr := resp.Body.Close(); cerr != nil {
-			logger.Warn("failed to close response body: %v", cerr)
-		}
-	}()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("failed to download release asset: %s returned status %d", downloadUrl, resp.StatusCode)
-	}
-
-	n, err := io.Copy(tmpOut, resp.Body)
-	if err != nil {
-		return fmt.Errorf("failed to write downloaded asset from %s to %s: %w", downloadUrl, tmpFile, err)
-	}
-	if n == 0 {
-		return fmt.Errorf("no data was written to %s from %s", tmpFile, downloadUrl)
+		return fmt.Errorf("failed to download %s to %s: %w", filename, tmpFile, err)
 	}
 	logger.Debug("Downloaded %d bytes to temp file", n)
 
@@ -782,7 +753,7 @@ func (i *GitHubReleaseInstaller) GetTag() (string, error) {
 
 func (i *GitHubReleaseInstaller) GetLatestTag() (string, error) {
 	opts := i.GetOpts()
-	latestReleaseUrl := fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", *opts.Repository)
+	latestReleaseUrl := fmt.Sprintf("%s/repos/%s/releases/latest", githubAPIBaseURL, *opts.Repository)
 	logger.Debug("Getting latest release from %s", latestReleaseUrl)
 
 	req, err := http.NewRequest("GET", latestReleaseUrl, nil)
@@ -991,8 +962,6 @@ func (i *GitHubReleaseInstaller) installTree() error {
 // path plus the resolved tag. It encapsulates the tag lookup, template application, HTTP
 // fetch, and file write so both single-file and tree-mode installs can share it.
 func (i *GitHubReleaseInstaller) downloadRelease(tmpDir, name string) (string, string, error) {
-	opts := i.GetOpts()
-
 	tag, err := i.GetTag()
 	if err != nil {
 		return "", "", err
@@ -1024,23 +993,58 @@ func (i *GitHubReleaseInstaller) downloadRelease(tmpDir, name string) (string, s
 		}
 	}()
 
-	downloadUrl := fmt.Sprintf("https://github.com/%s/releases/download/%s/%s", *opts.Repository, tag, filename)
-	logger.Debug("Downloading file: %s", filename)
-	logger.Debug("Download URL: %s", downloadUrl)
 	logger.Debug("Temp file: %s", tmpFile)
-
-	req, err := http.NewRequest("GET", downloadUrl, nil)
+	n, err := i.downloadAsset(out, tag, filename)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to build request for %s: %w", downloadUrl, err)
+		return "", "", fmt.Errorf("failed to download %s to %s: %w", filename, tmpFile, err)
 	}
+	logger.Debug("Downloaded %d bytes to temp file", n)
+	return tmpFile, tag, nil
+}
+
+// githubAPIBaseURL and githubWebBaseURL are variables so tests can point them at local servers.
+var (
+	githubAPIBaseURL = "https://api.github.com"
+	githubWebBaseURL = "https://github.com"
+)
+
+// downloadAsset writes the release asset named filename from tag to out and returns the number
+// of bytes written. With a token, it goes through the releases API: github.com download URLs
+// ignore bearer tokens, so private repositories answer 404 there. Without a token, it uses the
+// github.com download URL, which costs no API rate limit.
+func (i *GitHubReleaseInstaller) downloadAsset(out io.Writer, tag, filename string) (int64, error) {
+	opts := i.GetOpts()
+	repo := *opts.Repository
+	logger.Debug("Downloading file: %s", filename)
+
+	var req *http.Request
 	if opts.GithubToken != nil && *opts.GithubToken != "" {
 		logger.Debug("Using GitHub token for authentication")
-		req.Header.Set("Authorization", "Bearer "+*opts.GithubToken)
+		assetUrl, err := i.findReleaseAssetUrl(tag, filename)
+		if err != nil {
+			return 0, err
+		}
+		req, err = newGitHubAPIRequest(assetUrl, *opts.GithubToken)
+		if err != nil {
+			return 0, err
+		}
+		req.Header.Set("Accept", "application/octet-stream")
+	} else {
+		downloadUrl := fmt.Sprintf("%s/%s/releases/download/%s/%s", githubWebBaseURL, repo, tag, filename)
+		var err error
+		req, err = http.NewRequest("GET", downloadUrl, nil)
+		if err != nil {
+			return 0, fmt.Errorf("failed to build request for %s: %w", downloadUrl, err)
+		}
 	}
+	logger.Debug("Download URL: %s", req.URL)
 
+	// The asset endpoint redirects to a signed URL on another host, which rejects requests that
+	// carry an Authorization header. http.Client drops that header on cross-host redirects, so
+	// no CheckRedirect is set here.
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to download release asset from %s: %w", downloadUrl, err)
+		return 0, fmt.Errorf("failed to download release asset from %s: %w", req.URL, err)
 	}
 	defer func() {
 		if cerr := resp.Body.Close(); cerr != nil {
@@ -1049,18 +1053,74 @@ func (i *GitHubReleaseInstaller) downloadRelease(tmpDir, name string) (string, s
 	}()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return "", "", fmt.Errorf("failed to download release asset: %s returned status %d", downloadUrl, resp.StatusCode)
+		return 0, fmt.Errorf("failed to download release asset: %s returned status %d", req.URL, resp.StatusCode)
 	}
 
 	n, err := io.Copy(out, resp.Body)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to write downloaded asset from %s to %s: %w", downloadUrl, tmpFile, err)
+		return n, fmt.Errorf("failed to write downloaded asset from %s: %w", req.URL, err)
 	}
 	if n == 0 {
-		return "", "", fmt.Errorf("no data was written to %s from %s", tmpFile, downloadUrl)
+		return 0, fmt.Errorf("no data was received from %s", req.URL)
 	}
-	logger.Debug("Downloaded %d bytes to temp file", n)
-	return tmpFile, tag, nil
+	return n, nil
+}
+
+// findReleaseAssetUrl looks up the release for tag and returns the API URL of its asset named
+// filename.
+func (i *GitHubReleaseInstaller) findReleaseAssetUrl(tag, filename string) (string, error) {
+	opts := i.GetOpts()
+	repo := *opts.Repository
+	releaseUrl := fmt.Sprintf("%s/repos/%s/releases/tags/%s", githubAPIBaseURL, repo, url.PathEscape(tag))
+	logger.Debug("Getting release from %s", releaseUrl)
+
+	req, err := newGitHubAPIRequest(releaseUrl, *opts.GithubToken)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Accept", "application/vnd.github+json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch release from %s: %w", releaseUrl, err)
+	}
+	defer func() {
+		if cerr := resp.Body.Close(); cerr != nil {
+			logger.Warn("failed to close response body: %v", cerr)
+		}
+	}()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return "", fmt.Errorf("failed to fetch release: %s returned status %d", releaseUrl, resp.StatusCode)
+	}
+
+	var release struct {
+		Assets []struct {
+			ID   int64  `json:"id"`
+			Name string `json:"name"`
+		} `json:"assets"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
+		return "", fmt.Errorf("failed to parse JSON response from %s: %w", releaseUrl, err)
+	}
+
+	names := make([]string, 0, len(release.Assets))
+	for _, asset := range release.Assets {
+		if asset.Name == filename {
+			return fmt.Sprintf("%s/repos/%s/releases/assets/%d", githubAPIBaseURL, repo, asset.ID), nil
+		}
+		names = append(names, asset.Name)
+	}
+	return "", fmt.Errorf("release %s of %s has no asset named %q (available: %s)", tag, repo, filename, strings.Join(names, ", "))
+}
+
+func newGitHubAPIRequest(requestUrl, token string) (*http.Request, error) {
+	req, err := http.NewRequest("GET", requestUrl, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build request for %s: %w", requestUrl, err)
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
+	return req, nil
 }
 
 // extractZipWithStrip extracts a zip archive into dest, dropping the first `strip` leading

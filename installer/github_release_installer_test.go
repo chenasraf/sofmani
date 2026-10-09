@@ -4,10 +4,16 @@ import (
 	"archive/zip"
 	"bytes"
 	"compress/gzip"
+	"encoding/json"
 	"fmt"
+	"io"
+	"maps"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/chenasraf/sofmani/appconfig"
@@ -1245,5 +1251,161 @@ func TestNewGitHubReleaseInstaller(t *testing.T) {
 		assert.Equal(t, cfg, installer.Config)
 		assert.Equal(t, data, installer.Info)
 		assert.Equal(t, data, installer.Data)
+	})
+}
+
+// fakeGitHub stands in for api.github.com, github.com and the signed-URL storage host that the
+// asset endpoint redirects to. Storage is reached through "localhost" while the API is reached
+// through "127.0.0.1", so the redirect crosses hosts the way GitHub's does.
+type fakeGitHub struct {
+	api, web, storage *httptest.Server
+	assetBody         string
+	assetNames        []string
+	storageAuth       []string
+	webAuth           []string
+	apiHits           int
+}
+
+func newFakeGitHub(t *testing.T, token string) *fakeGitHub {
+	f := &fakeGitHub{assetBody: "asset-bytes", assetNames: []string{"app.zip", "app.tar.gz"}}
+
+	f.storage = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		f.storageAuth = append(f.storageAuth, r.Header.Get("Authorization"))
+		_, _ = io.WriteString(w, f.assetBody)
+	}))
+	f.api = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		f.apiHits++
+		assert.Equal(t, "Bearer "+token, r.Header.Get("Authorization"))
+		assert.Equal(t, "2022-11-28", r.Header.Get("X-GitHub-Api-Version"))
+		switch r.URL.Path {
+		case "/repos/owner/repo/releases/tags/v1.0.0":
+			assert.Equal(t, "application/vnd.github+json", r.Header.Get("Accept"))
+			assets := []map[string]any{}
+			for idx, name := range f.assetNames {
+				assets = append(assets, map[string]any{"id": 40 + idx, "name": name})
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{"tag_name": "v1.0.0", "assets": assets})
+		case "/repos/owner/repo/releases/assets/40":
+			assert.Equal(t, "application/octet-stream", r.Header.Get("Accept"))
+			signed := strings.Replace(f.storage.URL, "127.0.0.1", "localhost", 1) + "/signed/app.zip?sig=abc"
+			http.Redirect(w, r, signed, http.StatusFound)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	f.web = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		f.webAuth = append(f.webAuth, r.Header.Get("Authorization"))
+		if r.URL.Path != "/owner/repo/releases/download/v1.0.0/app.zip" {
+			http.NotFound(w, r)
+			return
+		}
+		_, _ = io.WriteString(w, f.assetBody)
+	}))
+
+	origAPI, origWeb := githubAPIBaseURL, githubWebBaseURL
+	githubAPIBaseURL, githubWebBaseURL = f.api.URL, f.web.URL
+	t.Cleanup(func() {
+		githubAPIBaseURL, githubWebBaseURL = origAPI, origWeb
+		f.api.Close()
+		f.web.Close()
+		f.storage.Close()
+	})
+	return f
+}
+
+func newDownloadTestInstaller(name string, opts map[string]any) *GitHubReleaseInstaller {
+	base := map[string]any{
+		"repository":        "owner/repo",
+		"download_filename": "app.zip",
+		"version":           "v1.0.0",
+	}
+	maps.Copy(base, opts)
+	data := &appconfig.InstallerData{
+		Name: lo.ToPtr(name),
+		Type: appconfig.InstallerTypeGitHubRelease,
+		Opts: &base,
+	}
+	inst := newTestGitHubReleaseInstaller(data)
+	inst.Config = &appconfig.AppConfig{}
+	return inst
+}
+
+func TestGitHubReleaseDownloadAsset(t *testing.T) {
+	logger.InitLogger(false)
+
+	t.Run("with a token downloads through the releases API without leaking auth to the redirect host", func(t *testing.T) {
+		f := newFakeGitHub(t, "secret")
+		inst := newDownloadTestInstaller("myapp", map[string]any{"github_token": "secret"})
+
+		var buf bytes.Buffer
+		n, err := inst.downloadAsset(&buf, "v1.0.0", "app.zip")
+		assert.NoError(t, err)
+		assert.Equal(t, int64(len(f.assetBody)), n)
+		assert.Equal(t, f.assetBody, buf.String())
+		assert.Equal(t, []string{""}, f.storageAuth, "Authorization must not reach the signed-URL host")
+		assert.Empty(t, f.webAuth, "the browser download URL must not be used with a token")
+	})
+
+	t.Run("with a token and no matching asset lists the available names", func(t *testing.T) {
+		f := newFakeGitHub(t, "secret")
+		inst := newDownloadTestInstaller("myapp", map[string]any{"github_token": "secret"})
+
+		var buf bytes.Buffer
+		_, err := inst.downloadAsset(&buf, "v1.0.0", "missing.zip")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), `"missing.zip"`)
+		assert.Contains(t, err.Error(), "app.zip, app.tar.gz")
+		assert.Empty(t, f.storageAuth)
+	})
+
+	t.Run("without a token downloads the browser URL anonymously", func(t *testing.T) {
+		f := newFakeGitHub(t, "")
+		inst := newDownloadTestInstaller("myapp", nil)
+
+		var buf bytes.Buffer
+		_, err := inst.downloadAsset(&buf, "v1.0.0", "app.zip")
+		assert.NoError(t, err)
+		assert.Equal(t, f.assetBody, buf.String())
+		assert.Equal(t, []string{""}, f.webAuth)
+		assert.Zero(t, f.apiHits)
+	})
+
+	t.Run("single-binary install uses the releases API with a token", func(t *testing.T) {
+		f := newFakeGitHub(t, "secret")
+		dest := t.TempDir()
+		inst := newDownloadTestInstaller("private-release-single-99999", map[string]any{
+			"github_token": "secret",
+			"destination":  dest,
+		})
+		t.Cleanup(func() {
+			if cacheDir, err := utils.GetCacheDir(); err == nil {
+				_ = os.Remove(filepath.Join(cacheDir, "private-release-single-99999"))
+			}
+		})
+
+		assert.NoError(t, inst.Install())
+		got, err := os.ReadFile(filepath.Join(dest, "private-release-single-99999"))
+		assert.NoError(t, err)
+		assert.Equal(t, f.assetBody, string(got))
+		assert.Equal(t, []string{""}, f.storageAuth)
+		assert.Empty(t, f.webAuth)
+	})
+
+	t.Run("tree mode uses the releases API with a token", func(t *testing.T) {
+		f := newFakeGitHub(t, "secret")
+		inst := newDownloadTestInstaller("myapp", map[string]any{
+			"github_token": "secret",
+			"extract_to":   filepath.Join(t.TempDir(), "app"),
+			"strategy":     "zip",
+		})
+
+		tmpFile, tag, err := inst.downloadRelease(t.TempDir(), "myapp")
+		assert.NoError(t, err)
+		assert.Equal(t, "v1.0.0", tag)
+		got, err := os.ReadFile(tmpFile)
+		assert.NoError(t, err)
+		assert.Equal(t, f.assetBody, string(got))
+		assert.Equal(t, []string{""}, f.storageAuth)
+		assert.Empty(t, f.webAuth)
 	})
 }

@@ -761,6 +761,10 @@ Downloads a GitHub release asset. Optionally untar/unzip the downloaded file.
 - `opts.github_token`: GitHub personal access token for authenticated API requests. Authenticated
   requests have a much higher rate limit (5,000/hour vs 60/hour for unauthenticated).
 
+  The token also gives access to release assets in private repositories. With a token set, assets
+  download through the GitHub releases API, so the token needs read access to the repository's
+  contents. Without a token, assets download from the public `github.com` release URL.
+
   Supports environment variable expansion, so you don't need to hard-code credentials:
 
   ```yaml
