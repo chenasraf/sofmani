@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.36.0](https://github.com/chenasraf/sofmani/compare/v1.35.1...v1.36.0) (2026-10-10)
+
+
+### Features
+
+* **config:** env_command for loading secrets into every installer ([1886572](https://github.com/chenasraf/sofmani/commit/1886572254f90d637aa1a7ae08052c8f7ec7b595))
+* **installer/github-release:** download/extract hooks and github_token_command ([6b861fd](https://github.com/chenasraf/sofmani/commit/6b861fdb51fda993d1c3d8a565fb99677417bf92))
+
 ## [1.35.1](https://github.com/chenasraf/sofmani/compare/v1.35.0...v1.35.1) (2026-10-09)
 
 
