@@ -93,6 +93,18 @@ func RunCmdGetOutput(env []string, bin string, args ...string) ([]byte, error) {
 	return out, err
 }
 
+// RunCmdGetOutputPassThrough executes a command and returns its standard output, while passing
+// through standard input and error so the command can still prompt the user (e.g. a password
+// manager asking to unlock).
+func RunCmdGetOutputPassThrough(env []string, bin string, args ...string) ([]byte, error) {
+	logger.Debug("Running command: %s %v", bin, args)
+	cmd := exec.Command(bin, args...)
+	cmd.Env = ResolveEnvPaths(os.Environ(), cmd.Env, env)
+	cmd.Stdin = os.Stdin
+	cmd.Stderr = os.Stderr
+	return cmd.Output()
+}
+
 // getShellScript returns the appropriate shell script filename based on the OS.
 func getShellScript(dir string) string {
 	var filename string

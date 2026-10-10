@@ -332,6 +332,22 @@
                     "type": "string",
                     "description": "Shell command to run when strategy is 'custom'. Supports Go template variables — in addition to the usual {{ .OS }}, {{ .Arch }}, {{ .Tag }}, etc., the following extract-specific variables are available: {{ .DownloadFile }}, {{ .ExtractDir }}, {{ .Destination }}, {{ .BinName }}, {{ .ArchiveBinName }}. After the command finishes, sofmani copies {{ .ExtractDir }}/{{ .ArchiveBinName }} to {{ .Destination }}/{{ .BinName }}."
                   },
+                  "pre_download": {
+                    "type": "string",
+                    "description": "Shell command to run before the release asset is downloaded. Supports the same template variables as extract_command."
+                  },
+                  "post_download": {
+                    "type": "string",
+                    "description": "Shell command to run after the release asset is downloaded to {{ .DownloadFile }}. Supports the same template variables as extract_command."
+                  },
+                  "pre_extract": {
+                    "type": "string",
+                    "description": "Shell command to run before the downloaded asset is extracted. Skipped with strategy 'none'. Supports the same template variables as extract_command."
+                  },
+                  "post_extract": {
+                    "type": "string",
+                    "description": "Shell command to run after the downloaded asset is extracted into {{ .ExtractDir }}, before the binary is copied (or, in tree mode, before the tree is swapped into extract_to). Skipped with strategy 'none'. Supports the same template variables as extract_command."
+                  },
                   "download_filename": {
                     "description": "Asset filename, or a per-platform map. Supports Go template variables.",
                     "oneOf": [
@@ -376,7 +392,11 @@
                       }
                     }
                   },
-                  "github_token": { "type": "string" }
+                  "github_token": { "type": "string" },
+                  "github_token_command": {
+                    "type": "string",
+                    "description": "Shell command whose standard output is used as the GitHub token, e.g. 'gh auth token' or 'op read op://vault/github/token'. Runs once, the first time a GitHub request needs the token, and only when github_token is empty."
+                  }
                 }
               }
             }

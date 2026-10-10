@@ -438,21 +438,21 @@ This includes `opts.command`, `opts.update_command`, `pre_install`, `post_instal
 
 Available variables:
 
-| Variable                | Description                                                                           | Example                        |
-| ----------------------- | ------------------------------------------------------------------------------------- | ------------------------------ |
-| `{{ .Arch }}`           | System architecture in Go format                                                      | `amd64`, `arm64`               |
-| `{{ .ArchAlias }}`      | Architecture in common alias format                                                   | `x86_64`, `arm64`              |
-| `{{ .ArchGnu }}`        | Architecture in GNU/Linux format                                                      | `x86_64`, `aarch64`            |
-| `{{ .OS }}`             | Current operating system                                                              | `macos`, `linux`, `windows`    |
-| `{{ .DeviceID }}`       | Unique machine identifier (truncated SHA-256 hash)                                    | `5fa2a8e8193868df`             |
-| `{{ .DeviceIDAlias }}`  | Friendly alias for the current machine, if defined in `machine_aliases`               | `work-laptop`                  |
-| `{{ .Tag }}`            | Full tag name (only available in `github-release` `download_filename`)                | `v1.0.0`                       |
-| `{{ .Version }}`        | Version without leading "v" (only available in `github-release` `download_filename`)  | `1.0.0`                        |
-| `{{ .DownloadFile }}`   | Absolute path to the downloaded asset (only in `github-release` `extract_command`)    | `/tmp/sofmani.../app.download` |
-| `{{ .ExtractDir }}`     | Temp directory to extract into (only in `github-release` `extract_command`)           | `/tmp/sofmani...`              |
-| `{{ .Destination }}`    | Final destination directory (only in `github-release` `extract_command`)              | `~/.local/bin`                 |
-| `{{ .BinName }}`        | Expected output binary name (only in `github-release` `extract_command`)              | `my-tool`                      |
-| `{{ .ArchiveBinName }}` | Filename sofmani copies from `ExtractDir` → `Destination` (only in `extract_command`) | `my-tool`                      |
+| Variable                | Description                                                                                             | Example                        |
+| ----------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| `{{ .Arch }}`           | System architecture in Go format                                                                        | `amd64`, `arm64`               |
+| `{{ .ArchAlias }}`      | Architecture in common alias format                                                                     | `x86_64`, `arm64`              |
+| `{{ .ArchGnu }}`        | Architecture in GNU/Linux format                                                                        | `x86_64`, `aarch64`            |
+| `{{ .OS }}`             | Current operating system                                                                                | `macos`, `linux`, `windows`    |
+| `{{ .DeviceID }}`       | Unique machine identifier (truncated SHA-256 hash)                                                      | `5fa2a8e8193868df`             |
+| `{{ .DeviceIDAlias }}`  | Friendly alias for the current machine, if defined in `machine_aliases`                                 | `work-laptop`                  |
+| `{{ .Tag }}`            | Full tag name (only in `github-release` `download_filename`, `extract_command` and hooks)               | `v1.0.0`                       |
+| `{{ .Version }}`        | Version without leading "v" (only in `github-release` `download_filename`, `extract_command` and hooks) | `1.0.0`                        |
+| `{{ .DownloadFile }}`   | Absolute path to the downloaded asset (only in `github-release` `extract_command` and hooks)            | `/tmp/sofmani.../app.download` |
+| `{{ .ExtractDir }}`     | Directory the asset is extracted into (only in `github-release` `extract_command` and hooks)            | `/tmp/sofmani...`              |
+| `{{ .Destination }}`    | Final destination directory (only in `github-release` `extract_command` and hooks)                      | `~/.local/bin`                 |
+| `{{ .BinName }}`        | Expected output binary name (only in `github-release` `extract_command` and hooks)                      | `my-tool`                      |
+| `{{ .ArchiveBinName }}` | Filename sofmani copies from `ExtractDir` → `Destination` (only in `extract_command` and hooks)         | `my-tool`                      |
 
 In addition, `DEVICE_ID` and `DEVICE_ID_ALIAS` are injected as **environment variables** into all
 command executions, so they can also be referenced as `$DEVICE_ID` and `$DEVICE_ID_ALIAS` in shell
@@ -779,6 +779,59 @@ Downloads a GitHub release asset. Optionally untar/unzip the downloaded file.
         opts:
           github_token: $GITHUB_TOKEN
   ```
+
+- `opts.github_token_command`: A shell command whose standard output is used as the GitHub token,
+  for tokens kept in a password manager or credential helper rather than in the environment.
+  Surrounding whitespace is trimmed, and empty output is an error. The command runs once per
+  installer, the first time a GitHub request needs the token. That includes looking up the latest
+  release while checking for updates, so the token is in place before any request. Standard input
+  and error are passed through, so the command can prompt to unlock a vault.
+
+  A non-empty `github_token` takes precedence, so a token exported in the environment (e.g. in CI)
+  skips the command.
+
+  ```yaml
+  defaults:
+    type:
+      github-release:
+        opts:
+          github_token: $GITHUB_TOKEN # used when set
+          github_token_command: op read op://Private/GitHub/token # otherwise
+  ```
+
+- `opts.pre_download`, `opts.post_download`, `opts.pre_extract`, `opts.post_extract`: Shell hooks
+  that run around the download and extraction of the release asset. They support all the template
+  variables available to `extract_command` (`{{ .DownloadFile }}`, `{{ .ExtractDir }}`,
+  `{{ .Destination }}`, `{{ .BinName }}`, `{{ .ArchiveBinName }}`), plus the usual ones
+  (`{{ .Tag }}`, `{{ .Version }}`, `{{ .OS }}`, ...). A hook that exits non-zero fails the install.
+
+  | Hook            | Runs                                                                                                                                                                           |
+  | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+  | `pre_download`  | After the release tag is resolved, before the asset is downloaded                                                                                                              |
+  | `post_download` | After the asset is written to `{{ .DownloadFile }}`, e.g. to verify a checksum                                                                                                 |
+  | `pre_extract`   | Before the asset is extracted                                                                                                                                                  |
+  | `post_extract`  | After extraction into `{{ .ExtractDir }}`, before the binary is copied to `destination`. In tree mode, `{{ .ExtractDir }}` is the staged tree, before it replaces `extract_to` |
+
+  The extract hooks don't run with `strategy: none`, which has nothing to extract. With
+  `strategy: gzip`, the asset is decompressed straight to `destination`, so `post_extract` sees the
+  binary there. In tree mode, `{{ .Destination }}` is `extract_to`.
+
+  ```yaml
+  - name: my-tool
+    type: github-release
+    opts:
+      repository: example/my-tool
+      destination: ~/.local/bin
+      strategy: tar
+      download_filename: my-tool-{{ .Version }}-{{ .OS }}-{{ .Arch }}.tar.gz
+      post_download: |
+        curl -fsSL https://github.com/example/my-tool/releases/download/{{ .Tag }}/checksums.txt \
+          | grep my-tool-{{ .Version }}-{{ .OS }}-{{ .Arch }}.tar.gz \
+          | awk '{print $1 "  {{ .DownloadFile }}"}' | shasum -a 256 -c -
+  ```
+
+  These are separate from the step-level `pre_install` / `post_install` / `pre_update` /
+  `post_update` hooks, which run around the whole install or update.
 
 ### `manifest`
 

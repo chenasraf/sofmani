@@ -1276,8 +1276,12 @@ func newFakeGitHub(t *testing.T, token string) *fakeGitHub {
 	f.api = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		f.apiHits++
 		assert.Equal(t, "Bearer "+token, r.Header.Get("Authorization"))
-		assert.Equal(t, "2022-11-28", r.Header.Get("X-GitHub-Api-Version"))
+		if r.URL.Path != "/repos/owner/repo/releases/latest" {
+			assert.Equal(t, "2022-11-28", r.Header.Get("X-GitHub-Api-Version"))
+		}
 		switch r.URL.Path {
+		case "/repos/owner/repo/releases/latest":
+			_ = json.NewEncoder(w).Encode(map[string]any{"tag_name": "v1.0.0"})
 		case "/repos/owner/repo/releases/tags/v1.0.0":
 			assert.Equal(t, "application/vnd.github+json", r.Header.Get("Accept"))
 			assets := []map[string]any{}
@@ -1399,13 +1403,209 @@ func TestGitHubReleaseDownloadAsset(t *testing.T) {
 			"strategy":     "zip",
 		})
 
-		tmpFile, tag, err := inst.downloadRelease(t.TempDir(), "myapp")
+		vars, err := inst.downloadRelease(t.TempDir(), "")
 		assert.NoError(t, err)
-		assert.Equal(t, "v1.0.0", tag)
-		got, err := os.ReadFile(tmpFile)
+		assert.Equal(t, "v1.0.0", vars.Tag)
+		got, err := os.ReadFile(vars.DownloadFile)
 		assert.NoError(t, err)
 		assert.Equal(t, f.assetBody, string(got))
 		assert.Equal(t, []string{""}, f.storageAuth)
 		assert.Empty(t, f.webAuth)
+	})
+}
+
+func zipBytes(t *testing.T, name, body string) string {
+	t.Helper()
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	w, err := zw.Create(name)
+	assert.NoError(t, err)
+	_, err = io.WriteString(w, body)
+	assert.NoError(t, err)
+	assert.NoError(t, zw.Close())
+	return buf.String()
+}
+
+func cleanupReleaseCache(t *testing.T, name string) {
+	t.Cleanup(func() {
+		if cacheDir, err := utils.GetCacheDir(); err == nil {
+			_ = os.Remove(filepath.Join(cacheDir, name))
+		}
+	})
+}
+
+func readLines(t *testing.T, path string) []string {
+	t.Helper()
+	contents, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	assert.NoError(t, err)
+	return strings.Split(strings.TrimSpace(string(contents)), "\n")
+}
+
+func TestGitHubReleaseHooks(t *testing.T) {
+	logger.InitLogger(false)
+	if runtime.GOOS == "windows" {
+		t.Skip("uses POSIX shell hooks")
+	}
+
+	t.Run("runs download and extract hooks in order with their template variables", func(t *testing.T) {
+		name := "release-hooks-zip-99999"
+		cleanupReleaseCache(t, name)
+		f := newFakeGitHub(t, "")
+		f.assetBody = zipBytes(t, name, "binary")
+		dest := t.TempDir()
+		log := filepath.Join(t.TempDir(), "hooks.log")
+		inst := newDownloadTestInstaller(name, map[string]any{
+			"destination":   dest,
+			"strategy":      "zip",
+			"pre_download":  "test ! -e {{ .DownloadFile }} && echo pre_download {{ .Tag }} >> " + log,
+			"post_download": "test -s {{ .DownloadFile }} && echo post_download >> " + log,
+			"pre_extract":   "test ! -e {{ .ExtractDir }}/{{ .ArchiveBinName }} && echo pre_extract >> " + log,
+			"post_extract":  "test -f {{ .ExtractDir }}/{{ .ArchiveBinName }} && echo post_extract {{ .Destination }} >> " + log,
+		})
+
+		assert.NoError(t, inst.Install())
+		assert.Equal(t, []string{"pre_download v1.0.0", "post_download", "pre_extract", "post_extract " + dest}, readLines(t, log))
+		got, err := os.ReadFile(filepath.Join(dest, name))
+		assert.NoError(t, err)
+		assert.Equal(t, "binary", string(got))
+	})
+
+	t.Run("post_extract can modify the extracted binary before it is copied", func(t *testing.T) {
+		name := "release-hooks-modify-99999"
+		cleanupReleaseCache(t, name)
+		f := newFakeGitHub(t, "")
+		f.assetBody = zipBytes(t, name, "binary")
+		dest := t.TempDir()
+		inst := newDownloadTestInstaller(name, map[string]any{
+			"destination":  dest,
+			"strategy":     "zip",
+			"post_extract": "printf patched > {{ .ExtractDir }}/{{ .ArchiveBinName }}",
+		})
+
+		assert.NoError(t, inst.Install())
+		got, err := os.ReadFile(filepath.Join(dest, name))
+		assert.NoError(t, err)
+		assert.Equal(t, "patched", string(got))
+	})
+
+	t.Run("strategy none skips the extract hooks", func(t *testing.T) {
+		name := "release-hooks-none-99999"
+		cleanupReleaseCache(t, name)
+		newFakeGitHub(t, "")
+		log := filepath.Join(t.TempDir(), "hooks.log")
+		inst := newDownloadTestInstaller(name, map[string]any{
+			"destination":   t.TempDir(),
+			"post_download": "echo post_download >> " + log,
+			"pre_extract":   "echo pre_extract >> " + log,
+			"post_extract":  "echo post_extract >> " + log,
+		})
+
+		assert.NoError(t, inst.Install())
+		assert.Equal(t, []string{"post_download"}, readLines(t, log))
+	})
+
+	t.Run("a failing pre_download aborts before downloading", func(t *testing.T) {
+		name := "release-hooks-fail-99999"
+		cleanupReleaseCache(t, name)
+		f := newFakeGitHub(t, "")
+		inst := newDownloadTestInstaller(name, map[string]any{
+			"destination":  t.TempDir(),
+			"pre_download": "exit 3",
+		})
+
+		err := inst.Install()
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "pre_download")
+		assert.Empty(t, f.webAuth)
+	})
+
+	t.Run("tree mode runs post_extract against the staged tree", func(t *testing.T) {
+		name := "release-hooks-tree-99999"
+		cleanupReleaseCache(t, name)
+		f := newFakeGitHub(t, "")
+		f.assetBody = zipBytes(t, "bin/tool", "binary")
+		extractTo := filepath.Join(t.TempDir(), "app")
+		inst := newDownloadTestInstaller(name, map[string]any{
+			"extract_to":   extractTo,
+			"strategy":     "zip",
+			"post_extract": "test -f {{ .ExtractDir }}/bin/tool && touch {{ .ExtractDir }}/marker",
+		})
+
+		assert.NoError(t, inst.Install())
+		exists, err := utils.PathExists(filepath.Join(extractTo, "marker"))
+		assert.NoError(t, err)
+		assert.True(t, exists)
+	})
+}
+
+func TestGitHubReleaseTokenCommand(t *testing.T) {
+	logger.InitLogger(false)
+	if runtime.GOOS == "windows" {
+		t.Skip("uses a POSIX shell command")
+	}
+
+	t.Run("runs once and authenticates both the latest-release lookup and the download", func(t *testing.T) {
+		f := newFakeGitHub(t, "secret")
+		count := filepath.Join(t.TempDir(), "count")
+		inst := newDownloadTestInstaller("myapp", map[string]any{
+			"github_token_command": "echo run >> " + count + "; printf ' secret\\n'",
+		})
+		delete(*inst.Info.Opts, "version")
+
+		tag, err := inst.GetTag()
+		assert.NoError(t, err)
+		assert.Equal(t, "v1.0.0", tag)
+
+		var buf bytes.Buffer
+		_, err = inst.downloadAsset(&buf, tag, "app.zip")
+		assert.NoError(t, err)
+		assert.Equal(t, f.assetBody, buf.String())
+		assert.Empty(t, f.webAuth)
+		assert.Equal(t, []string{"run"}, readLines(t, count))
+	})
+
+	t.Run("a failing command fails the request", func(t *testing.T) {
+		newFakeGitHub(t, "secret")
+		inst := newDownloadTestInstaller("myapp", map[string]any{"github_token_command": "exit 1"})
+
+		var buf bytes.Buffer
+		_, err := inst.downloadAsset(&buf, "v1.0.0", "app.zip")
+		assert.ErrorContains(t, err, "github_token_command")
+	})
+
+	t.Run("empty output is an error", func(t *testing.T) {
+		newFakeGitHub(t, "secret")
+		inst := newDownloadTestInstaller("myapp", map[string]any{"github_token_command": "true"})
+
+		var buf bytes.Buffer
+		_, err := inst.downloadAsset(&buf, "v1.0.0", "app.zip")
+		assert.ErrorContains(t, err, "printed no token")
+	})
+
+	t.Run("a non-empty github_token wins over the command", func(t *testing.T) {
+		newFakeGitHub(t, "secret")
+		inst := newDownloadTestInstaller("myapp", map[string]any{
+			"github_token":         "secret",
+			"github_token_command": "exit 1",
+		})
+
+		var buf bytes.Buffer
+		_, err := inst.downloadAsset(&buf, "v1.0.0", "app.zip")
+		assert.NoError(t, err)
+	})
+
+	t.Run("an empty github_token falls back to the command", func(t *testing.T) {
+		newFakeGitHub(t, "secret")
+		inst := newDownloadTestInstaller("myapp", map[string]any{
+			"github_token":         "",
+			"github_token_command": "printf secret",
+		})
+
+		var buf bytes.Buffer
+		_, err := inst.downloadAsset(&buf, "v1.0.0", "app.zip")
+		assert.NoError(t, err)
 	})
 }

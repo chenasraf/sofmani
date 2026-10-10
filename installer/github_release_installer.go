@@ -4,7 +4,6 @@ import (
 	"archive/zip"
 	"compress/gzip"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -27,6 +26,8 @@ type GitHubReleaseInstaller struct {
 	Config *appconfig.AppConfig
 	// Info is the installer data.
 	Info *appconfig.InstallerData
+	// resolvedToken caches the GitHub token so github_token_command runs at most once per run.
+	resolvedToken *string
 }
 
 // GitHubReleaseOpts represents options for the GitHubReleaseInstaller.
@@ -47,6 +48,18 @@ type GitHubReleaseOpts struct {
 	// GithubToken is the GitHub personal access token for authenticated API requests.
 	// Supports environment variable expansion (e.g., "$GITHUB_TOKEN" or "${GITHUB_TOKEN}").
 	GithubToken *string
+	// GithubTokenCommand is a shell command whose standard output is used as the GitHub token,
+	// for tokens kept in a secret store rather than in the manifest or environment. It runs the
+	// first time a request needs the token, including the latest-release lookup of an update check,
+	// and only when GithubToken is empty.
+	GithubTokenCommand *string
+	// PreDownload and PostDownload are shell hooks run before and after the release asset is
+	// downloaded. PreExtract and PostExtract run before and after it is extracted, and are skipped
+	// with strategy "none". All four support the same template variables as ExtractCommand.
+	PreDownload  *string
+	PostDownload *string
+	PreExtract   *string
+	PostExtract  *string
 	// ArchiveBinName is the name of the binary file inside the archive (tar/zip).
 	// Use this when the filename inside the archive differs from the desired output bin_name.
 	// Accepts either a string or a per-platform map. Supports Go template syntax with the
@@ -180,67 +193,30 @@ func (i *GitHubReleaseInstaller) Install() error {
 	if opts.ExtractTo != nil {
 		return i.installTree()
 	}
-	data := i.GetData()
-	name := *data.Name
 	tmpDir, err := os.MkdirTemp("", "sofmani")
 	if err != nil {
 		return fmt.Errorf("failed to create temp directory: %w", err)
 	}
-	tmpFile := fmt.Sprintf("%s/%s.download", tmpDir, name)
 	logger.Debug("Created temp directory: %s", tmpDir)
-	tmpOut, err := os.Create(tmpFile)
-	if err != nil {
-		return fmt.Errorf("failed to create temporary file %s: %w", tmpFile, err)
-	}
-	defer func() {
-		if cerr := tmpOut.Close(); cerr != nil {
-			logger.Warn("failed to close tmpOut file: %v", cerr)
-		}
-	}()
 
 	err = os.MkdirAll(*opts.Destination, 0755)
 	if err != nil {
 		return fmt.Errorf("failed to create destination directory %s: %w", *opts.Destination, err)
 	}
-	// defer os.RemoveAll(tmpDir)
 
-	tag, err := i.GetTag()
+	vars, err := i.downloadRelease(tmpDir, *opts.Destination)
 	if err != nil {
 		return err
 	}
-
-	filename := i.GetFilename()
-	if filename == "" {
-		return fmt.Errorf("no download filename matched for the current platform (%s/%s)", runtime.GOOS, runtime.GOARCH)
-	}
-	var machineAliases map[string]string
-	if i.Config.MachineAliases != nil {
-		machineAliases = *i.Config.MachineAliases
-	}
-	templateVars := NewTemplateVars(tag, machineAliases)
-	rawFilename := filename
-	filename, err = ApplyTemplate(filename, templateVars, name)
-	if err != nil {
-		return fmt.Errorf("failed to apply template to download_filename %q: %w", rawFilename, err)
-	}
-	logger.Debug("Temp file: %s", tmpFile)
-	n, err := i.downloadAsset(tmpOut, tag, filename)
-	if err != nil {
-		return fmt.Errorf("failed to download %s to %s: %w", filename, tmpFile, err)
-	}
-	logger.Debug("Downloaded %d bytes to temp file", n)
+	downloadFile := vars.DownloadFile
 
 	strategy := GitHubReleaseInstallStrategyNone
-
 	if opts.Strategy != nil {
 		strategy = *opts.Strategy
 	}
-
 	logger.Debug("Using strategy: %s", strategy)
 
-	success := false
-
-	outPath := filepath.Join(*opts.Destination, i.GetBinName())
+	outPath := filepath.Join(*opts.Destination, vars.BinName)
 	logger.Debug("Final destination: %s", outPath)
 
 	// Remove existing file first to avoid "text file busy" error on Linux
@@ -259,95 +235,72 @@ func (i *GitHubReleaseInstaller) Install() error {
 		}
 	}()
 
+	extracts := strategy != GitHubReleaseInstallStrategyNone
+	if extracts {
+		if err := i.runHook("pre_extract", opts.PreExtract, vars); err != nil {
+			return err
+		}
+	}
+
 	switch strategy {
 	case GitHubReleaseInstallStrategyTar:
 		logger.Debug("Strategy 'tar': extracting archive to %s", tmpDir)
-		success, err = i.RunCmdGetSuccess("tar", "-xvf", tmpOut.Name(), "-C", tmpDir)
+		success, err := i.RunCmdGetSuccess("tar", "-xvf", downloadFile, "-C", tmpDir)
 		if !success {
-			return wrapExtractError("tar", tmpOut.Name(), err)
+			return wrapExtractError("tar", downloadFile, err)
 		}
 		if err != nil {
-			return fmt.Errorf("failed to extract tar archive %s: %w", tmpOut.Name(), err)
-		}
-		archiveBin := i.GetArchiveBinName(templateVars)
-		logger.Debug("Strategy 'tar': copying binary '%s' to destination", archiveBin)
-		success, err = i.CopyExtractedFile(out, tmpDir, templateVars)
-		if !success {
-			return fmt.Errorf("failed to copy extracted file %s from %s to %s: %w", archiveBin, tmpDir, outPath, err)
-		}
-		if err != nil {
-			return fmt.Errorf("failed to copy extracted file %s to %s: %w", archiveBin, outPath, err)
+			return fmt.Errorf("failed to extract tar archive %s: %w", downloadFile, err)
 		}
 	case GitHubReleaseInstallStrategyZip:
 		logger.Debug("Strategy 'zip': extracting archive to %s", tmpDir)
-		success, err = i.RunCmdGetSuccess("unzip", tmpOut.Name(), "-d", tmpDir)
+		success, err := i.RunCmdGetSuccess("unzip", downloadFile, "-d", tmpDir)
 		if !success {
-			return wrapExtractError("zip", tmpOut.Name(), err)
+			return wrapExtractError("zip", downloadFile, err)
 		}
 		if err != nil {
-			return fmt.Errorf("failed to extract zip archive %s: %w", tmpOut.Name(), err)
-		}
-		archiveBin := i.GetArchiveBinName(templateVars)
-		logger.Debug("Strategy 'zip': copying binary '%s' to destination", archiveBin)
-		success, err = i.CopyExtractedFile(out, tmpDir, templateVars)
-		if !success {
-			return fmt.Errorf("failed to copy extracted file %s from %s to %s: %w", archiveBin, tmpDir, outPath, err)
-		}
-		if err != nil {
-			return fmt.Errorf("failed to copy extracted file %s to %s: %w", archiveBin, outPath, err)
+			return fmt.Errorf("failed to extract zip archive %s: %w", downloadFile, err)
 		}
 	case GitHubReleaseInstallStrategyGzip:
 		logger.Debug("Strategy 'gzip': decompressing downloaded file to %s", outPath)
-		if _, err = tmpOut.Seek(0, 0); err != nil {
-			return fmt.Errorf("failed to seek temp file %s: %w", tmpOut.Name(), err)
+		if err := copyDownload(downloadFile, out, decompressGzip); err != nil {
+			return fmt.Errorf("failed to decompress gzip file %s to %s: %w", downloadFile, outPath, err)
 		}
-		if err = decompressGzip(tmpOut, out); err != nil {
-			return fmt.Errorf("failed to decompress gzip file %s to %s: %w", tmpOut.Name(), outPath, err)
-		}
-		success = true
-		err = nil
 	case GitHubReleaseInstallStrategyCustom:
-		logger.Debug("Strategy 'custom': running user extract_command against %s", tmpOut.Name())
+		logger.Debug("Strategy 'custom': running user extract_command against %s", downloadFile)
 		if opts.ExtractCommand == nil || *opts.ExtractCommand == "" {
 			return fmt.Errorf("strategy 'custom' requires opts.extract_command")
 		}
-		extractVars := *templateVars
-		extractVars.DownloadFile = tmpOut.Name()
-		extractVars.ExtractDir = tmpDir
-		extractVars.Destination = *opts.Destination
-		extractVars.BinName = i.GetBinName()
-		archiveBin := i.GetArchiveBinName(templateVars)
-		extractVars.ArchiveBinName = archiveBin
-		if err = i.runCustomExtract(*opts.ExtractCommand, &extractVars); err != nil {
-			return fmt.Errorf("custom extract failed (download=%s, extract_dir=%s): %w", tmpOut.Name(), tmpDir, err)
-		}
-		logger.Debug("Strategy 'custom': copying binary '%s' to destination", archiveBin)
-		success, err = i.CopyExtractedFile(out, tmpDir, templateVars)
-		if !success {
-			return fmt.Errorf("failed to copy extracted file %s from %s to %s: %w", archiveBin, tmpDir, outPath, err)
-		}
-		if err != nil {
-			return fmt.Errorf("failed to copy extracted file %s to %s: %w", archiveBin, outPath, err)
+		if err := i.runCustomExtract(*opts.ExtractCommand, vars); err != nil {
+			return fmt.Errorf("custom extract failed (download=%s, extract_dir=%s): %w", downloadFile, tmpDir, err)
 		}
 	default:
 		logger.Debug("Strategy 'none': copying downloaded file directly to destination")
-		// Seek back to beginning of temp file before copying
-		if _, err = tmpOut.Seek(0, 0); err != nil {
-			return fmt.Errorf("failed to seek temp file %s: %w", tmpOut.Name(), err)
+		copyAll := func(src io.Reader, dst io.Writer) error {
+			_, err := io.Copy(dst, src)
+			return err
 		}
-		_, err = io.Copy(out, tmpOut)
-		if err != nil {
-			return fmt.Errorf("failed to copy downloaded file %s to %s: %w", tmpOut.Name(), outPath, err)
+		if err := copyDownload(downloadFile, out, copyAll); err != nil {
+			return fmt.Errorf("failed to copy downloaded file %s to %s: %w", downloadFile, outPath, err)
 		}
-		success = true
-		err = nil
 	}
 
-	if !success {
-		return fmt.Errorf("failed to copy the downloaded file %s to %s", tmpOut.Name(), outPath)
+	if extracts {
+		if err := i.runHook("post_extract", opts.PostExtract, vars); err != nil {
+			return err
+		}
 	}
-	if err != nil {
-		return errors.Join(fmt.Errorf("failed to extract the downloaded file %s", tmpOut.Name()), err)
+
+	switch strategy {
+	case GitHubReleaseInstallStrategyTar, GitHubReleaseInstallStrategyZip, GitHubReleaseInstallStrategyCustom:
+		logger.Debug("Strategy '%s': copying binary '%s' to destination", strategy, vars.ArchiveBinName)
+		success, err := i.CopyExtractedFile(out, tmpDir, vars)
+		if !success {
+			return fmt.Errorf("failed to copy extracted file %s from %s to %s: %w", vars.ArchiveBinName, tmpDir, outPath, err)
+		}
+		if err != nil {
+			return fmt.Errorf("failed to copy extracted file %s to %s: %w", vars.ArchiveBinName, outPath, err)
+		}
 	}
 
 	// Make the file executable
@@ -356,13 +309,23 @@ func (i *GitHubReleaseInstaller) Install() error {
 	}
 	logger.Debug("Set executable permissions on %s", outPath)
 
-	err = i.UpdateCache(tag)
+	err = i.UpdateCache(vars.Tag)
 	if err != nil {
 		return err
 	}
 
-	logger.Debug("Installation complete: %s -> %s", filename, outPath)
+	logger.Debug("Installation complete: %s -> %s", downloadFile, outPath)
 	return nil
+}
+
+// copyDownload opens the downloaded asset at path and hands it to write along with dst.
+func copyDownload(path string, dst io.Writer, write func(src io.Reader, dst io.Writer) error) error {
+	in, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = in.Close() }()
+	return write(in, dst)
 }
 
 // Update implements IInstaller.
@@ -664,6 +627,19 @@ func (i *GitHubReleaseInstaller) GetOpts() *GitHubReleaseOpts {
 			token = utils.GetRealPath(i.GetData().Environ(), token)
 			opts.GithubToken = &token
 		}
+		if command, ok := (*info.Opts)["github_token_command"].(string); ok {
+			opts.GithubTokenCommand = &command
+		}
+		for key, target := range map[string]**string{
+			"pre_download":  &opts.PreDownload,
+			"post_download": &opts.PostDownload,
+			"pre_extract":   &opts.PreExtract,
+			"post_extract":  &opts.PostExtract,
+		} {
+			if hook, ok := (*info.Opts)[key].(string); ok {
+				*target = &hook
+			}
+		}
 		if raw, ok := (*info.Opts)["archive_bin_name"]; ok {
 			opts.ArchiveBinName = platform.NewPlatformMap[string](raw)
 		}
@@ -760,8 +736,12 @@ func (i *GitHubReleaseInstaller) GetLatestTag() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to build request for %s: %w", latestReleaseUrl, err)
 	}
-	if opts.GithubToken != nil && *opts.GithubToken != "" {
-		req.Header.Set("Authorization", "Bearer "+*opts.GithubToken)
+	token, err := i.githubToken()
+	if err != nil {
+		return "", err
+	}
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
 	}
 
 	resp, err := http.DefaultClient.Do(req)
@@ -836,8 +816,6 @@ func (i *GitHubReleaseInstaller) GetInstallDir() string {
 // version (no stale files from an old release linger).
 func (i *GitHubReleaseInstaller) installTree() error {
 	opts := i.GetOpts()
-	data := i.GetData()
-	name := *data.Name
 
 	strategy := GitHubReleaseInstallStrategyNone
 	if opts.Strategy != nil {
@@ -857,12 +835,13 @@ func (i *GitHubReleaseInstaller) installTree() error {
 		}
 	}()
 
-	tmpFile, tag, err := i.downloadRelease(tmpDir, name)
+	extractTo := *opts.ExtractTo
+	vars, err := i.downloadRelease(tmpDir, extractTo)
 	if err != nil {
 		return err
 	}
+	tmpFile := vars.DownloadFile
 
-	extractTo := *opts.ExtractTo
 	stripComponents := 0
 	if opts.StripComponents != nil {
 		stripComponents = *opts.StripComponents
@@ -875,6 +854,13 @@ func (i *GitHubReleaseInstaller) installTree() error {
 	}
 	if err := os.MkdirAll(staging, 0755); err != nil {
 		return fmt.Errorf("failed to create staging dir %s: %w", staging, err)
+	}
+
+	// The extract hooks see the staging tree, so post_extract can adjust it before it is swapped in.
+	vars.ExtractDir = staging
+	if err := i.runHook("pre_extract", opts.PreExtract, vars); err != nil {
+		_ = os.RemoveAll(staging)
+		return err
 	}
 
 	switch strategy {
@@ -898,6 +884,11 @@ func (i *GitHubReleaseInstaller) installTree() error {
 			_ = os.RemoveAll(staging)
 			return fmt.Errorf("failed to extract zip file %s to %s: %w", tmpFile, staging, err)
 		}
+	}
+
+	if err := i.runHook("post_extract", opts.PostExtract, vars); err != nil {
+		_ = os.RemoveAll(staging)
+		return err
 	}
 
 	// Atomically replace the old tree with the new one. We move the old tree aside first
@@ -951,55 +942,117 @@ func (i *GitHubReleaseInstaller) installTree() error {
 		logger.Debug("Installed bin link %s -> %s", sourcePath, link.Target)
 	}
 
-	if err := i.UpdateCache(tag); err != nil {
+	if err := i.UpdateCache(vars.Tag); err != nil {
 		return err
 	}
 	logger.Debug("Tree install complete: %s", extractTo)
 	return nil
 }
 
-// downloadRelease downloads the configured release asset to tmpDir and returns the on-disk
-// path plus the resolved tag. It encapsulates the tag lookup, template application, HTTP
-// fetch, and file write so both single-file and tree-mode installs can share it.
-func (i *GitHubReleaseInstaller) downloadRelease(tmpDir, name string) (string, string, error) {
+// downloadRelease downloads the configured release asset into tmpDir, running the
+// pre_download and post_download hooks around it, and returns the template variables for the
+// rest of the install: the resolved tag, DownloadFile, and ExtractDir (tmpDir), Destination,
+// BinName and ArchiveBinName. Both single-file and tree-mode installs share it.
+func (i *GitHubReleaseInstaller) downloadRelease(tmpDir, destination string) (*TemplateVars, error) {
+	opts := i.GetOpts()
+	name := *i.Info.Name
 	tag, err := i.GetTag()
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
 	filename := i.GetFilename()
 	if filename == "" {
-		return "", "", fmt.Errorf("no download filename provided")
+		return nil, fmt.Errorf("no download filename matched for the current platform (%s/%s)", runtime.GOOS, runtime.GOARCH)
 	}
 	var machineAliases map[string]string
 	if i.Config != nil && i.Config.MachineAliases != nil {
 		machineAliases = *i.Config.MachineAliases
 	}
-	templateVars := NewTemplateVars(tag, machineAliases)
+	vars := NewTemplateVars(tag, machineAliases)
 	rawFilename := filename
-	filename, err = ApplyTemplate(filename, templateVars, name)
+	filename, err = ApplyTemplate(filename, vars, name)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to apply template to download_filename %q: %w", rawFilename, err)
+		return nil, fmt.Errorf("failed to apply template to download_filename %q: %w", rawFilename, err)
 	}
 
 	tmpFile := filepath.Join(tmpDir, name+".download")
+	vars.DownloadFile = tmpFile
+	vars.ExtractDir = tmpDir
+	vars.Destination = destination
+	vars.BinName = i.GetBinName()
+	vars.ArchiveBinName = i.GetArchiveBinName(vars)
+
+	if err := i.runHook("pre_download", opts.PreDownload, vars); err != nil {
+		return nil, err
+	}
+
 	out, err := os.Create(tmpFile)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to create temporary file %s: %w", tmpFile, err)
+		return nil, fmt.Errorf("failed to create temporary file %s: %w", tmpFile, err)
 	}
-	defer func() {
-		if cerr := out.Close(); cerr != nil {
-			logger.Warn("failed to close tmpOut file: %v", cerr)
-		}
-	}()
-
 	logger.Debug("Temp file: %s", tmpFile)
 	n, err := i.downloadAsset(out, tag, filename)
+	// Closed here rather than deferred so post_download sees the complete file.
+	if cerr := out.Close(); cerr != nil && err == nil {
+		err = fmt.Errorf("failed to close temporary file %s: %w", tmpFile, cerr)
+	}
 	if err != nil {
-		return "", "", fmt.Errorf("failed to download %s to %s: %w", filename, tmpFile, err)
+		return nil, fmt.Errorf("failed to download %s to %s: %w", filename, tmpFile, err)
 	}
 	logger.Debug("Downloaded %d bytes to temp file", n)
-	return tmpFile, tag, nil
+
+	if err := i.runHook("post_download", opts.PostDownload, vars); err != nil {
+		return nil, err
+	}
+	return vars, nil
+}
+
+// runHook runs one of the opts shell hooks (pre_download, post_extract, ...) after rendering vars
+// into it. An unset hook is a no-op.
+func (i *GitHubReleaseInstaller) runHook(field string, command *string, vars *TemplateVars) error {
+	if command == nil || *command == "" {
+		return nil
+	}
+	rendered, err := ApplyTemplate(*command, vars, *i.Info.Name)
+	if err != nil {
+		return fmt.Errorf("failed to render %s template %q: %w", field, *command, err)
+	}
+	logger.Debug("Running %s hook for %s", field, *i.Info.Name)
+	data := i.GetData()
+	if err := i.RunCmdPassThrough(utils.GetOSShell(data.EnvShell), utils.GetOSShellArgs(rendered)...); err != nil {
+		return fmt.Errorf("%s hook failed for %s: %w", field, *i.Info.Name, err)
+	}
+	return nil
+}
+
+// githubToken returns the token for GitHub API requests, or "" for anonymous requests. A
+// non-empty github_token wins over github_token_command, so a token exported in the environment
+// (e.g. in CI) skips the secret store. The command runs on the first call only; its trimmed
+// output is reused afterwards.
+func (i *GitHubReleaseInstaller) githubToken() (string, error) {
+	if i.resolvedToken != nil {
+		return *i.resolvedToken, nil
+	}
+	opts := i.GetOpts()
+	token := ""
+	switch {
+	case opts.GithubToken != nil && *opts.GithubToken != "":
+		token = *opts.GithubToken
+	case opts.GithubTokenCommand != nil && *opts.GithubTokenCommand != "":
+		logger.Debug("Running github_token_command for %s", *i.Info.Name)
+		data := i.GetData()
+		out, err := utils.RunCmdGetOutputPassThrough(data.Environ(), utils.GetOSShell(data.EnvShell), utils.GetOSShellArgs(i.applyTemplate(*opts.GithubTokenCommand))...)
+		if err != nil {
+			return "", fmt.Errorf("github_token_command failed for %s: %w", *i.Info.Name, err)
+		}
+		token = strings.TrimSpace(string(out))
+		if token == "" {
+			return "", fmt.Errorf("github_token_command for %s printed no token", *i.Info.Name)
+		}
+	}
+	i.resolvedToken = &token
+	return token, nil
 }
 
 // githubAPIBaseURL and githubWebBaseURL are variables so tests can point them at local servers.
@@ -1017,14 +1070,18 @@ func (i *GitHubReleaseInstaller) downloadAsset(out io.Writer, tag, filename stri
 	repo := *opts.Repository
 	logger.Debug("Downloading file: %s", filename)
 
+	token, err := i.githubToken()
+	if err != nil {
+		return 0, err
+	}
 	var req *http.Request
-	if opts.GithubToken != nil && *opts.GithubToken != "" {
+	if token != "" {
 		logger.Debug("Using GitHub token for authentication")
-		assetUrl, err := i.findReleaseAssetUrl(tag, filename)
+		assetUrl, err := i.findReleaseAssetUrl(tag, filename, token)
 		if err != nil {
 			return 0, err
 		}
-		req, err = newGitHubAPIRequest(assetUrl, *opts.GithubToken)
+		req, err = newGitHubAPIRequest(assetUrl, token)
 		if err != nil {
 			return 0, err
 		}
@@ -1068,13 +1125,13 @@ func (i *GitHubReleaseInstaller) downloadAsset(out io.Writer, tag, filename stri
 
 // findReleaseAssetUrl looks up the release for tag and returns the API URL of its asset named
 // filename.
-func (i *GitHubReleaseInstaller) findReleaseAssetUrl(tag, filename string) (string, error) {
+func (i *GitHubReleaseInstaller) findReleaseAssetUrl(tag, filename, token string) (string, error) {
 	opts := i.GetOpts()
 	repo := *opts.Repository
 	releaseUrl := fmt.Sprintf("%s/repos/%s/releases/tags/%s", githubAPIBaseURL, repo, url.PathEscape(tag))
 	logger.Debug("Getting release from %s", releaseUrl)
 
-	req, err := newGitHubAPIRequest(releaseUrl, *opts.GithubToken)
+	req, err := newGitHubAPIRequest(releaseUrl, token)
 	if err != nil {
 		return "", err
 	}

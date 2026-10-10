@@ -29,20 +29,19 @@ type TemplateVars struct {
 	// DeviceIDAlias is the friendly alias for the current machine, if one is defined in machine_aliases.
 	DeviceIDAlias string
 	// DownloadFile is the absolute path to the downloaded asset. Only populated for
-	// github-release custom extract commands.
+	// github-release extract_command and download/extract hooks.
 	DownloadFile string
-	// ExtractDir is the temp directory where a custom extract command should place
-	// extracted files. Only populated for github-release custom extract commands.
+	// ExtractDir is the directory the asset is extracted into. Only populated for
+	// github-release extract_command and download/extract hooks.
 	ExtractDir string
 	// Destination is the final destination directory. Only populated for github-release
-	// custom extract commands.
+	// extract_command and download/extract hooks.
 	Destination string
 	// BinName is the expected output binary name. Only populated for github-release
-	// custom extract commands.
+	// extract_command and download/extract hooks.
 	BinName string
-	// ArchiveBinName is the filename sofmani will copy from ExtractDir to Destination
-	// after the custom extract command finishes. Only populated for github-release
-	// custom extract commands.
+	// ArchiveBinName is the filename sofmani copies from ExtractDir to Destination after
+	// extraction. Only populated for github-release extract_command and download/extract hooks.
 	ArchiveBinName string
 }
 
@@ -99,7 +98,7 @@ type TemplateVarDescription struct {
 
 // DescribeTemplateVars returns a stable, ordered list of all template variables along with
 // their current values for the calling platform. Variables that only have a value at install
-// time (Tag/Version, custom extract context) carry an explanatory Note instead.
+// time (Tag/Version, github-release extract context) carry an explanatory Note instead.
 func DescribeTemplateVars(vars *TemplateVars) []TemplateVarDescription {
 	if vars == nil {
 		vars = NewTemplateVars("", nil)
@@ -117,11 +116,11 @@ func DescribeTemplateVars(vars *TemplateVars) []TemplateVarDescription {
 		{Name: "{{ .DeviceIDAlias }}", Value: vars.DeviceIDAlias, Note: deviceAliasNote},
 		{Name: "{{ .Tag }}", Note: "set per install from the resolved GitHub release tag"},
 		{Name: "{{ .Version }}", Note: "set per install (Tag without leading 'v')"},
-		{Name: "{{ .DownloadFile }}", Note: "set per install (github-release custom extract_command only)"},
-		{Name: "{{ .ExtractDir }}", Note: "set per install (github-release custom extract_command only)"},
-		{Name: "{{ .Destination }}", Note: "set per install (github-release custom extract_command only)"},
-		{Name: "{{ .BinName }}", Note: "set per install (github-release custom extract_command only)"},
-		{Name: "{{ .ArchiveBinName }}", Note: "set per install (github-release custom extract_command only)"},
+		{Name: "{{ .DownloadFile }}", Note: "set per install (github-release extract_command and hooks only)"},
+		{Name: "{{ .ExtractDir }}", Note: "set per install (github-release extract_command and hooks only)"},
+		{Name: "{{ .Destination }}", Note: "set per install (github-release extract_command and hooks only)"},
+		{Name: "{{ .BinName }}", Note: "set per install (github-release extract_command and hooks only)"},
+		{Name: "{{ .ArchiveBinName }}", Note: "set per install (github-release extract_command and hooks only)"},
 	}
 }
 
