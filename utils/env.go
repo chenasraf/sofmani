@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"maps"
 	"os"
+	"os/exec"
 	"strings"
 
+	"github.com/chenasraf/sofmani/logger"
+	"github.com/chenasraf/sofmani/platform"
 	"github.com/samber/lo"
 )
 
@@ -15,14 +18,28 @@ func ResolveEnvPaths(envs ...[]string) []string {
 	out := []string{}
 	for _, e := range envs {
 		for _, env := range e {
-			vals := strings.Split(env, "=")
-			if len(vals) != 2 {
+			k, v, ok := strings.Cut(env, "=")
+			if !ok {
 				continue
 			}
-			out = append(out, fmt.Sprintf("%s=%s", vals[0], GetRealPath(e, vals[1])))
+			out = append(out, fmt.Sprintf("%s=%s", k, GetRealPath(e, v)))
 		}
 	}
 	return out
+}
+
+// CommandEnv returns the environment for a child command: the process environment, with env
+// applied on top after resolving its values (see ResolveEnvPaths). Process values are passed on
+// as they are: they are already real values, and resolving them again would rewrite any `$` in a
+// secret.
+func CommandEnv(env []string) []string {
+	return append(os.Environ(), ResolveEnvPaths(env)...)
+}
+
+// ResolveEnvMap resolves the values of env (see ResolveEnvPaths), for config env that is applied
+// to the process.
+func ResolveEnvMap(env map[string]string) map[string]string {
+	return EnvSliceAsMap(ResolveEnvPaths(EnvMapAsSlice(env)))
 }
 
 // CombineEnv merges multiple slices of environment variable strings.
@@ -52,12 +69,10 @@ func CombineEnvMaps(envs ...*map[string]string) map[string]string {
 func EnvSliceAsMap(env []string) map[string]string {
 	out := map[string]string{}
 	for _, line := range env {
-		vals := strings.Split(line, "=")
-		if len(vals) != 2 {
+		k, v, ok := strings.Cut(line, "=")
+		if !ok {
 			continue
 		}
-		k := vals[0]
-		v := vals[1]
 		out[k] = v
 	}
 	return out
@@ -79,6 +94,82 @@ func mergeEnvs(source *[]string, target []string) []string {
 	}
 	maps.Copy(tgt, EnvSliceAsMap(*source))
 	return EnvMapAsSlice(tgt)
+}
+
+// envCommandIgnored are variables the shell itself changes between two `env` calls, which are
+// not something the command exported.
+var envCommandIgnored = map[string]bool{"_": true, "SHLVL": true, "PWD": true, "OLDPWD": true}
+
+// RunEnvCommand runs command in shell and returns the environment variables it exported: those
+// that are new or changed after it ran. The command runs in the shell process itself, so a shell
+// function that exports variables works, as does `eval "$(loader)"`. With interactive, the shell
+// starts with -i so it reads its rc file first (plugins, functions, aliases); whatever that
+// startup exports is not returned. Standard input, output and error are passed through so the
+// command can prompt, e.g. to unlock a password manager. shell must be POSIX-compatible (sh,
+// bash, zsh, ...).
+func RunEnvCommand(env []string, shell string, interactive bool, command string) (map[string]string, error) {
+	if platform.GetPlatform() == platform.PlatformWindows {
+		return nil, fmt.Errorf("env_command is not supported on Windows")
+	}
+	// The environment is dumped before and after the command to descriptors 3 and 4, so nothing
+	// the command or the rc files print can mix into it.
+	dumps := make([]*os.File, 2)
+	for idx := range dumps {
+		f, err := os.CreateTemp("", "sofmani-env")
+		if err != nil {
+			return nil, fmt.Errorf("failed to create env_command temp file: %w", err)
+		}
+		defer func() {
+			_ = f.Close()
+			_ = os.Remove(f.Name())
+		}()
+		dumps[idx] = f
+	}
+	script := "env -0 >&3\n" + command + "\n__sofmani_status=$?\nenv -0 >&4\nexit $__sofmani_status"
+	args := []string{"-c", script}
+	if interactive {
+		args = append([]string{"-i"}, args...)
+	}
+	logger.Debug("Running env_command with %s (interactive: %t)", shell, interactive)
+	cmd := exec.Command(shell, args...)
+	cmd.Env = CommandEnv(env)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.ExtraFiles = dumps
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("env_command failed: %w", err)
+	}
+
+	snapshots := make([]map[string]string, 2)
+	for idx, f := range dumps {
+		contents, err := os.ReadFile(f.Name())
+		if err != nil {
+			return nil, fmt.Errorf("failed to read env_command output: %w", err)
+		}
+		snapshots[idx] = parseNulEnv(contents)
+	}
+	if len(snapshots[1]) == 0 {
+		return nil, fmt.Errorf("env_command exited the shell before its environment could be read")
+	}
+	out := map[string]string{}
+	for k, v := range snapshots[1] {
+		if before, ok := snapshots[0][k]; (!ok || before != v) && !envCommandIgnored[k] {
+			out[k] = v
+		}
+	}
+	return out, nil
+}
+
+// parseNulEnv parses the output of `env -0`.
+func parseNulEnv(contents []byte) map[string]string {
+	out := map[string]string{}
+	for entry := range strings.SplitSeq(string(contents), "\x00") {
+		if k, v, ok := strings.Cut(entry, "="); ok && k != "" {
+			out[k] = v
+		}
+	}
+	return out
 }
 
 // launchEnv is the process environment as sofmani received it, before any config applied its

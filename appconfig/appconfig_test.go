@@ -3,9 +3,11 @@ package appconfig
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
+	"github.com/chenasraf/sofmani/logger"
 	"github.com/chenasraf/sofmani/platform"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
@@ -182,4 +184,74 @@ func TestFindConfigFile(t *testing.T) {
 	// Test finding the config file
 	assert.NoError(t, os.Chdir(dir))
 	assert.True(t, strings.HasSuffix(FindConfigFile(), file))
+}
+
+func TestLoadEnvCommand(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("uses a POSIX shell command")
+	}
+	platform.SetOS(runtime.GOOS)
+	logger.InitLogger(false)
+
+	t.Run("loads exported variables, keeping configured ones out", func(t *testing.T) {
+		cfg := &AppConfig{
+			Env:        &map[string]string{"KEPT": "config", "VAULT": "work"},
+			EnvCommand: &EnvCommand{Command: `export KEPT=loaded; export TOKEN="secret-$VAULT"`, Shell: "sh"},
+		}
+		names, err := cfg.LoadEnvCommand()
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"TOKEN"}, names)
+		assert.Equal(t, map[string]string{"TOKEN": "secret-work"}, cfg.LoadedEnv)
+		assert.Equal(t, map[string]string{"KEPT": "config", "VAULT": "work"}, *cfg.Env)
+	})
+
+	t.Run("does nothing without a command", func(t *testing.T) {
+		cfg := &AppConfig{}
+		names, err := cfg.LoadEnvCommand()
+		assert.NoError(t, err)
+		assert.Empty(t, names)
+		assert.Nil(t, cfg.LoadedEnv)
+	})
+
+	t.Run("reports a failing command", func(t *testing.T) {
+		cfg := &AppConfig{EnvCommand: &EnvCommand{Command: "exit 1", Shell: "sh"}}
+		_, err := cfg.LoadEnvCommand()
+		assert.Error(t, err)
+	})
+}
+
+func TestEnvCommandParsing(t *testing.T) {
+	t.Run("string form in yaml", func(t *testing.T) {
+		cfg, err := ParseConfigFromContent([]byte("env_command: load-secrets\ninstall: []\n"))
+		assert.NoError(t, err)
+		assert.Equal(t, &EnvCommand{Command: "load-secrets"}, cfg.EnvCommand)
+	})
+
+	t.Run("map form in yaml", func(t *testing.T) {
+		cfg, err := ParseConfigFromContent([]byte("env_command:\n  command: load_secrets\n  interactive: true\n  shell: zsh\ninstall: []\n"))
+		assert.NoError(t, err)
+		assert.Equal(t, &EnvCommand{Command: "load_secrets", Interactive: true, Shell: "zsh"}, cfg.EnvCommand)
+	})
+
+	t.Run("both forms in json", func(t *testing.T) {
+		dir := t.TempDir()
+		for content, want := range map[string]EnvCommand{
+			`{"env_command": "load-secrets", "install": []}`:                                   {Command: "load-secrets"},
+			`{"env_command": {"command": "load_secrets", "interactive": true}, "install": []}`: {Command: "load_secrets", Interactive: true},
+		} {
+			file := filepath.Join(dir, "sofmani.json")
+			assert.NoError(t, os.WriteFile(file, []byte(content), 0644))
+			cfg, err := ParseConfigFrom(file)
+			assert.NoError(t, err)
+			assert.Equal(t, &want, cfg.EnvCommand)
+		}
+	})
+
+	t.Run("map form from a yaml file", func(t *testing.T) {
+		file := filepath.Join(t.TempDir(), "sofmani.yml")
+		assert.NoError(t, os.WriteFile(file, []byte("env_command:\n  command: load_secrets\n  interactive: true\ninstall: []\n"), 0644))
+		cfg, err := ParseConfigFrom(file)
+		assert.NoError(t, err)
+		assert.Equal(t, &EnvCommand{Command: "load_secrets", Interactive: true}, cfg.EnvCommand)
+	})
 }

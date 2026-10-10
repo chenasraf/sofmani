@@ -125,7 +125,7 @@ yq -o=json sofmani.yaml | npx ajv-cli validate -s schema/sofmani.schema.json -d 
 ## What the schema covers
 
 - All top-level options (`debug`, `check_updates`, `summary`, `category_display`, `repo_update`,
-  `defaults`, `env`, `platform_env`, `machine_aliases`, `install`).
+  `defaults`, `env`, `platform_env`, `env_command`, `machine_aliases`, `install`).
 - All supported installer types and their type-specific `opts`.
 - Enums for `category_display`, `repo_update` modes, installer `type`, and platform names.
 - The `frequency` duration pattern (`1d`, `12h`, `1w2d`, ...).

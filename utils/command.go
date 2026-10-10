@@ -19,7 +19,7 @@ const UNIX_DEFAULT_SHELL string = "bash"
 func RunCmdPassThrough(env []string, bin string, args ...string) error {
 	logger.Debug("Running command: %s %v", bin, args)
 	cmd := exec.Command(bin, args...)
-	cmd.Env = ResolveEnvPaths(os.Environ(), cmd.Env, env)
+	cmd.Env = CommandEnv(env)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -43,7 +43,7 @@ func RunCmdPassThroughChained(env []string, commands [][]string) error {
 func RunCmdGetSuccess(env []string, bin string, args ...string) (bool, error) {
 	logger.Debug("Running command: %s %v", bin, args)
 	cmd := exec.Command(bin, args...)
-	cmd.Env = ResolveEnvPaths(os.Environ(), cmd.Env, env)
+	cmd.Env = CommandEnv(env)
 	err := cmd.Run()
 	if err != nil {
 		return false, nil // Error means command failed, not an error in execution of this function
@@ -55,7 +55,7 @@ func RunCmdGetSuccess(env []string, bin string, args ...string) (bool, error) {
 func RunCmdGetSuccessPassThrough(env []string, bin string, args ...string) (bool, error) {
 	logger.Debug("Running command: %s %v", bin, args)
 	cmd := exec.Command(bin, args...)
-	cmd.Env = ResolveEnvPaths(os.Environ(), cmd.Env, env)
+	cmd.Env = CommandEnv(env)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -73,7 +73,7 @@ func RunCmdGetSuccessPassThrough(env []string, bin string, args ...string) (bool
 func RunCmdGetSuccessCaptured(env []string, bin string, args ...string) (bool, error) {
 	logger.Debug("Running command: %s %v", bin, args)
 	cmd := exec.Command(bin, args...)
-	cmd.Env = ResolveEnvPaths(os.Environ(), cmd.Env, env)
+	cmd.Env = CommandEnv(env)
 	out, err := cmd.CombinedOutput()
 	if trimmed := strings.TrimSpace(string(out)); trimmed != "" {
 		logger.Debug("Command output: %s", trimmed)
@@ -88,7 +88,7 @@ func RunCmdGetSuccessCaptured(env []string, bin string, args ...string) (bool, e
 func RunCmdGetOutput(env []string, bin string, args ...string) ([]byte, error) {
 	logger.Debug("Running command: %s %v", bin, args)
 	cmd := exec.Command(bin, args...)
-	cmd.Env = ResolveEnvPaths(os.Environ(), cmd.Env, env)
+	cmd.Env = CommandEnv(env)
 	out, err := cmd.Output()
 	return out, err
 }
@@ -99,7 +99,7 @@ func RunCmdGetOutput(env []string, bin string, args ...string) ([]byte, error) {
 func RunCmdGetOutputPassThrough(env []string, bin string, args ...string) ([]byte, error) {
 	logger.Debug("Running command: %s %v", bin, args)
 	cmd := exec.Command(bin, args...)
-	cmd.Env = ResolveEnvPaths(os.Environ(), cmd.Env, env)
+	cmd.Env = CommandEnv(env)
 	cmd.Stdin = os.Stdin
 	cmd.Stderr = os.Stderr
 	return cmd.Output()

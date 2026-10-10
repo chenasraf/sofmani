@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
@@ -26,8 +27,6 @@ type GitHubReleaseInstaller struct {
 	Config *appconfig.AppConfig
 	// Info is the installer data.
 	Info *appconfig.InstallerData
-	// resolvedToken caches the GitHub token so github_token_command runs at most once per run.
-	resolvedToken *string
 }
 
 // GitHubReleaseOpts represents options for the GitHubReleaseInstaller.
@@ -51,7 +50,8 @@ type GitHubReleaseOpts struct {
 	// GithubTokenCommand is a shell command whose standard output is used as the GitHub token,
 	// for tokens kept in a secret store rather than in the manifest or environment. It runs the
 	// first time a request needs the token, including the latest-release lookup of an update check,
-	// and only when GithubToken is empty.
+	// and only when GithubToken is empty. Its output is reused by every installer with the same
+	// command for the rest of the run.
 	GithubTokenCommand *string
 	// PreDownload and PostDownload are shell hooks run before and after the release asset is
 	// downloaded. PreExtract and PostExtract run before and after it is extracted, and are skipped
@@ -1026,32 +1026,43 @@ func (i *GitHubReleaseInstaller) runHook(field string, command *string, vars *Te
 	return nil
 }
 
+// githubTokenCache holds github_token_command output for the rest of the run, keyed by the
+// rendered command, so the installers sharing a command from `defaults` fetch the token once
+// rather than once each (and prompt to unlock a vault once).
+var (
+	githubTokenCacheMu sync.Mutex
+	githubTokenCache   = map[string]string{}
+)
+
 // githubToken returns the token for GitHub API requests, or "" for anonymous requests. A
 // non-empty github_token wins over github_token_command, so a token exported in the environment
-// (e.g. in CI) skips the secret store. The command runs on the first call only; its trimmed
-// output is reused afterwards.
+// (e.g. in CI) skips the secret store.
 func (i *GitHubReleaseInstaller) githubToken() (string, error) {
-	if i.resolvedToken != nil {
-		return *i.resolvedToken, nil
-	}
 	opts := i.GetOpts()
-	token := ""
-	switch {
-	case opts.GithubToken != nil && *opts.GithubToken != "":
-		token = *opts.GithubToken
-	case opts.GithubTokenCommand != nil && *opts.GithubTokenCommand != "":
-		logger.Debug("Running github_token_command for %s", *i.Info.Name)
-		data := i.GetData()
-		out, err := utils.RunCmdGetOutputPassThrough(data.Environ(), utils.GetOSShell(data.EnvShell), utils.GetOSShellArgs(i.applyTemplate(*opts.GithubTokenCommand))...)
-		if err != nil {
-			return "", fmt.Errorf("github_token_command failed for %s: %w", *i.Info.Name, err)
-		}
-		token = strings.TrimSpace(string(out))
-		if token == "" {
-			return "", fmt.Errorf("github_token_command for %s printed no token", *i.Info.Name)
-		}
+	if opts.GithubToken != nil && *opts.GithubToken != "" {
+		return *opts.GithubToken, nil
 	}
-	i.resolvedToken = &token
+	if opts.GithubTokenCommand == nil || *opts.GithubTokenCommand == "" {
+		return "", nil
+	}
+	command := i.applyTemplate(*opts.GithubTokenCommand)
+
+	githubTokenCacheMu.Lock()
+	defer githubTokenCacheMu.Unlock()
+	if token, ok := githubTokenCache[command]; ok {
+		return token, nil
+	}
+	logger.Debug("Running github_token_command for %s", *i.Info.Name)
+	data := i.GetData()
+	out, err := utils.RunCmdGetOutputPassThrough(data.Environ(), utils.GetOSShell(data.EnvShell), utils.GetOSShellArgs(command)...)
+	if err != nil {
+		return "", fmt.Errorf("github_token_command failed for %s: %w", *i.Info.Name, err)
+	}
+	token := strings.TrimSpace(string(out))
+	if token == "" {
+		return "", fmt.Errorf("github_token_command for %s printed no token", *i.Info.Name)
+	}
+	githubTokenCache[command] = token
 	return token, nil
 }
 

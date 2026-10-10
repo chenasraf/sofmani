@@ -61,6 +61,26 @@
       "$ref": "#/definitions/platformEnvMap",
       "description": "Platform-specific environment variables set for all installers."
     },
+    "env_command": {
+      "description": "Shell command run once at startup; the variables it exports are passed to every installer. Use it to load secrets that aren't exported in your shell, e.g. a shell function or eval \"$(loader)\". Variables set by env or platform_env keep their configured value. Only read from the main config file.",
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["command"],
+          "properties": {
+            "command": { "type": "string", "description": "The command to run." },
+            "interactive": {
+              "type": "boolean",
+              "default": false,
+              "description": "Start the shell with -i, so its rc file (plugins, functions, aliases) loads before the command runs."
+            },
+            "shell": { "type": "string", "description": "Shell to run the command with. Defaults to $SHELL. Must be POSIX-compatible (sh, bash, zsh)." }
+          }
+        }
+      ]
+    },
     "machine_aliases": {
       "type": "object",
       "description": "Map of friendly names to machine IDs. Use 'sofmani --machine-id' to get your machine's ID.",

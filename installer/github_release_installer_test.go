@@ -1567,6 +1567,21 @@ func TestGitHubReleaseTokenCommand(t *testing.T) {
 		assert.Equal(t, []string{"run"}, readLines(t, count))
 	})
 
+	t.Run("installers sharing a command run it once per run", func(t *testing.T) {
+		newFakeGitHub(t, "secret")
+		count := filepath.Join(t.TempDir(), "count")
+		command := "echo run >> " + count + "; printf secret"
+		first := newDownloadTestInstaller("first", map[string]any{"github_token_command": command})
+		second := newDownloadTestInstaller("second", map[string]any{"github_token_command": command})
+
+		for _, inst := range []*GitHubReleaseInstaller{first, second} {
+			var buf bytes.Buffer
+			_, err := inst.downloadAsset(&buf, "v1.0.0", "app.zip")
+			assert.NoError(t, err)
+		}
+		assert.Equal(t, []string{"run"}, readLines(t, count))
+	})
+
 	t.Run("a failing command fails the request", func(t *testing.T) {
 		newFakeGitHub(t, "secret")
 		inst := newDownloadTestInstaller("myapp", map[string]any{"github_token_command": "exit 1"})

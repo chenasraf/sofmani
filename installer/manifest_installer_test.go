@@ -393,12 +393,14 @@ func TestManifestEnvIsolation(t *testing.T) {
 `, out)
 	assert.NoError(t, os.WriteFile(filepath.Join(dir, "manifest.yml"), []byte(manifest), 0o644))
 
-	run := func(opts map[string]any) string {
+	run := func(opts map[string]any, fromEnvCommand bool) string {
 		// main applies the root env to the process the same way.
 		t.Setenv("SOFMANI_TEST_SECRET", "hunter2")
-		parent := &appconfig.AppConfig{
-			CheckUpdates: lo.ToPtr(false),
-			Env:          &map[string]string{"SOFMANI_TEST_SECRET": "hunter2"},
+		parent := &appconfig.AppConfig{CheckUpdates: lo.ToPtr(false)}
+		if fromEnvCommand {
+			parent.LoadedEnv = map[string]string{"SOFMANI_TEST_SECRET": "hunter2"}
+		} else {
+			parent.Env = &map[string]string{"SOFMANI_TEST_SECRET": "hunter2"}
 		}
 		base := map[string]any{"source": dir, "path": "manifest.yml"}
 		maps.Copy(base, opts)
@@ -413,6 +415,8 @@ func TestManifestEnvIsolation(t *testing.T) {
 	}
 
 	overrides := map[string]any{"env": map[string]any{"SOFMANI_TEST_OWN": "mine"}}
-	assert.Equal(t, "|mine", run(map[string]any{"overrides": overrides}))
-	assert.Equal(t, "hunter2|mine", run(map[string]any{"overrides": overrides, "inherit": map[string]any{"env": true}}))
+	for _, fromEnvCommand := range []bool{false, true} {
+		assert.Equal(t, "|mine", run(map[string]any{"overrides": overrides}, fromEnvCommand))
+		assert.Equal(t, "hunter2|mine", run(map[string]any{"overrides": overrides, "inherit": map[string]any{"env": true}}, fromEnvCommand))
+	}
 }

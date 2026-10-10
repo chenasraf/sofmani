@@ -782,13 +782,16 @@ Downloads a GitHub release asset. Optionally untar/unzip the downloaded file.
 
 - `opts.github_token_command`: A shell command whose standard output is used as the GitHub token,
   for tokens kept in a password manager or credential helper rather than in the environment.
-  Surrounding whitespace is trimmed, and empty output is an error. The command runs once per
-  installer, the first time a GitHub request needs the token. That includes looking up the latest
-  release while checking for updates, so the token is in place before any request. Standard input
-  and error are passed through, so the command can prompt to unlock a vault.
+  Surrounding whitespace is trimmed, and empty output is an error. The command runs the first time a
+  GitHub request needs the token. That includes looking up the latest release while checking for
+  updates, so the token is in place before any request. Its output is reused for the rest of the run
+  by every installer with the same command, so setting it in `defaults` fetches the token once, and
+  not at all when no installer needs it. Standard input and error are passed through, so the command
+  can prompt to unlock a vault.
 
   A non-empty `github_token` takes precedence, so a token exported in the environment (e.g. in CI)
-  skips the command.
+  skips the command. To load several secrets at once for every installer type, see the global
+  [`env_command`](./configuration-reference.md#global-options).
 
   ```yaml
   defaults:

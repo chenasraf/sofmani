@@ -2,8 +2,12 @@ package utils
 
 import (
 	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
 	"testing"
 
+	"github.com/chenasraf/sofmani/logger"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -86,4 +90,71 @@ func TestScopeEnv(t *testing.T) {
 	assert.Equal(t, "before", os.Getenv("SOFMANI_SCOPE_SET"))
 	_, exists = os.LookupEnv("SOFMANI_SCOPE_NEW")
 	assert.False(t, exists)
+}
+
+func TestEnvValuesWithEqualsAndDollar(t *testing.T) {
+	assert.Equal(t, map[string]string{"B64": "aGk=="}, EnvSliceAsMap([]string{"B64=aGk=="}))
+	assert.Equal(t, []string{"B64=aGk=="}, ResolveEnvPaths([]string{"B64=aGk=="}))
+
+	t.Setenv("SOFMANI_SECRET", "pa$$w0rd=$HOME")
+	env := EnvSliceAsMap(CommandEnv([]string{"SOFMANI_CONFIGURED=$SOFMANI_REF"}))
+	assert.Equal(t, "pa$$w0rd=$HOME", env["SOFMANI_SECRET"], "process values pass through untouched")
+	_, hasConfigured := env["SOFMANI_CONFIGURED"]
+	assert.True(t, hasConfigured)
+}
+
+func TestCommandEnvResolvesConfiguredValues(t *testing.T) {
+	t.Setenv("SOFMANI_REF", "resolved")
+	env := EnvSliceAsMap(CommandEnv([]string{"SOFMANI_CONFIGURED=$SOFMANI_REF/bin"}))
+	assert.Equal(t, "resolved/bin", env["SOFMANI_CONFIGURED"])
+}
+
+func TestRunEnvCommand(t *testing.T) {
+	logger.InitLogger(false)
+	if runtime.GOOS == "windows" {
+		t.Skip("uses a POSIX shell")
+	}
+
+	t.Run("returns the variables the command exported, untouched", func(t *testing.T) {
+		got, err := RunEnvCommand(nil, "sh", false, `export TOKEN='pa$$=w0rd'; export B64=aGk==; UNEXPORTED=x`)
+		assert.NoError(t, err)
+		assert.Equal(t, map[string]string{"TOKEN": "pa$$=w0rd", "B64": "aGk=="}, got)
+	})
+
+	t.Run("loads eval-style loader output", func(t *testing.T) {
+		got, err := RunEnvCommand(nil, "sh", false, `eval "$(printf 'export TOKEN=abc\n')"`)
+		assert.NoError(t, err)
+		assert.Equal(t, map[string]string{"TOKEN": "abc"}, got)
+	})
+
+	t.Run("leaves out variables that did not change", func(t *testing.T) {
+		got, err := RunEnvCommand([]string{"SOFMANI_SAME=1"}, "sh", false, `export SOFMANI_SAME=1; export CHANGED=2`)
+		assert.NoError(t, err)
+		assert.Equal(t, map[string]string{"CHANGED": "2"}, got)
+	})
+
+	t.Run("output from the command does not interfere", func(t *testing.T) {
+		got, err := RunEnvCommand(nil, "sh", false, `echo noise; echo NOT=loaded; export TOKEN=abc`)
+		assert.NoError(t, err)
+		assert.Equal(t, map[string]string{"TOKEN": "abc"}, got)
+	})
+
+	t.Run("a failing command is an error", func(t *testing.T) {
+		_, err := RunEnvCommand(nil, "sh", false, "false")
+		assert.ErrorContains(t, err, "env_command failed")
+	})
+
+	t.Run("interactive loads rc file functions without returning what the rc file exports", func(t *testing.T) {
+		if _, err := exec.LookPath("bash"); err != nil {
+			t.Skip("bash not installed")
+		}
+		home := t.TempDir()
+		rc := "export FROM_RC=1\nload_secrets() { export TOKEN=from-function; }\n"
+		assert.NoError(t, os.WriteFile(filepath.Join(home, ".bashrc"), []byte(rc), 0644))
+		t.Setenv("HOME", home)
+
+		got, err := RunEnvCommand(nil, "bash", true, "load_secrets")
+		assert.NoError(t, err)
+		assert.Equal(t, map[string]string{"TOKEN": "from-function"}, got)
+	})
 }

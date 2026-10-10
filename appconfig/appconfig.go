@@ -1,9 +1,12 @@
 package appconfig
 
 import (
+	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/chenasraf/sofmani/platform"
@@ -58,6 +61,13 @@ type AppConfig struct {
 	Env *map[string]string `json:"env"            yaml:"env"`
 	// PlatformEnv is a map of platform-specific environment variables to set.
 	PlatformEnv *platform.PlatformMap[map[string]string] `json:"platform_env"   yaml:"platform_env"`
+	// EnvCommand is a shell command, run once at startup, whose exported variables are added to
+	// the environment of every installer. It loads secrets that are not exported in the shell
+	// sofmani runs from.
+	EnvCommand *EnvCommand `json:"env_command"    yaml:"env_command"`
+	// LoadedEnv holds the variables EnvCommand exported. They are kept apart from Env because Env
+	// values are resolved (~ and $VARS expanded) and these are secrets to pass on untouched.
+	LoadedEnv map[string]string `json:"-"              yaml:"-"`
 	// MachineAliases is a map of friendly names to machine IDs.
 	MachineAliases *map[string]string `json:"machine_aliases" yaml:"machine_aliases"`
 	// Filter is a list of installer names to filter by.
@@ -119,6 +129,76 @@ func (c *AppConfig) GetCategoryDisplay() CategoryDisplayMode {
 // Environ returns the combined environment variables as a slice of strings.
 func (c *AppConfig) Environ() []string {
 	return utils.EnvMapAsSlice(utils.CombineEnvMaps(c.Env, c.PlatformEnv.Resolve()))
+}
+
+// EnvCommand is a shell command that loads environment variables. In YAML it is either the
+// command string or a map with `command`, `interactive` and `shell`.
+type EnvCommand struct {
+	// Command runs in the shell; the variables it exports are loaded.
+	Command string `json:"command"     yaml:"command"`
+	// Interactive starts the shell with -i, so its rc file (plugins, functions) loads first.
+	Interactive bool `json:"interactive" yaml:"interactive"`
+	// Shell overrides $SHELL.
+	Shell string `json:"shell"       yaml:"shell"`
+}
+
+// envCommandFields has EnvCommand's fields without its unmarshalers, for decoding the map form.
+type envCommandFields EnvCommand
+
+// UnmarshalYAML accepts either the command string or the map form.
+func (e *EnvCommand) UnmarshalYAML(unmarshal func(any) error) error {
+	var command string
+	if err := unmarshal(&command); err == nil {
+		*e = EnvCommand{Command: command}
+		return nil
+	}
+	var fields envCommandFields
+	if err := unmarshal(&fields); err != nil {
+		return err
+	}
+	*e = EnvCommand(fields)
+	return nil
+}
+
+// UnmarshalJSON accepts either the command string or the map form.
+func (e *EnvCommand) UnmarshalJSON(data []byte) error {
+	var command string
+	if err := json.Unmarshal(data, &command); err == nil {
+		*e = EnvCommand{Command: command}
+		return nil
+	}
+	var fields envCommandFields
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return err
+	}
+	*e = EnvCommand(fields)
+	return nil
+}
+
+// LoadEnvCommand runs EnvCommand and stores the variables it exported in LoadedEnv, leaving out
+// any that Env or PlatformEnv set, so configured values win. It returns the names of the
+// variables loaded.
+func (c *AppConfig) LoadEnvCommand() ([]string, error) {
+	if c.EnvCommand == nil || c.EnvCommand.Command == "" {
+		return nil, nil
+	}
+	shell := c.EnvCommand.Shell
+	if shell == "" {
+		shell = utils.GetOSShell(nil)
+	}
+	loaded, err := utils.RunEnvCommand(c.Environ(), shell, c.EnvCommand.Interactive, c.EnvCommand.Command)
+	if err != nil {
+		return nil, err
+	}
+	configured := utils.CombineEnvMaps(c.Env, c.PlatformEnv.Resolve())
+	c.LoadedEnv = map[string]string{}
+	for k, v := range loaded {
+		if _, ok := configured[k]; !ok {
+			c.LoadedEnv[k] = v
+		}
+	}
+	names := slices.Sorted(maps.Keys(c.LoadedEnv))
+	return names, nil
 }
 
 // ParseConfig parses the configuration file and applies overrides.

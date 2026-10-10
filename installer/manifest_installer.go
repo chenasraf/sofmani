@@ -453,16 +453,17 @@ func mergeMap[K comparable, V any](base, overlay *map[K]V) *map[K]V {
 }
 
 // scopeManifestEnv applies the loaded manifest's env to the process for the duration of its
-// install. When env is not inherited, every variable the loading config set first goes back to
-// its value from before sofmani applied any config, so the manifest cannot read it from the
-// process either.
+// install. When env is not inherited, every variable the loading config set (including those its
+// env_command loaded) first goes back to its value from before sofmani applied any config, so the
+// manifest cannot read it from the process either.
 func (i *ManifestInstaller) scopeManifestEnv() (func(), error) {
 	var reset []string
 	if i.Config != nil && !i.GetOpts().Inherit.Env {
-		reset = slices.Collect(maps.Keys(utils.CombineEnvMaps(i.Config.Env, i.Config.PlatformEnv.Resolve())))
+		parentEnv := utils.CombineEnvMaps(i.Config.Env, i.Config.PlatformEnv.Resolve(), &i.Config.LoadedEnv)
+		reset = slices.Collect(maps.Keys(parentEnv))
 	}
 	config := i.ManifestConfig
-	set := utils.CombineEnvMaps(config.Env, config.PlatformEnv.Resolve())
+	set := utils.ResolveEnvMap(utils.CombineEnvMaps(config.Env, config.PlatformEnv.Resolve()))
 	return utils.ScopeEnv(set, reset)
 }
 

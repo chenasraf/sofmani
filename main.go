@@ -66,10 +66,25 @@ func runMain(cliConfig *appconfig.AppCliConfig) {
 		return
 	}
 
-	for k, v := range utils.CombineEnvMaps(cfg.Env, cfg.PlatformEnv.Resolve()) {
+	// Resolved once here: child commands inherit process values as they are.
+	for k, v := range utils.ResolveEnvMap(utils.CombineEnvMaps(cfg.Env, cfg.PlatformEnv.Resolve())) {
 		logger.Debug("Setting env %s=%s", k, v)
 		err := os.Setenv(k, v)
 		if err != nil {
+			logger.Error("failed to set environment variable %s: %v", k, err)
+			return
+		}
+	}
+
+	// env_command values are usually secrets, so only their names are logged.
+	loaded, err := cfg.LoadEnvCommand()
+	if err != nil {
+		logger.Error("%v", err)
+		return
+	}
+	for _, k := range loaded {
+		logger.Debug("Setting env %s from env_command", k)
+		if err := os.Setenv(k, cfg.LoadedEnv[k]); err != nil {
 			logger.Error("failed to set environment variable %s: %v", k, err)
 			return
 		}
