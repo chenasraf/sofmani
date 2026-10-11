@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.37.0](https://github.com/chenasraf/sofmani/compare/v1.36.0...v1.37.0) (2026-10-11)
+
+
+### Features
+
+* **installer/filter:** apply filters to installers inside manifests ([c03675c](https://github.com/chenasraf/sofmani/commit/c03675c158bc1c7562cd31d7b437b4df28014897))
+
+
+### Bug Fixes
+
+* **installer:** handle unset check_updates ([2299069](https://github.com/chenasraf/sofmani/commit/2299069904537da5def4bfb06fe6ef2db2a39959))
+* **installer:** validate installers inside groups and manifests ([cd23ec9](https://github.com/chenasraf/sofmani/commit/cd23ec90e33400ffef77d8dd28ff70226b1813b2))
+
 ## [1.36.0](https://github.com/chenasraf/sofmani/compare/v1.35.1...v1.36.0) (2026-10-10)
 
 
