@@ -1,8 +1,6 @@
 package installer
 
 import (
-	"fmt"
-
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
 	"github.com/chenasraf/sofmani/summary"
@@ -31,6 +29,9 @@ func (i *GroupInstaller) Validate() []ValidationError {
 	info := i.GetData()
 	if info.Steps == nil || len(*info.Steps) == 0 {
 		errors = append(errors, ValidationError{FieldName: "steps", Message: "Must have at least one step", InstallerName: *info.Name})
+	} else {
+		_, stepErrors := PrepareSteps(i.Config, *info.Steps)
+		errors = append(errors, stepErrors...)
 	}
 	return errors
 }
@@ -40,25 +41,9 @@ func (i *GroupInstaller) Install() error {
 	info := i.GetData()
 	name := *info.Name
 	logger.Debug("Installing group %s", logger.H(name))
-	i.childResults = []summary.InstallResult{}
-	for _, step := range *i.Data.Steps {
-		installer, err := GetInstaller(i.Config, &step)
-		if err != nil {
-			return err
-		}
-		if installer == nil {
-			logger.Warn("Installer type %s is not supported, skipping", logger.H(string(step.Type)))
-		} else {
-			result, err := RunInstaller(i.Config, installer)
-			if err != nil {
-				return fmt.Errorf("failed to run installer for step %s: %w", *step.Name, err)
-			}
-			if result != nil {
-				i.childResults = append(i.childResults, *result)
-			}
-		}
-	}
-	return nil
+	results, err := RunSteps(i.Config, *i.Data.Steps)
+	i.childResults = results
+	return err
 }
 
 // GetChildResults implements IChildResultsProvider.

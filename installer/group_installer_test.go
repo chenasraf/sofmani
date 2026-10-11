@@ -14,7 +14,7 @@ func newTestGroupInstaller(data *appconfig.InstallerData) *GroupInstaller {
 		InstallerBase: InstallerBase{
 			Data: data,
 		},
-		Config: nil,
+		Config: &appconfig.AppConfig{},
 		Data:   data,
 	}
 }
@@ -207,6 +207,7 @@ func TestGroupValidationWithMultipleSteps(t *testing.T) {
 		step2 := appconfig.InstallerData{
 			Name: lo.ToPtr("step2"),
 			Type: appconfig.InstallerTypeShell,
+			Opts: &map[string]any{"command": "true"},
 		}
 		data := &appconfig.InstallerData{
 			Name:  lo.ToPtr("group-multi"),

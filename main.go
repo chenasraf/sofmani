@@ -92,45 +92,11 @@ func runMain(cliConfig *appconfig.AppCliConfig) {
 
 	logger.Info("Checking all installers...")
 
-	// First pass: validate all installers (skip category entries)
-	type installItem struct {
-		installer  installer.IInstaller
-		isCategory bool
-		data       *appconfig.InstallerData
-	}
-	items := []installItem{}
-	hasValidationErrors := false
-
-	for idx := range cfg.Install {
-		i := &cfg.Install[idx]
-
-		// Handle category entries specially - they don't need validation
-		if i.IsCategory() {
-			items = append(items, installItem{isCategory: true, data: i})
-			continue
+	items, problems := installer.PrepareSteps(cfg, cfg.Install)
+	if len(problems) > 0 {
+		for _, e := range problems {
+			logger.Error("%s", e.Error())
 		}
-
-		installerInstance, err := installer.GetInstaller(cfg, i)
-		if err != nil {
-			logger.Error("%s", err)
-			return
-		}
-		if installerInstance == nil {
-			logger.Warn("Installer type %s is not supported, skipping", i.Type)
-		} else {
-			errors := installerInstance.Validate()
-			if len(errors) > 0 {
-				hasValidationErrors = true
-				for _, e := range errors {
-					logger.Error("%s", e.Error())
-				}
-			} else {
-				items = append(items, installItem{installer: installerInstance, data: i})
-			}
-		}
-	}
-
-	if hasValidationErrors {
 		logger.Error("Validation errors found, exiting. Please fix the errors and try again.")
 		os.Exit(1)
 	}
@@ -138,7 +104,7 @@ func runMain(cliConfig *appconfig.AppCliConfig) {
 	if cfg.StartFrom != "" {
 		startIdx := -1
 		for idx, item := range items {
-			if item.data.Name != nil && *item.data.Name == cfg.StartFrom {
+			if item.Data.Name != nil && *item.Data.Name == cfg.StartFrom {
 				startIdx = idx
 				break
 			}
@@ -169,12 +135,12 @@ func runMain(cliConfig *appconfig.AppCliConfig) {
 		}
 
 		// Handle category entries - just log the header
-		if item.isCategory {
-			logger.Category(*item.data.Category, item.data.Desc, logger.CategoryDisplayMode(cfg.GetCategoryDisplay()))
+		if item.IsCategory() {
+			logger.Category(*item.Data.Category, item.Data.Desc, logger.CategoryDisplayMode(cfg.GetCategoryDisplay()))
 			continue
 		}
 
-		result, err := installer.RunInstaller(cfg, item.installer)
+		result, err := installer.RunInstaller(cfg, item.Installer)
 		if err != nil {
 			logger.Error("%s", err)
 			break

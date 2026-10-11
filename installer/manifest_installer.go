@@ -167,24 +167,10 @@ func (i *ManifestInstaller) Install() error {
 	}
 	defer restoreEnv()
 	logger.Info("Installing manifest %s", logger.H(name))
-	i.childResults = []summary.InstallResult{}
-	for _, step := range config.Install {
-		logger.Debug("Checking step %s", logger.H(*step.Name))
-		installer, err := GetInstaller(config, &step)
-		if err != nil {
-			return err
-		}
-		if installer == nil {
-			logger.Warn("Installer type %s is not supported, skipping", logger.H(string(step.Type)))
-		} else {
-			result, err := RunInstaller(config, installer)
-			if err != nil {
-				return fmt.Errorf("failed to run installer for step %s: %w", *step.Name, err)
-			}
-			if result != nil {
-				i.childResults = append(i.childResults, *result)
-			}
-		}
+	results, err := RunSteps(config, config.Install)
+	i.childResults = results
+	if err != nil {
+		return fmt.Errorf("manifest %s: %w", name, err)
 	}
 	return nil
 }
