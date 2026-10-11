@@ -136,6 +136,9 @@ func (i *InstallerData) Environ() []string {
 
 // GetTagsList returns the list of tags for the installer.
 func (i *InstallerData) GetTagsList() []string {
+	if i.Tags == nil {
+		return nil
+	}
 	return lo.Map(strings.Split(*i.Tags, " "), func(tag string, i int) string {
 		return strings.TrimSpace(tag)
 	})

@@ -63,6 +63,12 @@ included.
 - To only installers that contain "sofmani", but exclude ones tagged "config", use
   `-f sofmani -f "!tag:config"`.
 
+Filters also apply to the installers inside [manifests](./installer-configuration.md#manifest). A manifest
+that an inclusion filter matches runs in full, keeping only the exclusion filters. A manifest that
+an exclusion filter matches does not run. Any other manifest is loaded and its installers are
+matched against the same filters, so `-f kamerie` also runs an installer named `kamerie` declared
+in a manifest called `sofmani-local`.
+
 ### Machine ID
 
 The machine ID is a unique, deterministic identifier for the current machine. It is generated from

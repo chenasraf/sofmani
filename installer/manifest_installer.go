@@ -402,6 +402,7 @@ func (i *ManifestInstaller) buildManifestConfig(config *appconfig.AppConfig, opt
 		}
 		logger.Debug("Manifest %s inherits %+v", *i.GetData().Name, opts.Inherit)
 		applyManifestSettings(config, &inherited)
+		config.Filter, _ = ManifestFilters(i, parent.Filter)
 	}
 	if opts.Overrides != nil {
 		applyManifestSettings(config, opts.Overrides)

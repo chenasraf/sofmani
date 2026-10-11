@@ -373,6 +373,13 @@ func TestManifestBuildConfig(t *testing.T) {
 		assert.True(t, *cfg.CheckUpdates)
 	})
 
+	t.Run("passes filters on to the manifest's installers", func(t *testing.T) {
+		p := parent()
+		p.Filter = []string{"kamerie", "!tag:slow"}
+		cfg := build(p, nil)
+		assert.Equal(t, []string{"kamerie", "!tag:slow"}, cfg.Filter)
+	})
+
 	t.Run("never writes into the parent config", func(t *testing.T) {
 		p := parent()
 		build(p, map[string]any{"inherit": true, "overrides": map[string]any{"env": map[string]any{"X": "y"}}})

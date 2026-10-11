@@ -98,6 +98,34 @@ func TestFilterInstaller(t *testing.T) {
 	}
 }
 
+func TestManifestFilters(t *testing.T) {
+	manifest := &MockInstaller{
+		data: &appconfig.InstallerData{Name: lo.ToPtr("sofmani-local"), Type: appconfig.InstallerTypeManifest, Tags: lo.ToPtr("local")},
+	}
+	tests := []struct {
+		name        string
+		filters     []string
+		expected    []string
+		expectedRun bool
+	}{
+		{name: "No filters", filters: nil, expected: nil, expectedRun: true},
+		{name: "Unmatched filter descends into the manifest", filters: []string{"kamerie"}, expected: []string{"kamerie"}, expectedRun: true},
+		{name: "Unmatched type filter descends into the manifest", filters: []string{"type:brew", "!jq"}, expected: []string{"type:brew", "!jq"}, expectedRun: true},
+		{name: "Matched filter runs the whole manifest", filters: []string{"sofmani-local"}, expected: []string{}, expectedRun: true},
+		{name: "Matched filter keeps exclusions", filters: []string{"tag:local", "!jq"}, expected: []string{"!jq"}, expectedRun: true},
+		{name: "Exclusion only descends into the manifest", filters: []string{"!jq"}, expected: []string{"!jq"}, expectedRun: true},
+		{name: "Excluded manifest does not run", filters: []string{"kamerie", "!sofmani-local"}, expected: nil, expectedRun: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			filters, run := ManifestFilters(manifest, tt.filters)
+			assert.Equal(t, tt.expectedRun, run)
+			assert.Equal(t, tt.expected, filters)
+		})
+	}
+}
+
 func TestInstallerIsEnabled(t *testing.T) {
 	logger.InitLogger(true)
 	tests := []struct {

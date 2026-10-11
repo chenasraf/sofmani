@@ -278,7 +278,11 @@ func runInstaller(config *appconfig.AppConfig, installer IInstaller) (*summary.I
 		result.Action = summary.ActionSkipped
 		return result, nil
 	}
-	if !FilterInstaller(installer, config.Filter) {
+	filteredIn := FilterInstaller(installer, config.Filter)
+	if info.Type == appconfig.InstallerTypeManifest {
+		_, filteredIn = ManifestFilters(installer, config.Filter)
+	}
+	if !filteredIn {
 		logger.Debug("%s is filtered, skipping", logger.H(name))
 		result.Action = summary.ActionSkipped
 		return result, nil

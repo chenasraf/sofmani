@@ -14,25 +14,46 @@ func FilterInstaller(installer IInstaller, filters []string) bool {
 	if len(filters) == 0 {
 		return true
 	}
+	positives, negatives := splitFilters(filters)
+	keep := len(positives) == 0 || matchesAny(installer, positives)
+	return keep && !matchesAny(installer, negatives)
+}
+
+// ManifestFilters returns the filters the installers inside a manifest run with, and whether the
+// manifest runs at all. A manifest that an exclusion filter matches does not run. One that an
+// inclusion filter matches runs in full, minus the exclusions. Any other manifest runs with the
+// same filters, so that `-f name` reaches installers declared inside manifests.
+func ManifestFilters(installer IInstaller, filters []string) ([]string, bool) {
+	if len(filters) == 0 {
+		return nil, true
+	}
+	positives, negatives := splitFilters(filters)
+	if matchesAny(installer, negatives) {
+		return nil, false
+	}
+	if len(positives) > 0 && matchesAny(installer, positives) {
+		return lo.Map(negatives, func(f string, _ int) string { return "!" + f }), true
+	}
+	return filters, true
+}
+
+// splitFilters separates inclusion filters from exclusion filters, stripping the `!` prefix of
+// the latter.
+func splitFilters(filters []string) ([]string, []string) {
 	positives := lo.Filter(filters, func(filter string, i int) bool {
 		return filter[0] != '!'
 	})
-
 	negatives := lo.FilterMap(filters, func(filter string, i int) (string, bool) {
 		return filter[1:], filter[0] == '!'
 	})
+	return positives, negatives
+}
 
-	keep := len(positives) == 0 || lo.SomeBy(positives, func(f string) bool {
+// matchesAny checks if an installer matches at least one of the given filters.
+func matchesAny(installer IInstaller, filters []string) bool {
+	return lo.SomeBy(filters, func(f string) bool {
 		return isFilteredIn(installer, f)
 	})
-
-	if keep && lo.SomeBy(negatives, func(f string) bool {
-		return isFilteredIn(installer, f)
-	}) {
-		return false
-	}
-
-	return keep
 }
 
 // isFilteredIn checks if a single installer matches a given filter.
