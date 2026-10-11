@@ -45,6 +45,17 @@ func TestRunInstaller(t *testing.T) {
 	assert.NotNil(t, result)
 }
 
+func TestRunInstallerInstalledWithoutCheckUpdates(t *testing.T) {
+	config := &appconfig.AppConfig{}
+	mockInstaller := &MockInstaller{
+		data:        &appconfig.InstallerData{Name: lo.ToPtr("test"), Type: appconfig.InstallerTypeBrew},
+		isInstalled: true,
+	}
+	result, err := RunInstaller(config, mockInstaller)
+	assert.NoError(t, err)
+	assert.Equal(t, summary.ActionUpToDate, result.Action)
+}
+
 func TestRunInstallerAllowFailure(t *testing.T) {
 	logger.InitLogger(false)
 	config := &appconfig.AppConfig{}

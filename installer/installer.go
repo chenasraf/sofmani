@@ -330,7 +330,7 @@ func runInstaller(config *appconfig.AppConfig, installer IInstaller) (*summary.I
 	if installed {
 		logger.Debug("%s: %s is already installed", logger.H(string(info.Type)), logger.H(name))
 
-		if *config.CheckUpdates {
+		if config.CheckUpdates != nil && *config.CheckUpdates {
 			if !isDelegating {
 				logger.Info("Checking updates for %s: %s", logger.H(string(info.Type)), logger.H(name))
 			}
