@@ -76,6 +76,9 @@ type AppConfig struct {
 	IgnoreFrequency bool
 	// StartFrom skips all installers before the one with the given name.
 	StartFrom string
+	// CheckUpdatesFlag is the update check choice given on the command line, which applies to
+	// every manifest the run loads regardless of what that manifest inherits.
+	CheckUpdatesFlag *bool `json:"-"              yaml:"-"`
 }
 
 // GetRepoUpdateMode returns the repo update mode for the given installer type,
@@ -216,6 +219,7 @@ func ParseConfig(overrides *AppCliConfig) (*AppConfig, error) {
 		}
 		if overrides.CheckUpdates != nil {
 			appConfig.CheckUpdates = overrides.CheckUpdates
+			appConfig.CheckUpdatesFlag = overrides.CheckUpdates
 		}
 		if overrides.Summary != nil {
 			appConfig.Summary = overrides.Summary

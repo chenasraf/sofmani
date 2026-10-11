@@ -366,7 +366,7 @@ func (i *ManifestInstaller) getLocalManifestConfig(path string) (*appconfig.AppC
 
 // buildManifestConfig layers the global settings of a loaded manifest. From lowest to highest
 // precedence: the manifest's own settings, the inherited settings of the loading config, and the
-// installer's `overrides`.
+// installer's `overrides`. The flags the run was started with apply on top of all three.
 func (i *ManifestInstaller) buildManifestConfig(config *appconfig.AppConfig, opts *ManifestOpts) *appconfig.AppConfig {
 	if parent := i.Config; parent != nil {
 		inherited := ManifestSettings{}
@@ -388,10 +388,18 @@ func (i *ManifestInstaller) buildManifestConfig(config *appconfig.AppConfig, opt
 		}
 		logger.Debug("Manifest %s inherits %+v", *i.GetData().Name, opts.Inherit)
 		applyManifestSettings(config, &inherited)
-		config.Filter, _ = ManifestFilters(i, parent.Filter)
 	}
 	if opts.Overrides != nil {
 		applyManifestSettings(config, opts.Overrides)
+	}
+	// Command line flags choose for the whole run, so they win over anything a config says.
+	if parent := i.Config; parent != nil {
+		config.Filter, _ = ManifestFilters(i, parent.Filter)
+		config.IgnoreFrequency = parent.IgnoreFrequency
+		if parent.CheckUpdatesFlag != nil {
+			config.CheckUpdates = lo.ToPtr(*parent.CheckUpdatesFlag)
+			config.CheckUpdatesFlag = parent.CheckUpdatesFlag
+		}
 	}
 	if config.CheckUpdates == nil {
 		config.CheckUpdates = lo.ToPtr(false)

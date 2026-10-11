@@ -380,6 +380,20 @@ func TestManifestBuildConfig(t *testing.T) {
 		assert.Equal(t, []string{"kamerie", "!tag:slow"}, cfg.Filter)
 	})
 
+	t.Run("command line flags win over everything", func(t *testing.T) {
+		p := parent()
+		p.CheckUpdatesFlag = lo.ToPtr(false)
+		p.IgnoreFrequency = true
+		cfg := build(p, map[string]any{"inherit": true, "overrides": map[string]any{"check_updates": true}})
+		assert.False(t, *cfg.CheckUpdates)
+		assert.True(t, cfg.IgnoreFrequency)
+
+		p.CheckUpdatesFlag = lo.ToPtr(true)
+		cfg = build(p, nil)
+		assert.True(t, *cfg.CheckUpdates)
+		assert.Equal(t, lo.ToPtr(true), cfg.CheckUpdatesFlag)
+	})
+
 	t.Run("never writes into the parent config", func(t *testing.T) {
 		p := parent()
 		build(p, map[string]any{"inherit": true, "overrides": map[string]any{"env": map[string]any{"X": "y"}}})

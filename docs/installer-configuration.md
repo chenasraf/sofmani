@@ -844,6 +844,8 @@ Installs an entire manifest from a local or remote file.
   installers.
 - The loaded manifest inherits none of the global settings of the config that loads it unless
   `opts.inherit` says so. A manifest you don't control never sees your `env` by accident.
+- Command line flags apply to the whole run, manifests included: `-u`/`-U`, `--ignore-frequency`
+  and `-f` reach a loaded manifest whatever its `inherit` and `overrides` say.
 - The manifest's `env` and `platform_env` apply to everything it runs, and only while it runs.
 - Remote manifests are fetched directly via HTTP (no git clone required).
 
