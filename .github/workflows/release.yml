@@ -15,6 +15,13 @@ jobs:
     uses: chenasraf/workflows/.github/workflows/go-release.yml@master
     with:
       name: sofmani
+
+  homebrew:
+    needs: release
+    if: ${{ needs.release.outputs.release_created }}
+    uses: chenasraf/workflows/.github/workflows/homebrew-release.yml@master
+    with:
       homebrew-tap-repo: chenasraf/homebrew-tap
+      tag: ${{ needs.release.outputs.tag_name }}
     secrets:
       REPO_DISPATCH_PAT: ${{ secrets.REPO_DISPATCH_PAT }}
