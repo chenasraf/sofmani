@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.38.0](https://github.com/chenasraf/sofmani/compare/v1.37.0...v1.38.0) (2026-10-14)
+
+
+### Features
+
+* **installer/manifest:** apply command line flags inside manifests ([31963ec](https://github.com/chenasraf/sofmani/commit/31963ecb7a58108d6c1eea49733d384d01db0b00))
+
 ## [1.37.0](https://github.com/chenasraf/sofmani/compare/v1.36.0...v1.37.0) (2026-10-11)
 
 
