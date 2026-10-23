@@ -5,7 +5,6 @@ import (
 
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
-	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -23,7 +22,7 @@ func TestAptValidation(t *testing.T) {
 	logger.InitLogger(false)
 	aptInstaller := newTestAptInstaller(
 		&appconfig.InstallerData{
-			Name: lo.ToPtr("test-apt"),
+			Name: new("test-apt"),
 			Type: appconfig.InstallerTypeApt,
 		},
 	)
@@ -34,14 +33,14 @@ func TestAptVersionPin(t *testing.T) {
 	logger.InitLogger(false)
 
 	unpinned := newTestAptInstaller(&appconfig.InstallerData{
-		Name: lo.ToPtr("ripgrep"),
+		Name: new("ripgrep"),
 		Type: appconfig.InstallerTypeApt,
 	})
 	assert.Equal(t, "", unpinned.GetPinnedVersion())
 	assert.Equal(t, "ripgrep", unpinned.GetPackageSpec())
 
 	pinned := newTestAptInstaller(&appconfig.InstallerData{
-		Name: lo.ToPtr("ripgrep"),
+		Name: new("ripgrep"),
 		Type: appconfig.InstallerTypeApt,
 		Opts: &map[string]any{"version": "13.0.0-2"},
 	})
@@ -51,7 +50,7 @@ func TestAptVersionPin(t *testing.T) {
 
 	// A version written onto the name pins just the same.
 	inline := newTestAptInstaller(&appconfig.InstallerData{
-		Name: lo.ToPtr("ripgrep=13.0.0-2"),
+		Name: new("ripgrep=13.0.0-2"),
 		Type: appconfig.InstallerTypeApt,
 	})
 	assert.Equal(t, "13.0.0-2", inline.GetPinnedVersion())
@@ -63,14 +62,14 @@ func TestAptInstallVerb(t *testing.T) {
 	logger.InitLogger(false)
 
 	apt := newTestAptInstaller(&appconfig.InstallerData{
-		Name: lo.ToPtr("ripgrep"),
+		Name: new("ripgrep"),
 		Type: appconfig.InstallerTypeApt,
 	})
 	apt.PackageManager = PackageManagerApt
 	assert.Equal(t, "install", apt.installVerb())
 
 	apk := newTestAptInstaller(&appconfig.InstallerData{
-		Name: lo.ToPtr("ripgrep"),
+		Name: new("ripgrep"),
 		Type: appconfig.InstallerTypeApk,
 	})
 	apk.PackageManager = PackageManagerApk
@@ -82,7 +81,7 @@ func TestAptGetOpts(t *testing.T) {
 
 	// Test default opts (no options set)
 	defaultData := &appconfig.InstallerData{
-		Name: lo.ToPtr("vim"),
+		Name: new("vim"),
 		Type: appconfig.InstallerTypeApt,
 	}
 	installer := newTestAptInstaller(defaultData)
@@ -99,7 +98,7 @@ func TestAptGetOpts(t *testing.T) {
 
 	// Test with flags option
 	flagsData := &appconfig.InstallerData{
-		Name: lo.ToPtr("vim"),
+		Name: new("vim"),
 		Type: appconfig.InstallerTypeApt,
 		Opts: &map[string]any{
 			"flags": "-y --no-install-recommends",
@@ -113,7 +112,7 @@ func TestAptGetOpts(t *testing.T) {
 
 	// Test with install_flags option
 	installFlagsData := &appconfig.InstallerData{
-		Name: lo.ToPtr("vim"),
+		Name: new("vim"),
 		Type: appconfig.InstallerTypeApt,
 		Opts: &map[string]any{
 			"install_flags": "--no-install-recommends",
@@ -127,7 +126,7 @@ func TestAptGetOpts(t *testing.T) {
 
 	// Test with update_flags option
 	updateFlagsData := &appconfig.InstallerData{
-		Name: lo.ToPtr("vim"),
+		Name: new("vim"),
 		Type: appconfig.InstallerTypeApt,
 		Opts: &map[string]any{
 			"update_flags": "--only-upgrade",
@@ -141,7 +140,7 @@ func TestAptGetOpts(t *testing.T) {
 
 	// Test with all flags options combined
 	allFlagsData := &appconfig.InstallerData{
-		Name: lo.ToPtr("vim"),
+		Name: new("vim"),
 		Type: appconfig.InstallerTypeApt,
 		Opts: &map[string]any{
 			"flags":         "--common",

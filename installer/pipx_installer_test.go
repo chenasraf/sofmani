@@ -5,7 +5,6 @@ import (
 
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
-	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -24,7 +23,7 @@ func TestPipxValidation(t *testing.T) {
 
 	// 🟢 Valid pipx installer
 	validData := &appconfig.InstallerData{
-		Name: lo.ToPtr("some-pipx-package"),
+		Name: new("some-pipx-package"),
 		Type: appconfig.InstallerTypePipx,
 	}
 	assertNoValidationErrors(t, newTestPipxInstaller(validData).Validate())
@@ -41,14 +40,14 @@ func TestPipxVersionPin(t *testing.T) {
 	logger.InitLogger(false)
 
 	unpinned := newTestPipxInstaller(&appconfig.InstallerData{
-		Name: lo.ToPtr("black"),
+		Name: new("black"),
 		Type: appconfig.InstallerTypePipx,
 	})
 	assert.Equal(t, "", unpinned.GetPinnedVersion())
 	assert.Equal(t, "black", unpinned.GetPackageSpec())
 
 	pinned := newTestPipxInstaller(&appconfig.InstallerData{
-		Name: lo.ToPtr("black"),
+		Name: new("black"),
 		Type: appconfig.InstallerTypePipx,
 		Opts: &map[string]any{"version": "24.3.0"},
 	})
@@ -58,7 +57,7 @@ func TestPipxVersionPin(t *testing.T) {
 
 	// A requirement written onto the name pins just the same.
 	inline := newTestPipxInstaller(&appconfig.InstallerData{
-		Name: lo.ToPtr("black==24.3.0"),
+		Name: new("black==24.3.0"),
 		Type: appconfig.InstallerTypePipx,
 	})
 	assert.Equal(t, "24.3.0", inline.GetPinnedVersion())
@@ -71,7 +70,7 @@ func TestPipxGetOpts(t *testing.T) {
 
 	// Test default opts (no options set)
 	defaultData := &appconfig.InstallerData{
-		Name: lo.ToPtr("black"),
+		Name: new("black"),
 		Type: appconfig.InstallerTypePipx,
 	}
 	installer := newTestPipxInstaller(defaultData)
@@ -88,7 +87,7 @@ func TestPipxGetOpts(t *testing.T) {
 
 	// Test with flags option
 	flagsData := &appconfig.InstallerData{
-		Name: lo.ToPtr("black"),
+		Name: new("black"),
 		Type: appconfig.InstallerTypePipx,
 		Opts: &map[string]any{
 			"flags": "--verbose",
@@ -102,7 +101,7 @@ func TestPipxGetOpts(t *testing.T) {
 
 	// Test with install_flags option
 	installFlagsData := &appconfig.InstallerData{
-		Name: lo.ToPtr("black"),
+		Name: new("black"),
 		Type: appconfig.InstallerTypePipx,
 		Opts: &map[string]any{
 			"install_flags": "--python python3.11",
@@ -116,7 +115,7 @@ func TestPipxGetOpts(t *testing.T) {
 
 	// Test with update_flags option
 	updateFlagsData := &appconfig.InstallerData{
-		Name: lo.ToPtr("black"),
+		Name: new("black"),
 		Type: appconfig.InstallerTypePipx,
 		Opts: &map[string]any{
 			"update_flags": "--force",
@@ -130,7 +129,7 @@ func TestPipxGetOpts(t *testing.T) {
 
 	// Test with all flags options combined
 	allFlagsData := &appconfig.InstallerData{
-		Name: lo.ToPtr("black"),
+		Name: new("black"),
 		Type: appconfig.InstallerTypePipx,
 		Opts: &map[string]any{
 			"flags":         "--common",

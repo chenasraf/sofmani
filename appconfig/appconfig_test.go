@@ -9,7 +9,6 @@ import (
 
 	"github.com/chenasraf/sofmani/logger"
 	"github.com/chenasraf/sofmani/platform"
-	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,18 +18,18 @@ func TestPlatformMapResolve(t *testing.T) {
 		platform string
 		expected *string
 	}{
-		{"MacOS", "darwin", lo.ToPtr("macos")},
-		{"Linux", "linux", lo.ToPtr("linux")},
-		{"Windows", "windows", lo.ToPtr("windows")},
+		{"MacOS", "darwin", new("macos")},
+		{"Linux", "linux", new("linux")},
+		{"Windows", "windows", new("windows")},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			platform.SetOS(tt.platform)
 			pm := platform.PlatformMap[string]{
-				MacOS:   lo.ToPtr("macos"),
-				Linux:   lo.ToPtr("linux"),
-				Windows: lo.ToPtr("windows"),
+				MacOS:   new("macos"),
+				Linux:   new("linux"),
+				Windows: new("windows"),
 			}
 			assert.Equal(t, tt.expected, pm.Resolve())
 		})

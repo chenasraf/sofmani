@@ -5,13 +5,12 @@ import (
 
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
-	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 )
 
 func shellStep(name string) appconfig.InstallerData {
 	return appconfig.InstallerData{
-		Name: lo.ToPtr(name),
+		Name: new(name),
 		Type: appconfig.InstallerTypeShell,
 		Opts: &map[string]any{"command": "true"},
 	}
@@ -23,7 +22,7 @@ func TestPrepareSteps(t *testing.T) {
 
 	t.Run("keeps categories as headers", func(t *testing.T) {
 		steps, problems := PrepareSteps(config, []appconfig.InstallerData{
-			{Category: lo.ToPtr("Tools")},
+			{Category: new("Tools")},
 			shellStep("tool"),
 		})
 		assert.Empty(t, problems)
@@ -44,7 +43,7 @@ func TestPrepareSteps(t *testing.T) {
 
 	t.Run("reports type validation errors", func(t *testing.T) {
 		_, problems := PrepareSteps(config, []appconfig.InstallerData{
-			{Name: lo.ToPtr("release"), Type: appconfig.InstallerTypeGitHubRelease},
+			{Name: new("release"), Type: appconfig.InstallerTypeGitHubRelease},
 		})
 		assert.NotEmpty(t, problems)
 		assert.Equal(t, "release", problems[0].InstallerName)
@@ -52,7 +51,7 @@ func TestPrepareSteps(t *testing.T) {
 
 	t.Run("leaves out unsupported types", func(t *testing.T) {
 		steps, problems := PrepareSteps(config, []appconfig.InstallerData{
-			{Name: lo.ToPtr("unknown"), Type: appconfig.InstallerType("nope")},
+			{Name: new("unknown"), Type: appconfig.InstallerType("nope")},
 		})
 		assert.Empty(t, steps)
 		assert.Empty(t, problems)
@@ -65,7 +64,7 @@ func TestRunSteps(t *testing.T) {
 
 	t.Run("runs installers around category headers", func(t *testing.T) {
 		results, err := RunSteps(config, []appconfig.InstallerData{
-			{Category: lo.ToPtr("Tools")},
+			{Category: new("Tools")},
 			shellStep("sofmani-run-steps-test"),
 		})
 		assert.NoError(t, err)
@@ -86,9 +85,9 @@ func TestRunSteps(t *testing.T) {
 func TestGroupValidateChecksSteps(t *testing.T) {
 	logger.InitLogger(false)
 	group := NewGroupInstaller(&appconfig.AppConfig{}, &appconfig.InstallerData{
-		Name:  lo.ToPtr("group"),
+		Name:  new("group"),
 		Type:  appconfig.InstallerTypeGroup,
-		Steps: &[]appconfig.InstallerData{{Category: lo.ToPtr("Tools")}, {Type: appconfig.InstallerTypeShell}},
+		Steps: &[]appconfig.InstallerData{{Category: new("Tools")}, {Type: appconfig.InstallerTypeShell}},
 	})
 	problems := group.Validate()
 	assert.Len(t, problems, 1)

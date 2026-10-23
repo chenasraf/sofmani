@@ -28,14 +28,14 @@ func TestBrewValidation(t *testing.T) {
 
 	// 🟢 Valid: No tap specified (tap is optional)
 	emptyData := &appconfig.InstallerData{
-		Name: lo.ToPtr("test-brew-valid"),
+		Name: new("test-brew-valid"),
 		Type: appconfig.InstallerTypeBrew,
 	}
 	assertNoValidationErrors(t, newTestBrewInstaller(emptyData).Validate())
 
 	// 🟢 Valid: Well-formed tap (contains slash, sufficient length)
 	validData := &appconfig.InstallerData{
-		Name: lo.ToPtr("test-brew-valid-tap"),
+		Name: new("test-brew-valid-tap"),
 		Type: appconfig.InstallerTypeBrew,
 		Opts: &map[string]any{"tap": "valid/tap"},
 	}
@@ -43,7 +43,7 @@ func TestBrewValidation(t *testing.T) {
 
 	// 🟢 Valid: Tap and cask used together
 	tapCaskData := &appconfig.InstallerData{
-		Name: lo.ToPtr("test-brew-tap-cask"),
+		Name: new("test-brew-tap-cask"),
 		Type: appconfig.InstallerTypeBrew,
 		Opts: &map[string]any{
 			"tap":  "homebrew/cask-versions",
@@ -54,7 +54,7 @@ func TestBrewValidation(t *testing.T) {
 
 	// 🔴 Invalid: Tap is present but malformed (missing slash or too short)
 	invalidData := &appconfig.InstallerData{
-		Name: lo.ToPtr("test-brew-invalid-tap"),
+		Name: new("test-brew-invalid-tap"),
 		Type: appconfig.InstallerTypeBrew,
 		Opts: &map[string]any{"tap": "invalid-tap"},
 	}
@@ -88,7 +88,7 @@ func TestBrewGetOpts(t *testing.T) {
 
 	// Test default opts (no options set)
 	defaultData := &appconfig.InstallerData{
-		Name: lo.ToPtr("vim"),
+		Name: new("vim"),
 		Type: appconfig.InstallerTypeBrew,
 	}
 	installer := newTestBrewInstaller(defaultData)
@@ -111,7 +111,7 @@ func TestBrewGetOpts(t *testing.T) {
 
 	// Test with flags option
 	flagsData := &appconfig.InstallerData{
-		Name: lo.ToPtr("vim"),
+		Name: new("vim"),
 		Type: appconfig.InstallerTypeBrew,
 		Opts: &map[string]any{
 			"flags": "--verbose --debug",
@@ -125,7 +125,7 @@ func TestBrewGetOpts(t *testing.T) {
 
 	// Test with install_flags option
 	installFlagsData := &appconfig.InstallerData{
-		Name: lo.ToPtr("vim"),
+		Name: new("vim"),
 		Type: appconfig.InstallerTypeBrew,
 		Opts: &map[string]any{
 			"install_flags": "--force",
@@ -139,7 +139,7 @@ func TestBrewGetOpts(t *testing.T) {
 
 	// Test with update_flags option
 	updateFlagsData := &appconfig.InstallerData{
-		Name: lo.ToPtr("vim"),
+		Name: new("vim"),
 		Type: appconfig.InstallerTypeBrew,
 		Opts: &map[string]any{
 			"update_flags": "--dry-run",
@@ -153,7 +153,7 @@ func TestBrewGetOpts(t *testing.T) {
 
 	// Test with all flags options combined
 	allFlagsData := &appconfig.InstallerData{
-		Name: lo.ToPtr("vim"),
+		Name: new("vim"),
 		Type: appconfig.InstallerTypeBrew,
 		Opts: &map[string]any{
 			"tap":           "homebrew/core",
@@ -253,7 +253,7 @@ func TestBrewGetFullName(t *testing.T) {
 
 	t.Run("returns name without tap", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("vim"),
+			Name: new("vim"),
 			Type: appconfig.InstallerTypeBrew,
 		}
 		installer := newTestBrewInstaller(data)
@@ -262,7 +262,7 @@ func TestBrewGetFullName(t *testing.T) {
 
 	t.Run("returns tap/name with tap", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("sofmani"),
+			Name: new("sofmani"),
 			Type: appconfig.InstallerTypeBrew,
 			Opts: &map[string]any{
 				"tap": "chenasraf/tap",
@@ -278,7 +278,7 @@ func TestBrewVersionPin(t *testing.T) {
 
 	t.Run("returns name without version", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("node"),
+			Name: new("node"),
 			Type: appconfig.InstallerTypeBrew,
 		}
 		installer := newTestBrewInstaller(data)
@@ -287,7 +287,7 @@ func TestBrewVersionPin(t *testing.T) {
 
 	t.Run("selects the versioned formula", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("node"),
+			Name: new("node"),
 			Type: appconfig.InstallerTypeBrew,
 			Opts: &map[string]any{
 				"version": "20",
@@ -300,7 +300,7 @@ func TestBrewVersionPin(t *testing.T) {
 
 	t.Run("keeps a version written onto the name", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("node@20"),
+			Name: new("node@20"),
 			Type: appconfig.InstallerTypeBrew,
 			Opts: &map[string]any{
 				"version": "22",
@@ -312,7 +312,7 @@ func TestBrewVersionPin(t *testing.T) {
 
 	t.Run("prefixes the tap onto the versioned formula", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("node"),
+			Name: new("node"),
 			Type: appconfig.InstallerTypeBrew,
 			Opts: &map[string]any{
 				"tap":     "chenasraf/tap",
@@ -329,7 +329,7 @@ func TestBrewIsCask(t *testing.T) {
 
 	t.Run("returns false when cask is not set", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("vim"),
+			Name: new("vim"),
 			Type: appconfig.InstallerTypeBrew,
 		}
 		installer := newTestBrewInstaller(data)
@@ -338,7 +338,7 @@ func TestBrewIsCask(t *testing.T) {
 
 	t.Run("returns false when cask is false", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("firefox"),
+			Name: new("firefox"),
 			Type: appconfig.InstallerTypeBrew,
 			Opts: &map[string]any{
 				"cask": false,
@@ -350,7 +350,7 @@ func TestBrewIsCask(t *testing.T) {
 
 	t.Run("returns true when cask is true", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("firefox"),
+			Name: new("firefox"),
 			Type: appconfig.InstallerTypeBrew,
 			Opts: &map[string]any{
 				"cask": true,
@@ -366,7 +366,7 @@ func TestBrewGetBinName(t *testing.T) {
 
 	t.Run("returns name when bin_name is not set", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("vim"),
+			Name: new("vim"),
 			Type: appconfig.InstallerTypeBrew,
 		}
 		installer := newTestBrewInstaller(data)
@@ -376,7 +376,7 @@ func TestBrewGetBinName(t *testing.T) {
 	t.Run("returns bin_name when set", func(t *testing.T) {
 		binName := "nvim"
 		data := &appconfig.InstallerData{
-			Name:    lo.ToPtr("neovim"),
+			Name:    new("neovim"),
 			Type:    appconfig.InstallerTypeBrew,
 			BinName: &binName,
 		}
@@ -387,7 +387,7 @@ func TestBrewGetBinName(t *testing.T) {
 	t.Run("returns name when bin_name is empty", func(t *testing.T) {
 		binName := ""
 		data := &appconfig.InstallerData{
-			Name:    lo.ToPtr("vim"),
+			Name:    new("vim"),
 			Type:    appconfig.InstallerTypeBrew,
 			BinName: &binName,
 		}
@@ -401,7 +401,7 @@ func TestBrewGetData(t *testing.T) {
 
 	t.Run("returns the installer data", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("vim"),
+			Name: new("vim"),
 			Type: appconfig.InstallerTypeBrew,
 		}
 		installer := newTestBrewInstaller(data)
@@ -418,7 +418,7 @@ func TestNewBrewInstaller(t *testing.T) {
 	t.Run("creates installer with config and data", func(t *testing.T) {
 		cfg := &appconfig.AppConfig{}
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("vim"),
+			Name: new("vim"),
 			Type: appconfig.InstallerTypeBrew,
 		}
 		installer := NewBrewInstaller(cfg, data)
@@ -436,7 +436,7 @@ func TestBrewCheckIsInstalled(t *testing.T) {
 	t.Run("runs custom check when provided", func(t *testing.T) {
 		checkCmd := "true"
 		data := &appconfig.InstallerData{
-			Name:           lo.ToPtr("test-brew"),
+			Name:           new("test-brew"),
 			Type:           appconfig.InstallerTypeBrew,
 			CheckInstalled: &checkCmd,
 		}
@@ -450,7 +450,7 @@ func TestBrewCheckIsInstalled(t *testing.T) {
 	t.Run("runs custom check that fails", func(t *testing.T) {
 		checkCmd := "false"
 		data := &appconfig.InstallerData{
-			Name:           lo.ToPtr("test-brew"),
+			Name:           new("test-brew"),
 			Type:           appconfig.InstallerTypeBrew,
 			CheckInstalled: &checkCmd,
 		}
@@ -474,7 +474,7 @@ func TestBrewCheckIsInstalled(t *testing.T) {
 	t.Run("finds an installed formula", func(t *testing.T) {
 		seedBrewList(t, []string{"git"}, nil)
 		installer := newTestBrewInstaller(&appconfig.InstallerData{
-			Name: lo.ToPtr("git"),
+			Name: new("git"),
 			Type: appconfig.InstallerTypeBrew,
 		})
 		result, err := installer.CheckIsInstalled()
@@ -486,7 +486,7 @@ func TestBrewCheckIsInstalled(t *testing.T) {
 	t.Run("finds an installed cask that is not declared as one", func(t *testing.T) {
 		seedBrewList(t, nil, []string{"volumehud"})
 		installer := newTestBrewInstaller(&appconfig.InstallerData{
-			Name: lo.ToPtr("volumehud"),
+			Name: new("volumehud"),
 			Type: appconfig.InstallerTypeBrew,
 			Opts: &map[string]any{"tap": "dannystewart/apps"},
 		})
@@ -499,7 +499,7 @@ func TestBrewCheckIsInstalled(t *testing.T) {
 	t.Run("returns false when the package is not installed", func(t *testing.T) {
 		seedBrewList(t, []string{"git"}, []string{"firefox"})
 		installer := newTestBrewInstaller(&appconfig.InstallerData{
-			Name: lo.ToPtr("neovim"),
+			Name: new("neovim"),
 			Type: appconfig.InstallerTypeBrew,
 		})
 		result, err := installer.CheckIsInstalled()
@@ -534,7 +534,7 @@ func TestBrewCheckNeedsUpdate(t *testing.T) {
 	t.Run("runs custom check when provided", func(t *testing.T) {
 		checkCmd := "true" // Returns exit code 0, meaning update available
 		data := &appconfig.InstallerData{
-			Name:           lo.ToPtr("test-brew"),
+			Name:           new("test-brew"),
 			Type:           appconfig.InstallerTypeBrew,
 			CheckHasUpdate: &checkCmd,
 		}
@@ -548,7 +548,7 @@ func TestBrewCheckNeedsUpdate(t *testing.T) {
 	t.Run("custom check returns false when no update", func(t *testing.T) {
 		checkCmd := "false" // Returns exit code 1, meaning no update
 		data := &appconfig.InstallerData{
-			Name:           lo.ToPtr("test-brew"),
+			Name:           new("test-brew"),
 			Type:           appconfig.InstallerTypeBrew,
 			CheckHasUpdate: &checkCmd,
 		}
@@ -566,7 +566,7 @@ func TestBrewEnsureTapped(t *testing.T) {
 	t.Run("is a no-op when tap is not set", func(t *testing.T) {
 		ResetRepoUpdateTracker()
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("vim"),
+			Name: new("vim"),
 			Type: appconfig.InstallerTypeBrew,
 		}
 		installer := newTestBrewInstaller(data)
@@ -579,7 +579,7 @@ func TestBrewEnsureTapped(t *testing.T) {
 		resetBrewTrustCache()
 		log := stubBrewCommand(t)
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("vim"),
+			Name: new("vim"),
 			Type: appconfig.InstallerTypeBrew,
 			Opts: &map[string]any{"tap": "some/tap"},
 		}
@@ -595,7 +595,7 @@ func TestBrewEnsureTapped(t *testing.T) {
 		log := stubBrewCommand(t)
 		t.Setenv("SOFMANI_TEST_TRUSTED_TAPS", "other/tap some/tap")
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("vim"),
+			Name: new("vim"),
 			Type: appconfig.InstallerTypeBrew,
 			Opts: &map[string]any{"tap": "some/tap"},
 		}
@@ -611,7 +611,7 @@ func TestBrewEnsureTapped(t *testing.T) {
 		log := stubBrewCommand(t)
 		t.Setenv("SOFMANI_TEST_TRUSTED_TAPS", "some/tap")
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("vim"),
+			Name: new("vim"),
 			Type: appconfig.InstallerTypeBrew,
 			Opts: &map[string]any{"tap": "Some/Tap"},
 		}
@@ -626,7 +626,7 @@ func TestBrewEnsureTapped(t *testing.T) {
 		resetBrewTrustCache()
 		log := stubBrewCommand(t, "trust")
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("vim"),
+			Name: new("vim"),
 			Type: appconfig.InstallerTypeBrew,
 			Opts: &map[string]any{"tap": "some/tap"},
 		}
@@ -649,7 +649,7 @@ func TestBrewEnsureTapped(t *testing.T) {
 		t.Setenv("SOFMANI_TEST_TRUSTED_TAPS", "some/tap other/tap")
 		for _, tap := range []string{"some/tap", "other/tap"} {
 			data := &appconfig.InstallerData{
-				Name: lo.ToPtr("vim"),
+				Name: new("vim"),
 				Type: appconfig.InstallerTypeBrew,
 				Opts: &map[string]any{"tap": tap},
 			}
@@ -665,7 +665,7 @@ func TestBrewEnsureTapped(t *testing.T) {
 		log := stubBrewCommand(t)
 		t.Setenv("HOMEBREW_NO_REQUIRE_TAP_TRUST", "1")
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("vim"),
+			Name: new("vim"),
 			Type: appconfig.InstallerTypeBrew,
 			Opts: &map[string]any{"tap": "some/tap"},
 		}
@@ -680,7 +680,7 @@ func TestBrewEnsureTapped(t *testing.T) {
 		resetBrewTrustCache()
 		log := stubBrewCommand(t, "trust")
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("vim"),
+			Name: new("vim"),
 			Type: appconfig.InstallerTypeBrew,
 			Opts: &map[string]any{"tap": "some/tap"},
 		}
@@ -695,7 +695,7 @@ func TestBrewEnsureTapped(t *testing.T) {
 		resetBrewTrustCache()
 		stubBrewCommand(t, "tap")
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("vim"),
+			Name: new("vim"),
 			Type: appconfig.InstallerTypeBrew,
 			Opts: &map[string]any{"tap": "some/tap"},
 		}
@@ -746,7 +746,7 @@ func TestBrewGetOptsWrongTypes(t *testing.T) {
 
 	t.Run("handles wrong type values gracefully", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("vim"),
+			Name: new("vim"),
 			Type: appconfig.InstallerTypeBrew,
 			Opts: &map[string]any{
 				"tap":           123,   // Wrong type

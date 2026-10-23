@@ -5,7 +5,6 @@ import (
 
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
-	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -24,7 +23,7 @@ func TestGoValidation(t *testing.T) {
 
 	// 🟢 Valid go installer
 	validData := &appconfig.InstallerData{
-		Name: lo.ToPtr("golang.org/x/tools/gopls"),
+		Name: new("golang.org/x/tools/gopls"),
 		Type: appconfig.InstallerTypeGo,
 	}
 	assertNoValidationErrors(t, newTestGoInstaller(validData).Validate())
@@ -42,7 +41,7 @@ func TestGoGetOpts(t *testing.T) {
 
 	// Default opts
 	defaultData := &appconfig.InstallerData{
-		Name: lo.ToPtr("golang.org/x/tools/gopls"),
+		Name: new("golang.org/x/tools/gopls"),
 		Type: appconfig.InstallerTypeGo,
 	}
 	installer := newTestGoInstaller(defaultData)
@@ -61,7 +60,7 @@ func TestGoGetOpts(t *testing.T) {
 	}
 
 	allOptsData := &appconfig.InstallerData{
-		Name: lo.ToPtr("golang.org/x/tools/gopls"),
+		Name: new("golang.org/x/tools/gopls"),
 		Type: appconfig.InstallerTypeGo,
 		Opts: &map[string]any{
 			"version":       "v0.16.0",
@@ -91,7 +90,7 @@ func TestGoGetPackageRef(t *testing.T) {
 
 	// Default: appends @latest
 	data := &appconfig.InstallerData{
-		Name: lo.ToPtr("golang.org/x/tools/gopls"),
+		Name: new("golang.org/x/tools/gopls"),
 		Type: appconfig.InstallerTypeGo,
 	}
 	if ref := newTestGoInstaller(data).GetPackageRef(); ref != "golang.org/x/tools/gopls@latest" {
@@ -100,7 +99,7 @@ func TestGoGetPackageRef(t *testing.T) {
 
 	// opts.version overrides default
 	versionData := &appconfig.InstallerData{
-		Name: lo.ToPtr("golang.org/x/tools/gopls"),
+		Name: new("golang.org/x/tools/gopls"),
 		Type: appconfig.InstallerTypeGo,
 		Opts: &map[string]any{"version": "v0.16.0"},
 	}
@@ -110,7 +109,7 @@ func TestGoGetPackageRef(t *testing.T) {
 
 	// Inline @version on name wins
 	inlineData := &appconfig.InstallerData{
-		Name: lo.ToPtr("golang.org/x/tools/gopls@v0.15.0"),
+		Name: new("golang.org/x/tools/gopls@v0.15.0"),
 		Type: appconfig.InstallerTypeGo,
 		Opts: &map[string]any{"version": "v0.16.0"},
 	}
@@ -124,20 +123,20 @@ func TestGoVersionPin(t *testing.T) {
 
 	// `latest` follows the module proxy, so it is not a pin.
 	unpinned := newTestGoInstaller(&appconfig.InstallerData{
-		Name: lo.ToPtr("golang.org/x/tools/gopls"),
+		Name: new("golang.org/x/tools/gopls"),
 		Type: appconfig.InstallerTypeGo,
 	})
 	assert.Equal(t, "", unpinned.GetPinnedVersion())
 
 	pinned := newTestGoInstaller(&appconfig.InstallerData{
-		Name: lo.ToPtr("golang.org/x/tools/gopls"),
+		Name: new("golang.org/x/tools/gopls"),
 		Type: appconfig.InstallerTypeGo,
 		Opts: &map[string]any{"version": "v0.16.0"},
 	})
 	assert.Equal(t, "v0.16.0", pinned.GetPinnedVersion())
 
 	inline := newTestGoInstaller(&appconfig.InstallerData{
-		Name: lo.ToPtr("golang.org/x/tools/gopls@v0.16.0"),
+		Name: new("golang.org/x/tools/gopls@v0.16.0"),
 		Type: appconfig.InstallerTypeGo,
 	})
 	assert.Equal(t, "v0.16.0", inline.GetPinnedVersion())
@@ -148,7 +147,7 @@ func TestGoGetBinName(t *testing.T) {
 
 	// Default: last path component of name
 	defaultData := &appconfig.InstallerData{
-		Name: lo.ToPtr("golang.org/x/tools/gopls"),
+		Name: new("golang.org/x/tools/gopls"),
 		Type: appconfig.InstallerTypeGo,
 	}
 	if name := newTestGoInstaller(defaultData).GetBinName(); name != "gopls" {
@@ -157,7 +156,7 @@ func TestGoGetBinName(t *testing.T) {
 
 	// Inline @version is stripped
 	withVersion := &appconfig.InstallerData{
-		Name: lo.ToPtr("golang.org/x/tools/gopls@v0.16.0"),
+		Name: new("golang.org/x/tools/gopls@v0.16.0"),
 		Type: appconfig.InstallerTypeGo,
 	}
 	if name := newTestGoInstaller(withVersion).GetBinName(); name != "gopls" {
@@ -166,9 +165,9 @@ func TestGoGetBinName(t *testing.T) {
 
 	// Override via bin_name
 	override := &appconfig.InstallerData{
-		Name:    lo.ToPtr("golang.org/x/tools/gopls"),
+		Name:    new("golang.org/x/tools/gopls"),
 		Type:    appconfig.InstallerTypeGo,
-		BinName: lo.ToPtr("gopls-custom"),
+		BinName: new("gopls-custom"),
 	}
 	if name := newTestGoInstaller(override).GetBinName(); name != "gopls-custom" {
 		t.Errorf("expected bin name 'gopls-custom', got %q", name)
@@ -179,7 +178,7 @@ func TestGoGetData(t *testing.T) {
 	logger.InitLogger(false)
 
 	data := &appconfig.InstallerData{
-		Name: lo.ToPtr("golang.org/x/tools/gopls"),
+		Name: new("golang.org/x/tools/gopls"),
 		Type: appconfig.InstallerTypeGo,
 	}
 	installer := newTestGoInstaller(data)

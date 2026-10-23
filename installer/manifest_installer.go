@@ -15,7 +15,6 @@ import (
 	"github.com/chenasraf/sofmani/platform"
 	"github.com/chenasraf/sofmani/summary"
 	"github.com/chenasraf/sofmani/utils"
-	"github.com/samber/lo"
 	"gopkg.in/yaml.v3"
 )
 
@@ -397,12 +396,12 @@ func (i *ManifestInstaller) buildManifestConfig(config *appconfig.AppConfig, opt
 		config.Filter, _ = ManifestFilters(i, parent.Filter)
 		config.IgnoreFrequency = parent.IgnoreFrequency
 		if parent.CheckUpdatesFlag != nil {
-			config.CheckUpdates = lo.ToPtr(*parent.CheckUpdatesFlag)
+			config.CheckUpdates = new(*parent.CheckUpdatesFlag)
 			config.CheckUpdatesFlag = parent.CheckUpdatesFlag
 		}
 	}
 	if config.CheckUpdates == nil {
-		config.CheckUpdates = lo.ToPtr(false)
+		config.CheckUpdates = new(false)
 	}
 	return config
 }
@@ -412,7 +411,7 @@ func (i *ManifestInstaller) buildManifestConfig(config *appconfig.AppConfig, opt
 // writes into the config it inherited from.
 func applyManifestSettings(config *appconfig.AppConfig, settings *ManifestSettings) {
 	if settings.CheckUpdates != nil {
-		config.CheckUpdates = lo.ToPtr(*settings.CheckUpdates)
+		config.CheckUpdates = new(*settings.CheckUpdates)
 	}
 	config.RepoUpdate = mergeMap(config.RepoUpdate, settings.RepoUpdate)
 	config.Env = mergeMap(config.Env, settings.Env)

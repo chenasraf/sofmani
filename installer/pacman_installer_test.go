@@ -5,7 +5,6 @@ import (
 
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
-	"github.com/samber/lo"
 )
 
 func newTestPacmanInstaller(data *appconfig.InstallerData) *PacmanInstaller {
@@ -35,14 +34,14 @@ func TestPacmanValidation(t *testing.T) {
 
 	// Valid pacman installer
 	validPacmanData := &appconfig.InstallerData{
-		Name: lo.ToPtr("vim"),
+		Name: new("vim"),
 		Type: appconfig.InstallerTypePacman,
 	}
 	assertNoValidationErrors(t, newTestPacmanInstaller(validPacmanData).Validate())
 
 	// Valid yay installer
 	validYayData := &appconfig.InstallerData{
-		Name: lo.ToPtr("visual-studio-code-bin"),
+		Name: new("visual-studio-code-bin"),
 		Type: appconfig.InstallerTypeYay,
 	}
 	assertNoValidationErrors(t, newTestYayInstaller(validYayData).Validate())
@@ -60,7 +59,7 @@ func TestPacmanGetBinName(t *testing.T) {
 
 	// Test default bin name (uses package name)
 	defaultBinData := &appconfig.InstallerData{
-		Name: lo.ToPtr("neovim"),
+		Name: new("neovim"),
 		Type: appconfig.InstallerTypePacman,
 	}
 	installer := newTestPacmanInstaller(defaultBinData)
@@ -71,7 +70,7 @@ func TestPacmanGetBinName(t *testing.T) {
 	// Test custom bin name
 	customBinName := "nvim"
 	customBinData := &appconfig.InstallerData{
-		Name:    lo.ToPtr("neovim"),
+		Name:    new("neovim"),
 		Type:    appconfig.InstallerTypePacman,
 		BinName: &customBinName,
 	}
@@ -86,7 +85,7 @@ func TestPacmanGetOpts(t *testing.T) {
 
 	// Test default opts (no options set)
 	defaultData := &appconfig.InstallerData{
-		Name: lo.ToPtr("vim"),
+		Name: new("vim"),
 		Type: appconfig.InstallerTypePacman,
 	}
 	installer := newTestPacmanInstaller(defaultData)
@@ -106,7 +105,7 @@ func TestPacmanGetOpts(t *testing.T) {
 
 	// Test with needed option set to true
 	neededData := &appconfig.InstallerData{
-		Name: lo.ToPtr("vim"),
+		Name: new("vim"),
 		Type: appconfig.InstallerTypePacman,
 		Opts: &map[string]any{
 			"needed": true,
@@ -120,7 +119,7 @@ func TestPacmanGetOpts(t *testing.T) {
 
 	// Test with needed option set to false
 	notNeededData := &appconfig.InstallerData{
-		Name: lo.ToPtr("vim"),
+		Name: new("vim"),
 		Type: appconfig.InstallerTypePacman,
 		Opts: &map[string]any{
 			"needed": false,
@@ -134,7 +133,7 @@ func TestPacmanGetOpts(t *testing.T) {
 
 	// Test with flags option
 	flagsData := &appconfig.InstallerData{
-		Name: lo.ToPtr("vim"),
+		Name: new("vim"),
 		Type: appconfig.InstallerTypePacman,
 		Opts: &map[string]any{
 			"flags": "--asdeps --overwrite '*'",
@@ -148,7 +147,7 @@ func TestPacmanGetOpts(t *testing.T) {
 
 	// Test with install_flags option
 	installFlagsData := &appconfig.InstallerData{
-		Name: lo.ToPtr("vim"),
+		Name: new("vim"),
 		Type: appconfig.InstallerTypePacman,
 		Opts: &map[string]any{
 			"install_flags": "--asdeps",
@@ -162,7 +161,7 @@ func TestPacmanGetOpts(t *testing.T) {
 
 	// Test with update_flags option
 	updateFlagsData := &appconfig.InstallerData{
-		Name: lo.ToPtr("vim"),
+		Name: new("vim"),
 		Type: appconfig.InstallerTypePacman,
 		Opts: &map[string]any{
 			"update_flags": "--ignore vim",
@@ -176,7 +175,7 @@ func TestPacmanGetOpts(t *testing.T) {
 
 	// Test with all flags options combined
 	allFlagsData := &appconfig.InstallerData{
-		Name: lo.ToPtr("vim"),
+		Name: new("vim"),
 		Type: appconfig.InstallerTypePacman,
 		Opts: &map[string]any{
 			"flags":         "--common",

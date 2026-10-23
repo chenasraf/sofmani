@@ -5,7 +5,6 @@ import (
 
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
-	"github.com/samber/lo"
 )
 
 func newTestRsyncInstaller(data *appconfig.InstallerData) *RsyncInstaller {
@@ -23,7 +22,7 @@ func TestRsyncValidation(t *testing.T) {
 
 	// 🟢 Valid rsync config
 	validData := &appconfig.InstallerData{
-		Name: lo.ToPtr("rsync-valid"),
+		Name: new("rsync-valid"),
 		Type: appconfig.InstallerTypeRsync,
 		Opts: &map[string]any{
 			"source":      "/path/from",
@@ -35,7 +34,7 @@ func TestRsyncValidation(t *testing.T) {
 
 	// 🔴 Missing source
 	missingSource := &appconfig.InstallerData{
-		Name: lo.ToPtr("rsync-missing-source"),
+		Name: new("rsync-missing-source"),
 		Type: appconfig.InstallerTypeRsync,
 		Opts: &map[string]any{
 			"destination": "/path/to",
@@ -45,7 +44,7 @@ func TestRsyncValidation(t *testing.T) {
 
 	// 🔴 Missing destination
 	missingDest := &appconfig.InstallerData{
-		Name: lo.ToPtr("rsync-missing-destination"),
+		Name: new("rsync-missing-destination"),
 		Type: appconfig.InstallerTypeRsync,
 		Opts: &map[string]any{
 			"source": "/path/from",
@@ -56,7 +55,7 @@ func TestRsyncValidation(t *testing.T) {
 
 	// 🔴 Empty flags string
 	emptyFlags := &appconfig.InstallerData{
-		Name: lo.ToPtr("rsync-empty-flags"),
+		Name: new("rsync-empty-flags"),
 		Type: appconfig.InstallerTypeRsync,
 		Opts: &map[string]any{
 			"source":      "/path/from",

@@ -5,7 +5,6 @@ import (
 
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
-	"github.com/samber/lo"
 )
 
 func newTestGitInstaller(data *appconfig.InstallerData) *GitInstaller {
@@ -22,7 +21,7 @@ func TestGitValidation(t *testing.T) {
 
 	// 🟢 Valid: Both destination and ref are present
 	validData := &appconfig.InstallerData{
-		Name: lo.ToPtr("test-git-valid"),
+		Name: new("test-git-valid"),
 		Type: appconfig.InstallerTypeGit,
 		Opts: &map[string]any{
 			"destination": "/some/path",
@@ -33,7 +32,7 @@ func TestGitValidation(t *testing.T) {
 
 	// 🟢 Valid: Missing ref
 	missingRefData := &appconfig.InstallerData{
-		Name: lo.ToPtr("test-git-missing-ref"),
+		Name: new("test-git-missing-ref"),
 		Type: appconfig.InstallerTypeGit,
 		Opts: &map[string]any{
 			"destination": "/some/path",
@@ -43,7 +42,7 @@ func TestGitValidation(t *testing.T) {
 
 	// 🔴 Invalid: Missing destination
 	missingDestData := &appconfig.InstallerData{
-		Name: lo.ToPtr("test-git-missing-destination"),
+		Name: new("test-git-missing-destination"),
 		Type: appconfig.InstallerTypeGit,
 		Opts: &map[string]any{
 			"ref": "main",
@@ -57,7 +56,7 @@ func TestGitGetOpts(t *testing.T) {
 
 	// Test default opts (only destination set)
 	defaultData := &appconfig.InstallerData{
-		Name: lo.ToPtr("owner/repo"),
+		Name: new("owner/repo"),
 		Type: appconfig.InstallerTypeGit,
 		Opts: &map[string]any{
 			"destination": "/some/path",
@@ -83,7 +82,7 @@ func TestGitGetOpts(t *testing.T) {
 
 	// Test with flags option
 	flagsData := &appconfig.InstallerData{
-		Name: lo.ToPtr("owner/repo"),
+		Name: new("owner/repo"),
 		Type: appconfig.InstallerTypeGit,
 		Opts: &map[string]any{
 			"destination": "/some/path",
@@ -98,7 +97,7 @@ func TestGitGetOpts(t *testing.T) {
 
 	// Test with install_flags option (for git clone)
 	installFlagsData := &appconfig.InstallerData{
-		Name: lo.ToPtr("owner/repo"),
+		Name: new("owner/repo"),
 		Type: appconfig.InstallerTypeGit,
 		Opts: &map[string]any{
 			"destination":   "/some/path",
@@ -113,7 +112,7 @@ func TestGitGetOpts(t *testing.T) {
 
 	// Test with update_flags option (for git pull)
 	updateFlagsData := &appconfig.InstallerData{
-		Name: lo.ToPtr("owner/repo"),
+		Name: new("owner/repo"),
 		Type: appconfig.InstallerTypeGit,
 		Opts: &map[string]any{
 			"destination":  "/some/path",
@@ -128,7 +127,7 @@ func TestGitGetOpts(t *testing.T) {
 
 	// Test with all options combined
 	allOptsData := &appconfig.InstallerData{
-		Name: lo.ToPtr("owner/repo"),
+		Name: new("owner/repo"),
 		Type: appconfig.InstallerTypeGit,
 		Opts: &map[string]any{
 			"destination":   "/some/path",

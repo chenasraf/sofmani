@@ -4,7 +4,6 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -172,16 +171,16 @@ func TestPlatformMapResolve(t *testing.T) {
 
 	t.Run("returns nil when platform value not set", func(t *testing.T) {
 		SetOS("darwin")
-		pm := &PlatformMap[string]{Linux: lo.ToPtr("linux-only")}
+		pm := &PlatformMap[string]{Linux: new("linux-only")}
 		assert.Nil(t, pm.Resolve())
 	})
 
 	t.Run("returns nil for unknown OS", func(t *testing.T) {
 		SetOS("freebsd")
 		pm := &PlatformMap[string]{
-			MacOS:   lo.ToPtr("mac"),
-			Linux:   lo.ToPtr("linux"),
-			Windows: lo.ToPtr("windows"),
+			MacOS:   new("mac"),
+			Linux:   new("linux"),
+			Windows: new("windows"),
 		}
 		assert.Nil(t, pm.Resolve())
 	})
@@ -193,15 +192,15 @@ func TestPlatformMapResolveWithFallback(t *testing.T) {
 
 	t.Run("returns primary value when set", func(t *testing.T) {
 		SetOS("darwin")
-		primary := &PlatformMap[string]{MacOS: lo.ToPtr("primary")}
-		fallback := PlatformMap[string]{MacOS: lo.ToPtr("fallback")}
+		primary := &PlatformMap[string]{MacOS: new("primary")}
+		fallback := PlatformMap[string]{MacOS: new("fallback")}
 		assert.Equal(t, "primary", primary.ResolveWithFallback(fallback))
 	})
 
 	t.Run("returns fallback value when primary not set", func(t *testing.T) {
 		SetOS("darwin")
-		primary := &PlatformMap[string]{Linux: lo.ToPtr("linux-only")}
-		fallback := PlatformMap[string]{MacOS: lo.ToPtr("fallback")}
+		primary := &PlatformMap[string]{Linux: new("linux-only")}
+		fallback := PlatformMap[string]{MacOS: new("fallback")}
 		assert.Equal(t, "fallback", primary.ResolveWithFallback(fallback))
 	})
 }

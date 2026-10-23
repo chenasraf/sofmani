@@ -5,7 +5,6 @@ import (
 
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
-	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -25,7 +24,7 @@ func TestNpmValidation(t *testing.T) {
 
 	// 🟢 Valid npm installer
 	validData := &appconfig.InstallerData{
-		Name: lo.ToPtr("some-npm-package"),
+		Name: new("some-npm-package"),
 		Type: appconfig.InstallerTypeNpm,
 	}
 	assertNoValidationErrors(t, newTestNpmInstaller(validData).Validate())
@@ -42,14 +41,14 @@ func TestNpmVersionPin(t *testing.T) {
 	logger.InitLogger(false)
 
 	unpinned := newTestNpmInstaller(&appconfig.InstallerData{
-		Name: lo.ToPtr("prettier"),
+		Name: new("prettier"),
 		Type: appconfig.InstallerTypeNpm,
 	})
 	assert.Equal(t, "", unpinned.GetPinnedVersion())
 	assert.Equal(t, "prettier", unpinned.GetPackageSpec())
 
 	pinned := newTestNpmInstaller(&appconfig.InstallerData{
-		Name: lo.ToPtr("prettier"),
+		Name: new("prettier"),
 		Type: appconfig.InstallerTypeNpm,
 		Opts: &map[string]any{"version": "3.3.3"},
 	})
@@ -59,7 +58,7 @@ func TestNpmVersionPin(t *testing.T) {
 
 	// A version written onto the name pins just the same.
 	inline := newTestNpmInstaller(&appconfig.InstallerData{
-		Name: lo.ToPtr("prettier@3.3.3"),
+		Name: new("prettier@3.3.3"),
 		Type: appconfig.InstallerTypeNpm,
 	})
 	assert.Equal(t, "3.3.3", inline.GetPinnedVersion())
@@ -68,7 +67,7 @@ func TestNpmVersionPin(t *testing.T) {
 
 	// The `@` opening a scoped package is not a version.
 	scoped := newTestNpmInstaller(&appconfig.InstallerData{
-		Name: lo.ToPtr("@vue/cli"),
+		Name: new("@vue/cli"),
 		Type: appconfig.InstallerTypeNpm,
 		Opts: &map[string]any{"version": "5.0.8"},
 	})
@@ -76,7 +75,7 @@ func TestNpmVersionPin(t *testing.T) {
 	assert.Equal(t, "@vue/cli@5.0.8", scoped.GetPackageSpec())
 
 	scopedUnpinned := newTestNpmInstaller(&appconfig.InstallerData{
-		Name: lo.ToPtr("@vue/cli"),
+		Name: new("@vue/cli"),
 		Type: appconfig.InstallerTypeNpm,
 	})
 	assert.Equal(t, "", scopedUnpinned.GetPinnedVersion())
@@ -88,7 +87,7 @@ func TestNpmGetOpts(t *testing.T) {
 
 	// Test default opts (no options set)
 	defaultData := &appconfig.InstallerData{
-		Name: lo.ToPtr("prettier"),
+		Name: new("prettier"),
 		Type: appconfig.InstallerTypeNpm,
 	}
 	installer := newTestNpmInstaller(defaultData)
@@ -105,7 +104,7 @@ func TestNpmGetOpts(t *testing.T) {
 
 	// Test with flags option
 	flagsData := &appconfig.InstallerData{
-		Name: lo.ToPtr("prettier"),
+		Name: new("prettier"),
 		Type: appconfig.InstallerTypeNpm,
 		Opts: &map[string]any{
 			"flags": "--legacy-peer-deps",
@@ -119,7 +118,7 @@ func TestNpmGetOpts(t *testing.T) {
 
 	// Test with install_flags option
 	installFlagsData := &appconfig.InstallerData{
-		Name: lo.ToPtr("prettier"),
+		Name: new("prettier"),
 		Type: appconfig.InstallerTypeNpm,
 		Opts: &map[string]any{
 			"install_flags": "--save-exact",
@@ -133,7 +132,7 @@ func TestNpmGetOpts(t *testing.T) {
 
 	// Test with update_flags option
 	updateFlagsData := &appconfig.InstallerData{
-		Name: lo.ToPtr("prettier"),
+		Name: new("prettier"),
 		Type: appconfig.InstallerTypeNpm,
 		Opts: &map[string]any{
 			"update_flags": "--force",
@@ -147,7 +146,7 @@ func TestNpmGetOpts(t *testing.T) {
 
 	// Test with all flags options combined
 	allFlagsData := &appconfig.InstallerData{
-		Name: lo.ToPtr("prettier"),
+		Name: new("prettier"),
 		Type: appconfig.InstallerTypeNpm,
 		Opts: &map[string]any{
 			"flags":         "--common",

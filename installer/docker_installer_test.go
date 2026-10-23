@@ -5,7 +5,6 @@ import (
 
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
-	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 )
 
@@ -24,17 +23,17 @@ func TestDockerValidation(t *testing.T) {
 
 	// 🟢 Valid: just name and type
 	validData := &appconfig.InstallerData{
-		Name:    lo.ToPtr("ghcr.io/open-webui/open-webui:main"),
+		Name:    new("ghcr.io/open-webui/open-webui:main"),
 		Type:    appconfig.InstallerTypeDocker,
-		BinName: lo.ToPtr("open-webui"),
+		BinName: new("open-webui"),
 	}
 	assertNoValidationErrors(t, newTestDockerInstaller(validData).Validate())
 
 	// 🟢 Valid: with flags
 	withFlags := &appconfig.InstallerData{
-		Name:    lo.ToPtr("ghcr.io/open-webui/open-webui:main"),
+		Name:    new("ghcr.io/open-webui/open-webui:main"),
 		Type:    appconfig.InstallerTypeDocker,
-		BinName: lo.ToPtr("open-webui"),
+		BinName: new("open-webui"),
 		Opts: &map[string]any{
 			"flags": "-p 3300:8080 -v open-webui:/data",
 		},
@@ -52,14 +51,14 @@ func TestDockerVersionPin(t *testing.T) {
 	logger.InitLogger(false)
 
 	unpinned := newTestDockerInstaller(&appconfig.InstallerData{
-		Name: lo.ToPtr("ghcr.io/open-webui/open-webui"),
+		Name: new("ghcr.io/open-webui/open-webui"),
 		Type: appconfig.InstallerTypeDocker,
 	})
 	require.Equal(t, "", unpinned.GetPinnedVersion())
 	require.Equal(t, "ghcr.io/open-webui/open-webui", unpinned.GetImage())
 
 	pinned := newTestDockerInstaller(&appconfig.InstallerData{
-		Name: lo.ToPtr("ghcr.io/open-webui/open-webui"),
+		Name: new("ghcr.io/open-webui/open-webui"),
 		Type: appconfig.InstallerTypeDocker,
 		Opts: &map[string]any{"version": "v0.5.0"},
 	})
@@ -68,7 +67,7 @@ func TestDockerVersionPin(t *testing.T) {
 
 	// A tag on the image name may be a moving one, so it keeps following the registry.
 	tagged := newTestDockerInstaller(&appconfig.InstallerData{
-		Name: lo.ToPtr("ghcr.io/open-webui/open-webui:main"),
+		Name: new("ghcr.io/open-webui/open-webui:main"),
 		Type: appconfig.InstallerTypeDocker,
 		Opts: &map[string]any{"version": "v0.5.0"},
 	})

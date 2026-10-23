@@ -7,7 +7,6 @@ import (
 
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
-	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -92,9 +91,9 @@ func newAptInstallerWithMode(mode appconfig.RepoUpdateMode) *AptInstaller {
 		appconfig.InstallerTypeApt: mode,
 	}
 	return &AptInstaller{
-		InstallerBase:  InstallerBase{Data: &appconfig.InstallerData{Name: lo.ToPtr("test-pkg"), Type: appconfig.InstallerTypeApt}},
+		InstallerBase:  InstallerBase{Data: &appconfig.InstallerData{Name: new("test-pkg"), Type: appconfig.InstallerTypeApt}},
 		Config:         &appconfig.AppConfig{RepoUpdate: &repoUpdate},
-		Info:           &appconfig.InstallerData{Name: lo.ToPtr("test-pkg"), Type: appconfig.InstallerTypeApt},
+		Info:           &appconfig.InstallerData{Name: new("test-pkg"), Type: appconfig.InstallerTypeApt},
 		PackageManager: AptPackageManager("true"), // "true" command always succeeds
 	}
 }
@@ -153,9 +152,9 @@ func newBrewInstallerWithMode(mode appconfig.RepoUpdateMode) *BrewInstaller {
 		appconfig.InstallerTypeBrew: mode,
 	}
 	return &BrewInstaller{
-		InstallerBase: InstallerBase{Data: &appconfig.InstallerData{Name: lo.ToPtr("test-pkg"), Type: appconfig.InstallerTypeBrew}},
+		InstallerBase: InstallerBase{Data: &appconfig.InstallerData{Name: new("test-pkg"), Type: appconfig.InstallerTypeBrew}},
 		Config:        &appconfig.AppConfig{RepoUpdate: &repoUpdate},
-		Info:          &appconfig.InstallerData{Name: lo.ToPtr("test-pkg"), Type: appconfig.InstallerTypeBrew},
+		Info:          &appconfig.InstallerData{Name: new("test-pkg"), Type: appconfig.InstallerTypeBrew},
 	}
 }
 

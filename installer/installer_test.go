@@ -9,7 +9,6 @@ import (
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
 	"github.com/chenasraf/sofmani/summary"
-	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -37,7 +36,7 @@ func TestInstallerWithDefaults(t *testing.T) {
 func TestRunInstaller(t *testing.T) {
 	config := &appconfig.AppConfig{}
 	mockInstaller := &MockInstaller{
-		data:        &appconfig.InstallerData{Name: lo.ToPtr("test"), Type: appconfig.InstallerTypeBrew},
+		data:        &appconfig.InstallerData{Name: new("test"), Type: appconfig.InstallerTypeBrew},
 		isInstalled: false,
 	}
 	result, err := RunInstaller(config, mockInstaller)
@@ -48,7 +47,7 @@ func TestRunInstaller(t *testing.T) {
 func TestRunInstallerInstalledWithoutCheckUpdates(t *testing.T) {
 	config := &appconfig.AppConfig{}
 	mockInstaller := &MockInstaller{
-		data:        &appconfig.InstallerData{Name: lo.ToPtr("test"), Type: appconfig.InstallerTypeBrew},
+		data:        &appconfig.InstallerData{Name: new("test"), Type: appconfig.InstallerTypeBrew},
 		isInstalled: true,
 	}
 	result, err := RunInstaller(config, mockInstaller)
@@ -63,7 +62,7 @@ func TestRunInstallerAllowFailure(t *testing.T) {
 
 	// Without allow_failure the error reaches the caller, which stops the run.
 	strict := &MockInstaller{
-		data:         &appconfig.InstallerData{Name: lo.ToPtr("strict"), Type: appconfig.InstallerTypeBrew},
+		data:         &appconfig.InstallerData{Name: new("strict"), Type: appconfig.InstallerTypeBrew},
 		installError: failure,
 	}
 	result, err := RunInstaller(config, strict)
@@ -73,9 +72,9 @@ func TestRunInstallerAllowFailure(t *testing.T) {
 	// With allow_failure the error is reported and swallowed, leaving no result to summarize.
 	lenient := &MockInstaller{
 		data: &appconfig.InstallerData{
-			Name:         lo.ToPtr("lenient"),
+			Name:         new("lenient"),
 			Type:         appconfig.InstallerTypeBrew,
-			AllowFailure: lo.ToPtr(true),
+			AllowFailure: new(true),
 		},
 		installError: failure,
 	}
@@ -86,7 +85,7 @@ func TestRunInstallerAllowFailure(t *testing.T) {
 
 func TestRunInstallerConfirm(t *testing.T) {
 	logger.InitLogger(false)
-	config := &appconfig.AppConfig{CheckUpdates: lo.ToPtr(true)}
+	config := &appconfig.AppConfig{CheckUpdates: new(true)}
 
 	// answerWith replaces the prompt for the duration of a test.
 	answerWith := func(t *testing.T, answer bool) *[]string {
@@ -105,9 +104,9 @@ func TestRunInstallerConfirm(t *testing.T) {
 		asked := answerWith(t, false)
 		inst := &MockInstaller{
 			data: &appconfig.InstallerData{
-				Name:           lo.ToPtr("declined"),
+				Name:           new("declined"),
 				Type:           appconfig.InstallerTypeBrew,
-				ConfirmInstall: lo.ToPtr(true),
+				ConfirmInstall: new(true),
 			},
 		}
 		result, err := RunInstaller(config, inst)
@@ -121,9 +120,9 @@ func TestRunInstallerConfirm(t *testing.T) {
 		answerWith(t, true)
 		inst := &MockInstaller{
 			data: &appconfig.InstallerData{
-				Name:           lo.ToPtr("accepted"),
+				Name:           new("accepted"),
 				Type:           appconfig.InstallerTypeBrew,
-				ConfirmInstall: lo.ToPtr(true),
+				ConfirmInstall: new(true),
 			},
 		}
 		result, err := RunInstaller(config, inst)
@@ -136,9 +135,9 @@ func TestRunInstallerConfirm(t *testing.T) {
 		asked := answerWith(t, false)
 		inst := &MockInstaller{
 			data: &appconfig.InstallerData{
-				Name:          lo.ToPtr("declined-update"),
+				Name:          new("declined-update"),
 				Type:          appconfig.InstallerTypeNpm,
-				ConfirmUpdate: lo.ToPtr(true),
+				ConfirmUpdate: new(true),
 			},
 			isInstalled: true,
 			needsUpdate: true,
@@ -154,9 +153,9 @@ func TestRunInstallerConfirm(t *testing.T) {
 		asked := answerWith(t, false)
 		inst := &MockInstaller{
 			data: &appconfig.InstallerData{
-				Name:           lo.ToPtr("install-only"),
+				Name:           new("install-only"),
 				Type:           appconfig.InstallerTypeBrew,
-				ConfirmInstall: lo.ToPtr(true),
+				ConfirmInstall: new(true),
 			},
 			isInstalled: true,
 			needsUpdate: true,
@@ -171,7 +170,7 @@ func TestRunInstallerConfirm(t *testing.T) {
 	t.Run("nothing is asked without the flags", func(t *testing.T) {
 		asked := answerWith(t, false)
 		inst := &MockInstaller{
-			data: &appconfig.InstallerData{Name: lo.ToPtr("quiet"), Type: appconfig.InstallerTypeBrew},
+			data: &appconfig.InstallerData{Name: new("quiet"), Type: appconfig.InstallerTypeBrew},
 		}
 		result, err := RunInstaller(config, inst)
 		assert.NoError(t, err)
@@ -197,7 +196,7 @@ func TestRunInstallerRecordsPinnedVersion(t *testing.T) {
 	name := "test-pin-run-installer"
 	mockInstaller := &pinnedMockInstaller{
 		MockInstaller: &MockInstaller{
-			data:        &appconfig.InstallerData{Name: lo.ToPtr(name), Type: appconfig.InstallerTypeNpm},
+			data:        &appconfig.InstallerData{Name: new(name), Type: appconfig.InstallerTypeNpm},
 			isInstalled: false,
 		},
 		version: "1.2.3",
@@ -236,8 +235,8 @@ func TestCheckIsInstalled_UsesBinName(t *testing.T) {
 	for _, tc := range whichBasedCases {
 		t.Run(tc.name+"_uses_bin_name", func(t *testing.T) {
 			data := &appconfig.InstallerData{
-				Name:    lo.ToPtr("nonexistent-bin-xyz-12345"),
-				BinName: lo.ToPtr("ls"),
+				Name:    new("nonexistent-bin-xyz-12345"),
+				BinName: new("ls"),
 				Type:    tc.installerType,
 			}
 			installer := tc.newInstaller(data)
@@ -248,7 +247,7 @@ func TestCheckIsInstalled_UsesBinName(t *testing.T) {
 
 		t.Run(tc.name+"_falls_back_to_name", func(t *testing.T) {
 			data := &appconfig.InstallerData{
-				Name: lo.ToPtr("ls"),
+				Name: new("ls"),
 				Type: tc.installerType,
 			}
 			installer := tc.newInstaller(data)
@@ -269,8 +268,8 @@ func TestCheckIsInstalled_UsesBinName(t *testing.T) {
 		assert.NoError(t, err)
 
 		data := &appconfig.InstallerData{
-			Name:    lo.ToPtr("cospend-cli"),
-			BinName: lo.ToPtr("cospend"),
+			Name:    new("cospend-cli"),
+			BinName: new("cospend"),
 			Type:    appconfig.InstallerTypeGitHubRelease,
 			Opts:    &map[string]any{"destination": tmpDir},
 		}
@@ -289,7 +288,7 @@ func TestCheckIsInstalled_UsesBinName(t *testing.T) {
 		assert.NoError(t, err)
 
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("myapp"),
+			Name: new("myapp"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{"destination": tmpDir},
 		}

@@ -9,7 +9,6 @@ import (
 	"github.com/chenasraf/sofmani/installer"
 	"github.com/chenasraf/sofmani/logger"
 	"github.com/chenasraf/sofmani/machine"
-	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 )
 
@@ -176,26 +175,26 @@ func buildCliConfig(cmd *cobra.Command, args []string) *appconfig.AppCliConfig {
 
 	// Handle debug flag
 	if cmd.Flags().Changed("debug") {
-		config.Debug = lo.ToPtr(true)
+		config.Debug = new(true)
 	}
 	if cmd.Flags().Changed("no-debug") {
-		config.Debug = lo.ToPtr(false)
+		config.Debug = new(false)
 	}
 
 	// Handle update flag
 	if cmd.Flags().Changed("update") {
-		config.CheckUpdates = lo.ToPtr(true)
+		config.CheckUpdates = new(true)
 	}
 	if cmd.Flags().Changed("no-update") {
-		config.CheckUpdates = lo.ToPtr(false)
+		config.CheckUpdates = new(false)
 	}
 
 	// Handle summary flag
 	if cmd.Flags().Changed("summary") {
-		config.Summary = lo.ToPtr(true)
+		config.Summary = new(true)
 	}
 	if cmd.Flags().Changed("no-summary") {
-		config.Summary = lo.ToPtr(false)
+		config.Summary = new(false)
 	}
 
 	// Handle log file flag

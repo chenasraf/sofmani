@@ -9,7 +9,6 @@ import (
 
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
-	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -28,7 +27,7 @@ func TestManifestValidation(t *testing.T) {
 
 	// 🟢 Valid
 	validData := &appconfig.InstallerData{
-		Name: lo.ToPtr("manifest-valid"),
+		Name: new("manifest-valid"),
 		Type: appconfig.InstallerTypeManifest,
 		Opts: &map[string]any{
 			"source": "https://example.com/repo.git",
@@ -40,7 +39,7 @@ func TestManifestValidation(t *testing.T) {
 
 	// 🔴 Missing source
 	missingSource := &appconfig.InstallerData{
-		Name: lo.ToPtr("manifest-missing-source"),
+		Name: new("manifest-missing-source"),
 		Type: appconfig.InstallerTypeManifest,
 		Opts: &map[string]any{
 			"path": "some/path",
@@ -50,7 +49,7 @@ func TestManifestValidation(t *testing.T) {
 
 	// 🔴 Missing path
 	missingPath := &appconfig.InstallerData{
-		Name: lo.ToPtr("manifest-missing-path"),
+		Name: new("manifest-missing-path"),
 		Type: appconfig.InstallerTypeManifest,
 		Opts: &map[string]any{
 			"source": "https://example.com/repo.git",
@@ -60,7 +59,7 @@ func TestManifestValidation(t *testing.T) {
 
 	// 🔴 Empty ref (not nil, just empty)
 	emptyRef := &appconfig.InstallerData{
-		Name: lo.ToPtr("manifest-empty-ref"),
+		Name: new("manifest-empty-ref"),
 		Type: appconfig.InstallerTypeManifest,
 		Opts: &map[string]any{
 			"source": "https://example.com/repo.git",
@@ -72,7 +71,7 @@ func TestManifestValidation(t *testing.T) {
 
 	// 🔴 Nil opts
 	nilOpts := &appconfig.InstallerData{
-		Name: lo.ToPtr("manifest-nil-opts"),
+		Name: new("manifest-nil-opts"),
 		Type: appconfig.InstallerTypeManifest,
 		Opts: nil,
 	}
@@ -84,7 +83,7 @@ func TestManifestGetOpts(t *testing.T) {
 
 	t.Run("returns all opts when set", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("manifest-test"),
+			Name: new("manifest-test"),
 			Type: appconfig.InstallerTypeManifest,
 			Opts: &map[string]any{
 				"source": "https://github.com/user/repo.git",
@@ -105,7 +104,7 @@ func TestManifestGetOpts(t *testing.T) {
 
 	t.Run("returns nil fields when opts is nil", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("manifest-test"),
+			Name: new("manifest-test"),
 			Type: appconfig.InstallerTypeManifest,
 			Opts: nil,
 		}
@@ -119,7 +118,7 @@ func TestManifestGetOpts(t *testing.T) {
 
 	t.Run("handles partial opts", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("manifest-test"),
+			Name: new("manifest-test"),
 			Type: appconfig.InstallerTypeManifest,
 			Opts: &map[string]any{
 				"source": "https://github.com/user/repo.git",
@@ -136,7 +135,7 @@ func TestManifestGetOpts(t *testing.T) {
 
 	t.Run("handles wrong type values gracefully", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("manifest-test"),
+			Name: new("manifest-test"),
 			Type: appconfig.InstallerTypeManifest,
 			Opts: &map[string]any{
 				"source": 123,     // Wrong type
@@ -159,7 +158,7 @@ func TestManifestGetData(t *testing.T) {
 
 	t.Run("returns the installer data", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("manifest-test"),
+			Name: new("manifest-test"),
 			Type: appconfig.InstallerTypeManifest,
 		}
 		installer := newTestManifestInstaller(data)
@@ -175,7 +174,7 @@ func TestManifestCheckIsInstalled(t *testing.T) {
 
 	t.Run("returns false when no custom check", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("manifest-test"),
+			Name: new("manifest-test"),
 			Type: appconfig.InstallerTypeManifest,
 		}
 		installer := newTestManifestInstaller(data)
@@ -188,7 +187,7 @@ func TestManifestCheckIsInstalled(t *testing.T) {
 	t.Run("runs custom check when provided", func(t *testing.T) {
 		checkCmd := "true"
 		data := &appconfig.InstallerData{
-			Name:           lo.ToPtr("manifest-test"),
+			Name:           new("manifest-test"),
 			Type:           appconfig.InstallerTypeManifest,
 			CheckInstalled: &checkCmd,
 		}
@@ -205,7 +204,7 @@ func TestManifestCheckNeedsUpdate(t *testing.T) {
 
 	t.Run("returns true when no custom check", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("manifest-test"),
+			Name: new("manifest-test"),
 			Type: appconfig.InstallerTypeManifest,
 		}
 		installer := newTestManifestInstaller(data)
@@ -218,7 +217,7 @@ func TestManifestCheckNeedsUpdate(t *testing.T) {
 	t.Run("runs custom check when provided", func(t *testing.T) {
 		checkCmd := "false" // Returns exit code 1, meaning no update
 		data := &appconfig.InstallerData{
-			Name:           lo.ToPtr("manifest-test"),
+			Name:           new("manifest-test"),
 			Type:           appconfig.InstallerTypeManifest,
 			CheckHasUpdate: &checkCmd,
 		}
@@ -236,7 +235,7 @@ func TestNewManifestInstaller(t *testing.T) {
 	t.Run("creates installer with config and data", func(t *testing.T) {
 		cfg := &appconfig.AppConfig{}
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("manifest-test"),
+			Name: new("manifest-test"),
 			Type: appconfig.InstallerTypeManifest,
 		}
 		installer := NewManifestInstaller(cfg, data)
@@ -252,7 +251,7 @@ func manifestData(opts map[string]any) *appconfig.InstallerData {
 	base := map[string]any{"source": "/tmp", "path": "manifest.yml"}
 	maps.Copy(base, opts)
 	return &appconfig.InstallerData{
-		Name: lo.ToPtr("manifest-test"),
+		Name: new("manifest-test"),
 		Type: appconfig.InstallerTypeManifest,
 		Opts: &base,
 	}
@@ -329,12 +328,12 @@ func TestManifestBuildConfig(t *testing.T) {
 
 	parent := func() *appconfig.AppConfig {
 		return &appconfig.AppConfig{
-			CheckUpdates:   lo.ToPtr(true),
+			CheckUpdates:   new(true),
 			Env:            &map[string]string{"SECRET": "parent", "SHARED": "parent"},
 			RepoUpdate:     &map[appconfig.InstallerType]appconfig.RepoUpdateMode{appconfig.InstallerTypeBrew: appconfig.RepoUpdateNever},
 			MachineAliases: &map[string]string{"home": "123"},
 			Defaults: &appconfig.AppConfigDefaults{Type: &map[appconfig.InstallerType]appconfig.InstallerData{
-				appconfig.InstallerTypeShell: {Verbose: lo.ToPtr(true)},
+				appconfig.InstallerTypeShell: {Verbose: new(true)},
 			}},
 		}
 	}
@@ -382,16 +381,16 @@ func TestManifestBuildConfig(t *testing.T) {
 
 	t.Run("command line flags win over everything", func(t *testing.T) {
 		p := parent()
-		p.CheckUpdatesFlag = lo.ToPtr(false)
+		p.CheckUpdatesFlag = new(false)
 		p.IgnoreFrequency = true
 		cfg := build(p, map[string]any{"inherit": true, "overrides": map[string]any{"check_updates": true}})
 		assert.False(t, *cfg.CheckUpdates)
 		assert.True(t, cfg.IgnoreFrequency)
 
-		p.CheckUpdatesFlag = lo.ToPtr(true)
+		p.CheckUpdatesFlag = new(true)
 		cfg = build(p, nil)
 		assert.True(t, *cfg.CheckUpdates)
-		assert.Equal(t, lo.ToPtr(true), cfg.CheckUpdatesFlag)
+		assert.Equal(t, new(true), cfg.CheckUpdatesFlag)
 	})
 
 	t.Run("never writes into the parent config", func(t *testing.T) {
@@ -417,7 +416,7 @@ func TestManifestEnvIsolation(t *testing.T) {
 	run := func(opts map[string]any, fromEnvCommand bool) string {
 		// main applies the root env to the process the same way.
 		t.Setenv("SOFMANI_TEST_SECRET", "hunter2")
-		parent := &appconfig.AppConfig{CheckUpdates: lo.ToPtr(false)}
+		parent := &appconfig.AppConfig{CheckUpdates: new(false)}
 		if fromEnvCommand {
 			parent.LoadedEnv = map[string]string{"SOFMANI_TEST_SECRET": "hunter2"}
 		} else {
@@ -425,7 +424,7 @@ func TestManifestEnvIsolation(t *testing.T) {
 		}
 		base := map[string]any{"source": dir, "path": "manifest.yml"}
 		maps.Copy(base, opts)
-		data := &appconfig.InstallerData{Name: lo.ToPtr("isolated"), Type: appconfig.InstallerTypeManifest, Opts: &base}
+		data := &appconfig.InstallerData{Name: new("isolated"), Type: appconfig.InstallerTypeManifest, Opts: &base}
 		assert.NoError(t, NewManifestInstaller(parent, data).Install())
 		assert.Equal(t, "hunter2", os.Getenv("SOFMANI_TEST_SECRET"), "parent env is restored afterwards")
 		_, leaked := os.LookupEnv("SOFMANI_TEST_OWN")

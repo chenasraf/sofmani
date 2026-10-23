@@ -5,7 +5,6 @@ import (
 
 	"github.com/chenasraf/sofmani/appconfig"
 	"github.com/chenasraf/sofmani/logger"
-	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -24,11 +23,11 @@ func TestGroupValidation(t *testing.T) {
 
 	// 🟢 Valid: one sub-installer
 	validStep := appconfig.InstallerData{
-		Name: lo.ToPtr("child-installer"),
+		Name: new("child-installer"),
 		Type: appconfig.InstallerTypeBrew,
 	}
 	validData := &appconfig.InstallerData{
-		Name:  lo.ToPtr("group-valid"),
+		Name:  new("group-valid"),
 		Type:  appconfig.InstallerTypeGroup,
 		Steps: &[]appconfig.InstallerData{validStep},
 	}
@@ -36,7 +35,7 @@ func TestGroupValidation(t *testing.T) {
 
 	// 🔴 Invalid: empty steps slice
 	emptySteps := &appconfig.InstallerData{
-		Name:  lo.ToPtr("group-empty"),
+		Name:  new("group-empty"),
 		Type:  appconfig.InstallerTypeGroup,
 		Steps: &[]appconfig.InstallerData{},
 	}
@@ -44,7 +43,7 @@ func TestGroupValidation(t *testing.T) {
 
 	// 🔴 Invalid: nil steps
 	nilSteps := &appconfig.InstallerData{
-		Name:  lo.ToPtr("group-nil"),
+		Name:  new("group-nil"),
 		Type:  appconfig.InstallerTypeGroup,
 		Steps: nil,
 	}
@@ -56,7 +55,7 @@ func TestGroupGetData(t *testing.T) {
 
 	t.Run("returns the installer data", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("group-test"),
+			Name: new("group-test"),
 			Type: appconfig.InstallerTypeGroup,
 		}
 		installer := newTestGroupInstaller(data)
@@ -72,7 +71,7 @@ func TestGroupGetOpts(t *testing.T) {
 
 	t.Run("returns empty opts", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("group-test"),
+			Name: new("group-test"),
 			Type: appconfig.InstallerTypeGroup,
 		}
 		installer := newTestGroupInstaller(data)
@@ -87,7 +86,7 @@ func TestGroupGetBinName(t *testing.T) {
 
 	t.Run("returns name when bin_name is not set", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("my-group"),
+			Name: new("my-group"),
 			Type: appconfig.InstallerTypeGroup,
 		}
 		installer := newTestGroupInstaller(data)
@@ -97,7 +96,7 @@ func TestGroupGetBinName(t *testing.T) {
 	t.Run("returns bin_name when set", func(t *testing.T) {
 		binName := "custom-bin"
 		data := &appconfig.InstallerData{
-			Name:    lo.ToPtr("my-group"),
+			Name:    new("my-group"),
 			Type:    appconfig.InstallerTypeGroup,
 			BinName: &binName,
 		}
@@ -108,7 +107,7 @@ func TestGroupGetBinName(t *testing.T) {
 	t.Run("returns name when bin_name is empty", func(t *testing.T) {
 		binName := ""
 		data := &appconfig.InstallerData{
-			Name:    lo.ToPtr("my-group"),
+			Name:    new("my-group"),
 			Type:    appconfig.InstallerTypeGroup,
 			BinName: &binName,
 		}
@@ -123,7 +122,7 @@ func TestGroupCheckIsInstalled(t *testing.T) {
 	t.Run("runs custom check when provided", func(t *testing.T) {
 		checkCmd := "true"
 		data := &appconfig.InstallerData{
-			Name:           lo.ToPtr("group-test"),
+			Name:           new("group-test"),
 			Type:           appconfig.InstallerTypeGroup,
 			CheckInstalled: &checkCmd,
 		}
@@ -137,7 +136,7 @@ func TestGroupCheckIsInstalled(t *testing.T) {
 	t.Run("runs custom check that fails", func(t *testing.T) {
 		checkCmd := "false"
 		data := &appconfig.InstallerData{
-			Name:           lo.ToPtr("group-test"),
+			Name:           new("group-test"),
 			Type:           appconfig.InstallerTypeGroup,
 			CheckInstalled: &checkCmd,
 		}
@@ -154,7 +153,7 @@ func TestGroupCheckNeedsUpdate(t *testing.T) {
 
 	t.Run("returns true when no custom check", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("group-test"),
+			Name: new("group-test"),
 			Type: appconfig.InstallerTypeGroup,
 		}
 		installer := newTestGroupInstaller(data)
@@ -167,7 +166,7 @@ func TestGroupCheckNeedsUpdate(t *testing.T) {
 	t.Run("runs custom check when provided", func(t *testing.T) {
 		checkCmd := "false" // Returns exit code 1, meaning no update
 		data := &appconfig.InstallerData{
-			Name:           lo.ToPtr("group-test"),
+			Name:           new("group-test"),
 			Type:           appconfig.InstallerTypeGroup,
 			CheckHasUpdate: &checkCmd,
 		}
@@ -185,7 +184,7 @@ func TestNewGroupInstaller(t *testing.T) {
 	t.Run("creates installer with config and data", func(t *testing.T) {
 		cfg := &appconfig.AppConfig{}
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("group-test"),
+			Name: new("group-test"),
 			Type: appconfig.InstallerTypeGroup,
 		}
 		installer := NewGroupInstaller(cfg, data)
@@ -201,16 +200,16 @@ func TestGroupValidationWithMultipleSteps(t *testing.T) {
 
 	t.Run("valid with multiple steps", func(t *testing.T) {
 		step1 := appconfig.InstallerData{
-			Name: lo.ToPtr("step1"),
+			Name: new("step1"),
 			Type: appconfig.InstallerTypeBrew,
 		}
 		step2 := appconfig.InstallerData{
-			Name: lo.ToPtr("step2"),
+			Name: new("step2"),
 			Type: appconfig.InstallerTypeShell,
 			Opts: &map[string]any{"command": "true"},
 		}
 		data := &appconfig.InstallerData{
-			Name:  lo.ToPtr("group-multi"),
+			Name:  new("group-multi"),
 			Type:  appconfig.InstallerTypeGroup,
 			Steps: &[]appconfig.InstallerData{step1, step2},
 		}

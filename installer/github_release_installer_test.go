@@ -20,7 +20,6 @@ import (
 	"github.com/chenasraf/sofmani/logger"
 	"github.com/chenasraf/sofmani/platform"
 	"github.com/chenasraf/sofmani/utils"
-	"github.com/samber/lo"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -38,7 +37,7 @@ func TestGitHubReleaseValidation(t *testing.T) {
 
 	// 🟢 Valid
 	validData := &appconfig.InstallerData{
-		Name: lo.ToPtr("ghr-valid"),
+		Name: new("ghr-valid"),
 		Type: appconfig.InstallerTypeGitHubRelease,
 		Opts: &map[string]any{
 			"repository":        "owner/repo",
@@ -51,7 +50,7 @@ func TestGitHubReleaseValidation(t *testing.T) {
 
 	// 🔴 Missing repository
 	missingRepo := &appconfig.InstallerData{
-		Name: lo.ToPtr("ghr-missing-repo"),
+		Name: new("ghr-missing-repo"),
 		Type: appconfig.InstallerTypeGitHubRelease,
 		Opts: &map[string]any{
 			"destination":       "/some/path",
@@ -62,7 +61,7 @@ func TestGitHubReleaseValidation(t *testing.T) {
 
 	// 🔴 Missing download_filename
 	missingDownloadFilename := &appconfig.InstallerData{
-		Name: lo.ToPtr("ghr-missing-download"),
+		Name: new("ghr-missing-download"),
 		Type: appconfig.InstallerTypeGitHubRelease,
 		Opts: &map[string]any{
 			"repository":  "owner/repo",
@@ -73,13 +72,13 @@ func TestGitHubReleaseValidation(t *testing.T) {
 
 	// 🔴 Empty per-platform download_filename
 	emptyPlatformFilename := &appconfig.InstallerData{
-		Name: lo.ToPtr("ghr-empty-platform-filename"),
+		Name: new("ghr-empty-platform-filename"),
 		Type: appconfig.InstallerTypeGitHubRelease,
 		Opts: &map[string]any{
 			"repository":  "owner/repo",
 			"destination": "/some/path",
 			"download_filename": map[string]*string{
-				string(platform.GetPlatform()): lo.ToPtr(""),
+				string(platform.GetPlatform()): new(""),
 			},
 		},
 	}
@@ -91,14 +90,14 @@ func TestGitHubReleaseValidation(t *testing.T) {
 		otherPlatform = platform.PlatformMacos
 	}
 	otherPlatformOnly := &appconfig.InstallerData{
-		Name:      lo.ToPtr("ghr-other-platform-only"),
+		Name:      new("ghr-other-platform-only"),
 		Type:      appconfig.InstallerTypeGitHubRelease,
 		Platforms: &platform.Platforms{Only: &[]platform.Platform{otherPlatform}},
 		Opts: &map[string]any{
 			"repository":  "owner/repo",
 			"destination": "/some/path",
 			"download_filename": map[string]*string{
-				string(otherPlatform): lo.ToPtr("file.tar.gz"),
+				string(otherPlatform): new("file.tar.gz"),
 			},
 		},
 	}
@@ -106,13 +105,13 @@ func TestGitHubReleaseValidation(t *testing.T) {
 
 	// 🔴 download_filename missing for current platform when installer runs on current platform
 	missingCurrentPlatform := &appconfig.InstallerData{
-		Name: lo.ToPtr("ghr-missing-current-platform"),
+		Name: new("ghr-missing-current-platform"),
 		Type: appconfig.InstallerTypeGitHubRelease,
 		Opts: &map[string]any{
 			"repository":  "owner/repo",
 			"destination": "/some/path",
 			"download_filename": map[string]*string{
-				string(otherPlatform): lo.ToPtr("file.tar.gz"),
+				string(otherPlatform): new("file.tar.gz"),
 			},
 		},
 	}
@@ -120,7 +119,7 @@ func TestGitHubReleaseValidation(t *testing.T) {
 
 	// 🔴 Invalid strategy
 	invalidStrategy := &appconfig.InstallerData{
-		Name: lo.ToPtr("ghr-invalid-strategy"),
+		Name: new("ghr-invalid-strategy"),
 		Type: appconfig.InstallerTypeGitHubRelease,
 		Opts: &map[string]any{
 			"repository":        "owner/repo",
@@ -133,7 +132,7 @@ func TestGitHubReleaseValidation(t *testing.T) {
 
 	// 🟢 Valid gzip strategy
 	gzipStrategy := &appconfig.InstallerData{
-		Name: lo.ToPtr("ghr-gzip"),
+		Name: new("ghr-gzip"),
 		Type: appconfig.InstallerTypeGitHubRelease,
 		Opts: &map[string]any{
 			"repository":        "owner/repo",
@@ -146,7 +145,7 @@ func TestGitHubReleaseValidation(t *testing.T) {
 
 	// 🟢 Valid custom strategy with extract_command
 	customStrategy := &appconfig.InstallerData{
-		Name: lo.ToPtr("ghr-custom"),
+		Name: new("ghr-custom"),
 		Type: appconfig.InstallerTypeGitHubRelease,
 		Opts: &map[string]any{
 			"repository":        "owner/repo",
@@ -160,7 +159,7 @@ func TestGitHubReleaseValidation(t *testing.T) {
 
 	// 🔴 custom strategy without extract_command
 	customMissingCmd := &appconfig.InstallerData{
-		Name: lo.ToPtr("ghr-custom-missing"),
+		Name: new("ghr-custom-missing"),
 		Type: appconfig.InstallerTypeGitHubRelease,
 		Opts: &map[string]any{
 			"repository":        "owner/repo",
@@ -173,7 +172,7 @@ func TestGitHubReleaseValidation(t *testing.T) {
 
 	// 🔴 extract_command without strategy: custom
 	extractCmdWrongStrategy := &appconfig.InstallerData{
-		Name: lo.ToPtr("ghr-custom-wrong-strategy"),
+		Name: new("ghr-custom-wrong-strategy"),
 		Type: appconfig.InstallerTypeGitHubRelease,
 		Opts: &map[string]any{
 			"repository":        "owner/repo",
@@ -191,7 +190,7 @@ func TestGitHubReleaseGetOpts(t *testing.T) {
 
 	t.Run("parses all options correctly", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("test-release"),
+			Name: new("test-release"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{
 				"repository":        "owner/repo",
@@ -210,7 +209,7 @@ func TestGitHubReleaseGetOpts(t *testing.T) {
 
 	t.Run("handles nil opts", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("test-release"),
+			Name: new("test-release"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: nil,
 		}
@@ -224,7 +223,7 @@ func TestGitHubReleaseGetOpts(t *testing.T) {
 
 	t.Run("handles zip strategy", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("test-release"),
+			Name: new("test-release"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{
 				"strategy": "zip",
@@ -238,7 +237,7 @@ func TestGitHubReleaseGetOpts(t *testing.T) {
 
 	t.Run("handles none strategy", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("test-release"),
+			Name: new("test-release"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{
 				"strategy": "none",
@@ -252,7 +251,7 @@ func TestGitHubReleaseGetOpts(t *testing.T) {
 
 	t.Run("handles gzip strategy", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("test-release"),
+			Name: new("test-release"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{
 				"strategy": "gzip",
@@ -266,7 +265,7 @@ func TestGitHubReleaseGetOpts(t *testing.T) {
 
 	t.Run("accepts gz as alias for gzip", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("test-release"),
+			Name: new("test-release"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{
 				"strategy": "gz",
@@ -280,7 +279,7 @@ func TestGitHubReleaseGetOpts(t *testing.T) {
 
 	t.Run("handles custom strategy with extract_command", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("test-release"),
+			Name: new("test-release"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{
 				"strategy":        "custom",
@@ -312,7 +311,7 @@ func TestGitHubReleaseCustomExtract(t *testing.T) {
 	assert.NoError(t, os.Mkdir(extractDir, 0755))
 
 	data := &appconfig.InstallerData{
-		Name: lo.ToPtr("custom-tool"),
+		Name: new("custom-tool"),
 		Type: appconfig.InstallerTypeGitHubRelease,
 		Opts: &map[string]any{
 			// The user's command references template variables directly instead of env vars.
@@ -345,7 +344,7 @@ func TestGitHubReleaseCustomExtractFailures(t *testing.T) {
 	}
 
 	data := &appconfig.InstallerData{
-		Name: lo.ToPtr("custom-tool"),
+		Name: new("custom-tool"),
 		Type: appconfig.InstallerTypeGitHubRelease,
 	}
 	installer := newTestGitHubReleaseInstaller(data)
@@ -427,7 +426,7 @@ func TestGitHubReleaseGetBinName(t *testing.T) {
 	t.Run("returns bin_name when set", func(t *testing.T) {
 		binName := "custom-bin"
 		data := &appconfig.InstallerData{
-			Name:    lo.ToPtr("my-app"),
+			Name:    new("my-app"),
 			Type:    appconfig.InstallerTypeGitHubRelease,
 			BinName: &binName,
 		}
@@ -437,7 +436,7 @@ func TestGitHubReleaseGetBinName(t *testing.T) {
 
 	t.Run("returns base name when bin_name not set", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("owner/my-app"),
+			Name: new("owner/my-app"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 		}
 		installer := newTestGitHubReleaseInstaller(data)
@@ -451,7 +450,7 @@ func TestGitHubReleaseGetArchiveBinName(t *testing.T) {
 	t.Run("returns archive_bin_name when set", func(t *testing.T) {
 		binName := "cospend"
 		data := &appconfig.InstallerData{
-			Name:    lo.ToPtr("cospend-cli"),
+			Name:    new("cospend-cli"),
 			Type:    appconfig.InstallerTypeGitHubRelease,
 			BinName: &binName,
 			Opts: &map[string]any{
@@ -466,7 +465,7 @@ func TestGitHubReleaseGetArchiveBinName(t *testing.T) {
 	t.Run("falls back to bin_name when archive_bin_name not set", func(t *testing.T) {
 		binName := "custom-bin"
 		data := &appconfig.InstallerData{
-			Name:    lo.ToPtr("my-app"),
+			Name:    new("my-app"),
 			Type:    appconfig.InstallerTypeGitHubRelease,
 			BinName: &binName,
 		}
@@ -476,7 +475,7 @@ func TestGitHubReleaseGetArchiveBinName(t *testing.T) {
 
 	t.Run("falls back to name when neither set", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("my-app"),
+			Name: new("my-app"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 		}
 		installer := newTestGitHubReleaseInstaller(data)
@@ -485,7 +484,7 @@ func TestGitHubReleaseGetArchiveBinName(t *testing.T) {
 
 	t.Run("renders template tokens in archive_bin_name", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("gh"),
+			Name: new("gh"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{
 				"archive_bin_name": "gh_{{ .Version }}_{{ .OS }}_{{ .Arch }}/bin/gh",
@@ -499,7 +498,7 @@ func TestGitHubReleaseGetArchiveBinName(t *testing.T) {
 
 	t.Run("accepts a per-platform map and resolves for current platform", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("tool"),
+			Name: new("tool"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{
 				"archive_bin_name": map[string]any{
@@ -518,7 +517,7 @@ func TestGitHubReleaseGetFilename(t *testing.T) {
 
 	t.Run("returns filename for current platform", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("test-release"),
+			Name: new("test-release"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{
 				"download_filename": "app.tar.gz",
@@ -530,7 +529,7 @@ func TestGitHubReleaseGetFilename(t *testing.T) {
 
 	t.Run("returns empty string when not set", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("test-release"),
+			Name: new("test-release"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{},
 		}
@@ -553,7 +552,7 @@ func TestGitHubReleaseCacheOperations(t *testing.T) {
 
 	t.Run("UpdateCache writes tag to file", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("test-cache-app"),
+			Name: new("test-cache-app"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{
 				"repository":        "owner/repo",
@@ -575,7 +574,7 @@ func TestGitHubReleaseCacheOperations(t *testing.T) {
 
 	t.Run("GetCachedTag returns empty for non-existent cache", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("non-existent-app-12345"),
+			Name: new("non-existent-app-12345"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{
 				"repository":        "owner/repo",
@@ -592,7 +591,7 @@ func TestGitHubReleaseCacheOperations(t *testing.T) {
 
 	t.Run("UpdateCache overwrites existing cache", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("test-overwrite-app"),
+			Name: new("test-overwrite-app"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{
 				"repository":        "owner/repo",
@@ -622,7 +621,7 @@ func TestGitHubReleaseGetDestination(t *testing.T) {
 
 	t.Run("returns destination from opts", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("test-release"),
+			Name: new("test-release"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{
 				"destination": "/usr/local/bin",
@@ -634,7 +633,7 @@ func TestGitHubReleaseGetDestination(t *testing.T) {
 
 	t.Run("returns current directory when destination not set", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("test-release"),
+			Name: new("test-release"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{},
 		}
@@ -649,7 +648,7 @@ func TestGitHubReleaseGetInstallDir(t *testing.T) {
 
 	t.Run("returns same as destination", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("test-release"),
+			Name: new("test-release"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{
 				"destination": "/opt/bin",
@@ -675,7 +674,7 @@ func TestGitHubReleaseCheckIsInstalled(t *testing.T) {
 		assert.NoError(t, err)
 
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("myapp"),
+			Name: new("myapp"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{
 				"destination": tmpDir,
@@ -694,7 +693,7 @@ func TestGitHubReleaseCheckIsInstalled(t *testing.T) {
 		defer func() { _ = os.RemoveAll(tmpDir) }()
 
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("nonexistent-app"),
+			Name: new("nonexistent-app"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{
 				"destination": tmpDir,
@@ -710,7 +709,7 @@ func TestGitHubReleaseCheckIsInstalled(t *testing.T) {
 	t.Run("uses custom check when provided", func(t *testing.T) {
 		checkCmd := "true"
 		data := &appconfig.InstallerData{
-			Name:           lo.ToPtr("myapp"),
+			Name:           new("myapp"),
 			Type:           appconfig.InstallerTypeGitHubRelease,
 			CheckInstalled: &checkCmd,
 		}
@@ -728,7 +727,7 @@ func TestGitHubReleaseCheckNeedsUpdate(t *testing.T) {
 	t.Run("uses custom check when provided", func(t *testing.T) {
 		checkCmd := "true" // returns success = update needed
 		data := &appconfig.InstallerData{
-			Name:           lo.ToPtr("myapp"),
+			Name:           new("myapp"),
 			Type:           appconfig.InstallerTypeGitHubRelease,
 			CheckHasUpdate: &checkCmd,
 		}
@@ -742,7 +741,7 @@ func TestGitHubReleaseCheckNeedsUpdate(t *testing.T) {
 	t.Run("returns true when no cached tag", func(t *testing.T) {
 		// Use a unique name that won't have a cache file
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("unique-no-cache-app-99999"),
+			Name: new("unique-no-cache-app-99999"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{
 				"repository":        "owner/repo",
@@ -763,7 +762,7 @@ func TestGitHubReleaseVersionPin(t *testing.T) {
 
 	t.Run("resolves the pinned tag without querying GitHub", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("myapp"),
+			Name: new("myapp"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{
 				"repository":        "owner/repo",
@@ -782,7 +781,7 @@ func TestGitHubReleaseVersionPin(t *testing.T) {
 
 	t.Run("reports no update when the cached tag is the pinned one", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("pinned-release-app-99999"),
+			Name: new("pinned-release-app-99999"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{
 				"repository":        "owner/repo",
@@ -813,7 +812,7 @@ func TestGitHubReleaseVersionPin(t *testing.T) {
 
 	t.Run("is unpinned without a version", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("myapp"),
+			Name: new("myapp"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{
 				"repository": "owner/repo",
@@ -828,7 +827,7 @@ func TestGitHubReleaseTreeModeOpts(t *testing.T) {
 
 	t.Run("parses extract_to, strip_components, bin_links", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("neovim"),
+			Name: new("neovim"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{
 				"repository":        "neovim/neovim",
@@ -854,7 +853,7 @@ func TestGitHubReleaseTreeModeOpts(t *testing.T) {
 
 	t.Run("accepts strip_components as float64 (yaml number decoding)", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("neovim"),
+			Name: new("neovim"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{
 				"strip_components": float64(2),
@@ -867,7 +866,7 @@ func TestGitHubReleaseTreeModeOpts(t *testing.T) {
 
 	t.Run("parses bin_links with map[any]any keys (yaml.v2 shape)", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("neovim"),
+			Name: new("neovim"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{
 				"bin_links": []any{
@@ -887,7 +886,7 @@ func TestGitHubReleaseTreeModeValidation(t *testing.T) {
 	// Tree mode does not require destination.
 	t.Run("destination not required in tree mode", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("ghr-tree"),
+			Name: new("ghr-tree"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{
 				"repository":        "owner/repo",
@@ -904,7 +903,7 @@ func TestGitHubReleaseTreeModeValidation(t *testing.T) {
 
 	t.Run("tree mode requires tar or zip strategy", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("ghr-tree-none"),
+			Name: new("ghr-tree-none"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{
 				"repository":        "owner/repo",
@@ -918,7 +917,7 @@ func TestGitHubReleaseTreeModeValidation(t *testing.T) {
 
 	t.Run("tree mode with missing strategy fails validation", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("ghr-tree-no-strategy"),
+			Name: new("ghr-tree-no-strategy"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{
 				"repository":        "owner/repo",
@@ -931,7 +930,7 @@ func TestGitHubReleaseTreeModeValidation(t *testing.T) {
 
 	t.Run("rejects bin_link with missing target", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("ghr-tree-bad-link"),
+			Name: new("ghr-tree-bad-link"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{
 				"repository":        "owner/repo",
@@ -948,7 +947,7 @@ func TestGitHubReleaseTreeModeValidation(t *testing.T) {
 
 	t.Run("rejects bin_link source that escapes extract_to", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("ghr-tree-escape"),
+			Name: new("ghr-tree-escape"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{
 				"repository":        "owner/repo",
@@ -965,7 +964,7 @@ func TestGitHubReleaseTreeModeValidation(t *testing.T) {
 
 	t.Run("rejects negative strip_components", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("ghr-tree-strip"),
+			Name: new("ghr-tree-strip"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{
 				"repository":        "owner/repo",
@@ -983,7 +982,7 @@ func TestGitHubReleaseTreeModeInstallDir(t *testing.T) {
 	logger.InitLogger(false)
 
 	data := &appconfig.InstallerData{
-		Name: lo.ToPtr("tree"),
+		Name: new("tree"),
 		Type: appconfig.InstallerTypeGitHubRelease,
 		Opts: &map[string]any{
 			"extract_to": "/opt/tree",
@@ -998,7 +997,7 @@ func TestGitHubReleaseTreeModeCheckIsInstalled(t *testing.T) {
 
 	t.Run("returns false when extract_to missing", func(t *testing.T) {
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("tree"),
+			Name: new("tree"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{
 				"extract_to": "/nonexistent/sofmani-tree-test",
@@ -1015,7 +1014,7 @@ func TestGitHubReleaseTreeModeCheckIsInstalled(t *testing.T) {
 		defer func() { _ = os.RemoveAll(tmp) }()
 
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("tree"),
+			Name: new("tree"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{
 				"extract_to": tmp,
@@ -1038,7 +1037,7 @@ func TestGitHubReleaseTreeModeCheckIsInstalled(t *testing.T) {
 		assert.NoError(t, os.WriteFile(linkPath, []byte("x"), 0644))
 
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("tree"),
+			Name: new("tree"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 			Opts: &map[string]any{
 				"extract_to": tmp,
@@ -1242,7 +1241,7 @@ func TestNewGitHubReleaseInstaller(t *testing.T) {
 	t.Run("creates installer with config and data", func(t *testing.T) {
 		cfg := &appconfig.AppConfig{}
 		data := &appconfig.InstallerData{
-			Name: lo.ToPtr("test-release"),
+			Name: new("test-release"),
 			Type: appconfig.InstallerTypeGitHubRelease,
 		}
 		installer := NewGitHubReleaseInstaller(cfg, data)
@@ -1325,7 +1324,7 @@ func newDownloadTestInstaller(name string, opts map[string]any) *GitHubReleaseIn
 	}
 	maps.Copy(base, opts)
 	data := &appconfig.InstallerData{
-		Name: lo.ToPtr(name),
+		Name: new(name),
 		Type: appconfig.InstallerTypeGitHubRelease,
 		Opts: &base,
 	}
