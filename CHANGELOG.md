@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.38.1](https://github.com/chenasraf/sofmani/compare/v1.38.0...v1.38.1) (2026-10-23)
+
+
+### Bug Fixes
+
+* **deps:** require go 1.26.10 ([95af865](https://github.com/chenasraf/sofmani/commit/95af865ad4e834e34dad81f46fe863d30e197dff))
+* **deps:** require go 1.27.3 ([446840c](https://github.com/chenasraf/sofmani/commit/446840cafcf6afba07456e82eb5df16a2baa75cd))
+
 ## [1.38.0](https://github.com/chenasraf/sofmani/compare/v1.37.0...v1.38.0) (2026-10-14)
 
 
