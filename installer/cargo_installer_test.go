@@ -10,9 +10,7 @@ import (
 
 func newTestCargoInstaller(data *appconfig.InstallerData) *CargoInstaller {
 	return &CargoInstaller{
-		InstallerBase: InstallerBase{
-			Data: data,
-		},
+		Data:   data,
 		Config: nil,
 		Info:   data,
 	}

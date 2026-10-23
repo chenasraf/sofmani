@@ -185,9 +185,9 @@ func (i *GitInstaller) GetInstallDir() string {
 // NewGitInstaller creates a new GitInstaller.
 func NewGitInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *GitInstaller {
 	i := &GitInstaller{
-		InstallerBase: InstallerBase{Data: installer},
-		Config:        cfg,
-		Info:          installer,
+		Data:   installer,
+		Config: cfg,
+		Info:   installer,
 	}
 
 	return i

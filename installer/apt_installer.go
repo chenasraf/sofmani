@@ -231,7 +231,7 @@ func NewAptInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerDat
 		packageManager = PackageManagerApk
 	}
 	i := &AptInstaller{
-		InstallerBase:  InstallerBase{Data: installer},
+		Data:           installer,
 		Config:         cfg,
 		Info:           installer,
 		PackageManager: packageManager,

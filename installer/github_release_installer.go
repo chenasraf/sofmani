@@ -1323,9 +1323,9 @@ func copyFile(src, dst string) error {
 // NewGitHubReleaseInstaller creates a new GitHubReleaseInstaller.
 func NewGitHubReleaseInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *GitHubReleaseInstaller {
 	i := &GitHubReleaseInstaller{
-		InstallerBase: InstallerBase{Data: installer},
-		Config:        cfg,
-		Info:          installer,
+		Data:   installer,
+		Config: cfg,
+		Info:   installer,
 	}
 
 	return i

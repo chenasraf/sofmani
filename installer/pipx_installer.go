@@ -173,9 +173,9 @@ func (i *PipxInstaller) GetBinName() string {
 // NewPipxInstaller creates a new PipxInstaller.
 func NewPipxInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *PipxInstaller {
 	i := &PipxInstaller{
-		InstallerBase: InstallerBase{Data: installer},
-		Config:        cfg,
-		Info:          installer,
+		Data:   installer,
+		Config: cfg,
+		Info:   installer,
 	}
 
 	return i

@@ -10,9 +10,7 @@ import (
 
 func newTestAptInstaller(data *appconfig.InstallerData) *AptInstaller {
 	return &AptInstaller{
-		InstallerBase: InstallerBase{
-			Data: data,
-		},
+		Data:   data,
 		Config: nil,
 		Info:   data,
 	}

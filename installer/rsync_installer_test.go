@@ -9,9 +9,7 @@ import (
 
 func newTestRsyncInstaller(data *appconfig.InstallerData) *RsyncInstaller {
 	return &RsyncInstaller{
-		InstallerBase: InstallerBase{
-			Data: data,
-		},
+		Data:   data,
 		Config: nil,
 		Info:   data,
 	}

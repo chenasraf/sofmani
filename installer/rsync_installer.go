@@ -155,9 +155,9 @@ func (i *RsyncInstaller) GetBinName() string {
 // NewRsyncInstaller creates a new RsyncInstaller.
 func NewRsyncInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *RsyncInstaller {
 	i := &RsyncInstaller{
-		InstallerBase: InstallerBase{Data: installer},
-		Config:        cfg,
-		Info:          installer,
+		Data:   installer,
+		Config: cfg,
+		Info:   installer,
 	}
 
 	return i

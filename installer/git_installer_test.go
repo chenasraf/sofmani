@@ -9,9 +9,7 @@ import (
 
 func newTestGitInstaller(data *appconfig.InstallerData) *GitInstaller {
 	return &GitInstaller{
-		InstallerBase: InstallerBase{
-			Data: data,
-		},
+		Data: data,
 		Info: data,
 	}
 }

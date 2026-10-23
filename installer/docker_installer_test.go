@@ -10,9 +10,7 @@ import (
 
 func newTestDockerInstaller(data *appconfig.InstallerData) *DockerInstaller {
 	return &DockerInstaller{
-		InstallerBase: InstallerBase{
-			Data: data,
-		},
+		Data:   data,
 		Config: nil,
 		Info:   data,
 	}

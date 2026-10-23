@@ -10,9 +10,7 @@ import (
 
 func newTestGoInstaller(data *appconfig.InstallerData) *GoInstaller {
 	return &GoInstaller{
-		InstallerBase: InstallerBase{
-			Data: data,
-		},
+		Data:   data,
 		Config: nil,
 		Info:   data,
 	}

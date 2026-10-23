@@ -157,9 +157,9 @@ func (i *GoInstaller) GetBinName() string {
 // NewGoInstaller creates a new GoInstaller.
 func NewGoInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *GoInstaller {
 	i := &GoInstaller{
-		InstallerBase: InstallerBase{Data: installer},
-		Config:        cfg,
-		Info:          installer,
+		Data:   installer,
+		Config: cfg,
+		Info:   installer,
 	}
 
 	return i

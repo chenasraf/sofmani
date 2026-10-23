@@ -25,9 +25,7 @@ import (
 
 func newTestGitHubReleaseInstaller(data *appconfig.InstallerData) *GitHubReleaseInstaller {
 	return &GitHubReleaseInstaller{
-		InstallerBase: InstallerBase{
-			Data: data,
-		},
+		Data: data,
 		Info: data,
 	}
 }

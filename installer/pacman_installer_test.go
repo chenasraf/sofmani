@@ -9,9 +9,7 @@ import (
 
 func newTestPacmanInstaller(data *appconfig.InstallerData) *PacmanInstaller {
 	return &PacmanInstaller{
-		InstallerBase: InstallerBase{
-			Data: data,
-		},
+		Data:           data,
 		Config:         nil,
 		PackageManager: PackageManagerPacman,
 		Info:           data,
@@ -20,9 +18,7 @@ func newTestPacmanInstaller(data *appconfig.InstallerData) *PacmanInstaller {
 
 func newTestYayInstaller(data *appconfig.InstallerData) *PacmanInstaller {
 	return &PacmanInstaller{
-		InstallerBase: InstallerBase{
-			Data: data,
-		},
+		Data:           data,
 		Config:         nil,
 		PackageManager: PackageManagerYay,
 		Info:           data,

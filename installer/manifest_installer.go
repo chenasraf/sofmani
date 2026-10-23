@@ -463,8 +463,8 @@ func (i *ManifestInstaller) scopeManifestEnv() (func(), error) {
 
 func NewManifestInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *ManifestInstaller {
 	return &ManifestInstaller{
-		InstallerBase: InstallerBase{Data: installer},
-		Config:        cfg,
-		Info:          installer,
+		Data:   installer,
+		Config: cfg,
+		Info:   installer,
 	}
 }

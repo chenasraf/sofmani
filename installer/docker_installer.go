@@ -36,9 +36,9 @@ type DockerOpts struct {
 // NewDockerInstaller creates a new DockerInstaller.
 func NewDockerInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *DockerInstaller {
 	return &DockerInstaller{
-		InstallerBase: InstallerBase{Data: installer},
-		Config:        cfg,
-		Info:          installer,
+		Data:   installer,
+		Config: cfg,
+		Info:   installer,
 	}
 }
 

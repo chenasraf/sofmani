@@ -98,8 +98,8 @@ func (i *ShellInstaller) GetBinName() string {
 // NewShellInstaller creates a new ShellInstaller.
 func NewShellInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *ShellInstaller {
 	return &ShellInstaller{
-		InstallerBase: InstallerBase{Data: installer},
-		Config:        cfg,
-		Info:          installer,
+		Data:   installer,
+		Config: cfg,
+		Info:   installer,
 	}
 }

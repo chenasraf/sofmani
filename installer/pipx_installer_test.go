@@ -10,9 +10,7 @@ import (
 
 func newTestPipxInstaller(data *appconfig.InstallerData) *PipxInstaller {
 	return &PipxInstaller{
-		InstallerBase: InstallerBase{
-			Data: data,
-		},
+		Data:   data,
 		Config: nil,
 		Info:   data,
 	}

@@ -502,9 +502,9 @@ func (i *BrewInstaller) GetBinName() string {
 // NewBrewInstaller creates a new BrewInstaller.
 func NewBrewInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *BrewInstaller {
 	i := &BrewInstaller{
-		InstallerBase: InstallerBase{Data: installer},
-		Config:        cfg,
-		Info:          installer,
+		Data:   installer,
+		Config: cfg,
+		Info:   installer,
 	}
 
 	return i

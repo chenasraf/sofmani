@@ -91,7 +91,7 @@ func newAptInstallerWithMode(mode appconfig.RepoUpdateMode) *AptInstaller {
 		appconfig.InstallerTypeApt: mode,
 	}
 	return &AptInstaller{
-		InstallerBase:  InstallerBase{Data: &appconfig.InstallerData{Name: new("test-pkg"), Type: appconfig.InstallerTypeApt}},
+		Data:           &appconfig.InstallerData{Name: new("test-pkg"), Type: appconfig.InstallerTypeApt},
 		Config:         &appconfig.AppConfig{RepoUpdate: &repoUpdate},
 		Info:           &appconfig.InstallerData{Name: new("test-pkg"), Type: appconfig.InstallerTypeApt},
 		PackageManager: AptPackageManager("true"), // "true" command always succeeds
@@ -152,9 +152,9 @@ func newBrewInstallerWithMode(mode appconfig.RepoUpdateMode) *BrewInstaller {
 		appconfig.InstallerTypeBrew: mode,
 	}
 	return &BrewInstaller{
-		InstallerBase: InstallerBase{Data: &appconfig.InstallerData{Name: new("test-pkg"), Type: appconfig.InstallerTypeBrew}},
-		Config:        &appconfig.AppConfig{RepoUpdate: &repoUpdate},
-		Info:          &appconfig.InstallerData{Name: new("test-pkg"), Type: appconfig.InstallerTypeBrew},
+		Data:   &appconfig.InstallerData{Name: new("test-pkg"), Type: appconfig.InstallerTypeBrew},
+		Config: &appconfig.AppConfig{RepoUpdate: &repoUpdate},
+		Info:   &appconfig.InstallerData{Name: new("test-pkg"), Type: appconfig.InstallerTypeBrew},
 	}
 }
 

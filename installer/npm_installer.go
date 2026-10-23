@@ -196,7 +196,7 @@ func NewNpmInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerDat
 		packageManager = PackageManagerYarn
 	}
 	i := &NpmInstaller{
-		InstallerBase:  InstallerBase{Data: installer},
+		Data:           installer,
 		Config:         cfg,
 		PackageManager: packageManager,
 		Info:           installer,

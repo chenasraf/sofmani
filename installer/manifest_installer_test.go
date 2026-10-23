@@ -14,9 +14,7 @@ import (
 
 func newTestManifestInstaller(data *appconfig.InstallerData) *ManifestInstaller {
 	return &ManifestInstaller{
-		InstallerBase: InstallerBase{
-			Data: data,
-		},
+		Data:   data,
 		Config: nil,
 		Info:   data,
 	}

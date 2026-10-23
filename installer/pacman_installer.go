@@ -155,7 +155,7 @@ func NewPacmanInstaller(cfg *appconfig.AppConfig, installer *appconfig.Installer
 		packageManager = PackageManagerYay
 	}
 	i := &PacmanInstaller{
-		InstallerBase:  InstallerBase{Data: installer},
+		Data:           installer,
 		Config:         cfg,
 		Info:           installer,
 		PackageManager: packageManager,

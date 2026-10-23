@@ -10,9 +10,7 @@ import (
 
 func newTestNpmInstaller(data *appconfig.InstallerData) *NpmInstaller {
 	return &NpmInstaller{
-		InstallerBase: InstallerBase{
-			Data: data,
-		},
+		Data:           data,
 		Config:         nil,
 		PackageManager: PackageManagerNpm,
 		Info:           data,

@@ -16,9 +16,7 @@ import (
 
 func newTestBrewInstaller(data *appconfig.InstallerData) *BrewInstaller {
 	return &BrewInstaller{
-		InstallerBase: InstallerBase{
-			Data: data,
-		},
+		Data: data,
 		Info: data,
 	}
 }

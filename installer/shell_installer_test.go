@@ -9,9 +9,9 @@ import (
 
 func newTestShellInstaller(data *appconfig.InstallerData) *ShellInstaller {
 	return &ShellInstaller{
-		InstallerBase: InstallerBase{Data: data},
-		Config:        nil,
-		Info:          data,
+		Data:   data,
+		Config: nil,
+		Info:   data,
 	}
 }
 

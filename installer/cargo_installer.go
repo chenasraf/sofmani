@@ -147,9 +147,9 @@ func (i *CargoInstaller) GetBinName() string {
 // NewCargoInstaller creates a new CargoInstaller.
 func NewCargoInstaller(cfg *appconfig.AppConfig, installer *appconfig.InstallerData) *CargoInstaller {
 	i := &CargoInstaller{
-		InstallerBase: InstallerBase{Data: installer},
-		Config:        cfg,
-		Info:          installer,
+		Data:   installer,
+		Config: cfg,
+		Info:   installer,
 	}
 
 	return i
